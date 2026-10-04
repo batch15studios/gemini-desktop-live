@@ -501,17 +501,36 @@ async function startMicrophoneCapture() {
       // Acoustic Transient Detection (Clap or Finger Snap)
       detectSoundSnapOrClap(micFreqData);
 
-      // Voice Activity State Tracking
-      if (micLevel > 0.12) {
-        if (isAssistantSpeaking) {
-          // Natural user barge-in over assistant speech
-          if (micLevel > 0.32) {
+      const now = Date.now();
+      const isEchoPeriod = isAssistantSpeaking || (now < roomReverbDecayUntil);
+
+      if (isEchoPeriod) {
+        // Assistant is actively speaking or room reverberation is decaying.
+        // Gating is critical: do NOT stream mic audio to Gemini Live to prevent
+        // the assistant from hearing its own voice and creating an acoustic feedback loop.
+        
+        // Check for genuine deliberate user barge-in (sustained high energy above speaker bleed)
+        if (micLevel > 0.45) {
+          interruptionSustainedFrames++;
+          if (interruptionSustainedFrames >= 3) {
+            console.log('[Orb] User voice barge-in detected over speaker playback!');
             clearAudioQueue();
             updateState('LISTENING');
+            interruptionSustainedFrames = 0;
           }
         } else {
-          updateState('LISTENING');
+          interruptionSustainedFrames = Math.max(0, interruptionSustainedFrames - 1);
         }
+
+        // Drop transmission while assistant is speaking or reverb is decaying
+        return;
+      }
+
+      interruptionSustainedFrames = 0;
+
+      // Voice Activity State Tracking (When assistant is quiet)
+      if (micLevel > 0.12) {
+        updateState('LISTENING');
       } else if (micLevel <= 0.04 && currentState === 'LISTENING') {
         updateState('IDLE');
       }
@@ -627,7 +646,7 @@ function playAudioChunk(base64Data) {
       outputLevel = 0;
       isAssistantSpeaking = false;
       nextPlayTime = 0; // Flush timeline anchor to eliminate clock drift between turns
-      roomReverbDecayUntil = Date.now() + 250; // Allow 250ms for speaker echo in the room to decay
+      roomReverbDecayUntil = Date.now() + 350; // Allow 350ms for speaker echo in the room to decay
       updateState('IDLE');
     }
   };

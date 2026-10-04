@@ -10,7 +10,7 @@ const WebSocket = require('ws');
 class GeminiLiveEngine {
   constructor(options = {}) {
     this.apiKey = options.apiKey || process.env.GEMINI_API_KEY || '';
-    this.model = options.model || 'gemini-3.1-flash-live-preview';
+    this.model = options.model || 'gemini-3.8-live';
     this.voiceName = options.voiceName || 'Aoede'; // Aoede, Kore, Puck, Charon, Fenrir
     this.toolsManager = options.toolsManager;
     this.emitter = options.emitter;
@@ -42,10 +42,10 @@ class GeminiLiveEngine {
     this.voiceName = voice;
   }
 
-  scheduleReconnect(delayMs = 1200) {
+  scheduleReconnect(delayMs = 1500) {
     if (this.reconnectTimer || !this.shouldAutoReconnect) return;
     this.isReconnecting = true;
-    console.log(`[GeminiLiveEngine] Seamlessly resuming session in ${delayMs}ms...`);
+    console.log(`[GeminiLiveEngine] Seamlessly reconnecting session in ${delayMs}ms...`);
     this.reconnectTimer = setTimeout(async () => {
       this.reconnectTimer = null;
       if (this.shouldAutoReconnect) {
@@ -90,10 +90,8 @@ You have native PC tool and cursor control capabilities:
 Be direct, perceptive, sharp, and helpful. When Ryan speaks or shows something on his screen, immediately comprehend the visual and audible context.
 Do not describe what you are doing in tedious detail; execute actions with precision and speak in a clear, confident, conversational voice.`;
 
-      // Live Session Setup with sliding window compression and session resumption
-      this.session = await ai.live.connect({
-        model: this.model,
-        config: {
+      const buildConfig = (handle) => {
+        const config = {
           responseModalities: ['audio'],
           systemInstruction: { parts: [{ text: systemInstruction }] },
           speechConfig: {
@@ -102,43 +100,75 @@ Do not describe what you are doing in tedious detail; execute actions with preci
             }
           },
           tools: toolDeclarations.length > 0 ? [{ functionDeclarations: toolDeclarations }] : [],
-          inputAudioTranscription: { mode: 'smart' },
+          inputAudioTranscription: {},
           outputAudioTranscription: {},
-          contextWindowCompression: { slidingWindow: {} },
-          sessionResumption: this.resumptionHandle ? { handle: this.resumptionHandle } : {}
-        },
-        callbacks: {
-          onopen: () => {
-            this.isConnected = true;
-            this.isReconnecting = false;
-            console.log('[GeminiLiveEngine] WebSocket Connected to Gemini Live');
-            this.emitter?.emit('status', { status: 'connected', message: 'Gemini Live Active (Ready)' });
-          },
-          onmessage: async (response) => {
-            await this.handleServerMessage(response);
-          },
-          onerror: (err) => {
-            console.error('[GeminiLiveEngine] Session Error:', err?.message || err);
-            this.emitter?.emit('status', { status: 'error', message: `Live error: ${err?.message || err}` });
-          },
-          onclose: (e) => {
-            this.isConnected = false;
-            const code = e?.code || (e?.target && e.target._closeCode) || 1000;
-            const reason = e?.reason || (e?.target && e.target._closeMessage?.toString()) || 'Normal Closure';
-            console.log(`[GeminiLiveEngine] Connection closed (code: ${code}, reason: "${reason}")`);
-            this.emitter?.emit('status', { status: 'disconnected', message: 'Disconnected from Gemini Live' });
+          contextWindowCompression: { slidingWindow: {} }
+        };
+        if (handle) {
+          config.sessionResumption = { handle };
+        }
+        return config;
+      };
 
-            // Automatically resume session if closed by server and not explicitly disconnected by user
-            if (this.shouldAutoReconnect && (code === 1000 || code === 1006)) {
-              this.scheduleReconnect(1200);
-            }
+      const callbacks = {
+        onopen: () => {
+          this.isConnected = true;
+          this.isReconnecting = false;
+          console.log(`[GeminiLiveEngine] WebSocket Connected to Gemini Live (${this.model})`);
+          this.emitter?.emit('status', { status: 'connected', message: 'Gemini Live Active (Ready)' });
+        },
+        onmessage: async (response) => {
+          await this.handleServerMessage(response);
+        },
+        onerror: (err) => {
+          console.error('[GeminiLiveEngine] Session Error:', err?.message || err);
+          this.resumptionHandle = null; // Clear broken handle so next connection attempt starts clean
+          this.emitter?.emit('status', { status: 'error', message: `Live error: ${err?.message || err}` });
+        },
+        onclose: (e) => {
+          this.isConnected = false;
+          const code = e?.code || (e?.target && e.target._closeCode) || 1000;
+          const reason = e?.reason || (e?.target && e.target._closeMessage?.toString()) || 'Normal Closure';
+          console.log(`[GeminiLiveEngine] Connection closed (code: ${code}, reason: "${reason}")`);
+          
+          if (code !== 1000 && code !== 1006) {
+            this.resumptionHandle = null;
+          }
+
+          this.emitter?.emit('status', { status: 'disconnected', message: 'Disconnected from Gemini Live' });
+
+          // Automatically reconnect if not explicitly closed by user
+          if (this.shouldAutoReconnect && (code === 1000 || code === 1006 || code === 1011)) {
+            this.scheduleReconnect(1500);
           }
         }
-      });
+      };
+
+      // Resilient connection: If connecting with a resumption handle fails, retry cleanly with fresh session
+      try {
+        this.session = await ai.live.connect({
+          model: this.model,
+          config: buildConfig(this.resumptionHandle),
+          callbacks
+        });
+      } catch (firstErr) {
+        if (this.resumptionHandle) {
+          console.warn('[GeminiLiveEngine] Resumption with handle failed, retrying fresh session:', firstErr?.message);
+          this.resumptionHandle = null;
+          this.session = await ai.live.connect({
+            model: this.model,
+            config: buildConfig(null),
+            callbacks
+          });
+        } else {
+          throw firstErr;
+        }
+      }
 
       return true;
     } catch (err) {
       console.error('[GeminiLiveEngine] Failed to connect:', err?.message || err);
+      this.resumptionHandle = null; // Guarantee clean slate on failure
       this.isConnected = false;
       this.emitter?.emit('status', { status: 'error', message: `Connection failed: ${err?.message || err}` });
       return false;
@@ -301,6 +331,12 @@ Do not describe what you are doing in tedious detail; execute actions with preci
   }
 
   disconnect() {
+    this.shouldAutoReconnect = false;
+    this.resumptionHandle = null; // Clear resumption token on deliberate disconnect so next connect is fresh
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.session) {
       try {
         this.session.close();

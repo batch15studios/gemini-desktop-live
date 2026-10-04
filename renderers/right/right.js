@@ -143,14 +143,14 @@ async function captureAndSendFrame(sourceType = 'auto') {
   }
 }
 
-// 4. Periodic Vision Stream (~1 frame every 1.5 seconds)
+// 4. Periodic Vision Stream (~1 frame every 2.5 seconds to preserve context & rate limits)
 function startPeriodicVisionLoop() {
   if (streamInterval) return;
   streamInterval = setInterval(() => {
     if (webcamStream || isScreenSharing) {
       captureAndSendFrame('auto');
     }
-  }, 1500);
+  }, 2500);
 }
 
 // 5. Manual Instant Snapshot
