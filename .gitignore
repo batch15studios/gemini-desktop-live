@@ -1,0 +1,26 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.key
+assistant_config.json
+
+# Dependencies
+node_modules/
+
+# Logs & Temporary files
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# OS / System artifacts
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+
+# Electron builds
+dist/
+out/
+build/

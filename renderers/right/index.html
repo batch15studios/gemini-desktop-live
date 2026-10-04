@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini Perception HUD</title>
+  <link rel="stylesheet" href="../../assets/themes.css">
+  <link rel="stylesheet" href="right.css">
+</head>
+<body>
+  <div class="glass-card">
+    <!-- Draggable Header -->
+    <div class="card-header">
+      <div class="header-title">
+        <span class="vision-dot" id="visionDot"></span>
+        <span>GEMINI // VISION & SPATIAL HUD</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" id="btnMinimize" title="Minimize Panel to System Tray">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+            <path d="M19 13H5v-2h14v2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="hud-body">
+      <!-- Section 1: User Webcam Perception (What Gemini Sees) -->
+      <div class="monitor-card">
+        <div class="monitor-header">
+          <div class="monitor-title">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+              <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+            </svg>
+            <span>WEBCAM PERCEPTION</span>
+          </div>
+          <div class="monitor-controls">
+            <span class="live-tag" id="webcamTag">OFFLINE</span>
+            <button class="toggle-btn" id="btnToggleCam">Start Camera</button>
+          </div>
+        </div>
+
+        <div class="video-container">
+          <video id="webcamVideo" autoplay playsinline muted></video>
+          <div class="crosshair top-left"></div>
+          <div class="crosshair top-right"></div>
+          <div class="crosshair bottom-left"></div>
+          <div class="crosshair bottom-right"></div>
+          <div class="scanline"></div>
+          <div class="video-overlay" id="camOverlay">Camera Standby</div>
+        </div>
+      </div>
+
+      <!-- Section 2: Desktop Screen Share Perception -->
+      <div class="monitor-card">
+        <div class="monitor-header">
+          <div class="monitor-title">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+              <path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/>
+            </svg>
+            <span>DESKTOP SCREEN SHARE</span>
+          </div>
+          <div class="monitor-controls">
+            <span class="live-tag" id="screenTag">OFFLINE</span>
+            <button class="toggle-btn" id="btnToggleScreen">Share Screen</button>
+          </div>
+        </div>
+
+        <div class="video-container screen-box">
+          <video id="screenVideo" autoplay playsinline muted></video>
+          <img id="screenImg" style="display:none; width:100%; height:100%; object-fit:contain; background:#000;" />
+          <div class="crosshair top-left"></div>
+          <div class="crosshair top-right"></div>
+          <div class="crosshair bottom-left"></div>
+          <div class="crosshair bottom-right"></div>
+          <div class="video-overlay" id="screenOverlay">Screen Share Standby</div>
+        </div>
+      </div>
+
+      <!-- Section 3: Spatial Awareness & Transmission Stats -->
+      <div class="stats-panel">
+        <div class="stat-row">
+          <span>Vision Transmission Rate:</span>
+          <span class="stat-highlight" id="fpsDisplay">1.0 FPS (Optimal)</span>
+        </div>
+        <div class="stat-row">
+          <span>Frames Streamed to Gemini:</span>
+          <span class="stat-highlight" id="frameCounter">0</span>
+        </div>
+        <div class="stat-row">
+          <span>Spatial Context Status:</span>
+          <span class="stat-highlight" id="spatialStatus">Audible + Visual Enabled</span>
+        </div>
+        <button class="action-btn-snap" id="btnSnapNow">⚡ Capture & Send Instant Frame</button>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="snapshotCanvas" style="display:none;"></canvas>
+  <script src="../../assets/theme-registry.js"></script>
+  <script src="right.js"></script>
+</body>
+</html>

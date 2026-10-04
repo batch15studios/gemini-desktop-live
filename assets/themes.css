@@ -1,0 +1,107 @@
+/**
+ * Themes & Interface Skins Engine for Gemini Desktop Assistant
+ * Provides unified CSS semantic tokens and variables across all renderers.
+ */
+
+:root,
+[data-theme="cyber-cyan"] {
+  --theme-accent: #00f0ff;
+  --theme-accent-rgb: 0, 240, 255;
+  --theme-accent-sec: #70a1ff;
+  --theme-glow: 0 0 12px rgba(0, 240, 255, 0.4);
+  --theme-glow-strong: 0 0 22px rgba(0, 240, 255, 0.7);
+  --theme-text-glow: 0 0 10px rgba(0, 240, 255, 0.6);
+  --theme-border: rgba(0, 240, 255, 0.25);
+  --theme-border-hover: rgba(0, 240, 255, 0.65);
+  --theme-bg-card: rgba(9, 16, 28, 0.90);
+  --theme-bg-toolbar: rgba(9, 16, 28, 0.94);
+  --theme-bg-box: rgba(14, 25, 42, 0.7);
+  --theme-text-bright: #e2f1f8;
+  --theme-text-muted: #648ba6;
+  --theme-selection: rgba(0, 240, 255, 0.3);
+}
+
+[data-theme="synthwave-violet"] {
+  --theme-accent: #c084fc;
+  --theme-accent-rgb: 192, 132, 252;
+  --theme-accent-sec: #f472b6;
+  --theme-glow: 0 0 12px rgba(192, 132, 252, 0.45);
+  --theme-glow-strong: 0 0 22px rgba(192, 132, 252, 0.75);
+  --theme-text-glow: 0 0 10px rgba(192, 132, 252, 0.6);
+  --theme-border: rgba(192, 132, 252, 0.3);
+  --theme-border-hover: rgba(192, 132, 252, 0.75);
+  --theme-bg-card: rgba(15, 10, 26, 0.92);
+  --theme-bg-toolbar: rgba(15, 10, 26, 0.95);
+  --theme-bg-box: rgba(26, 16, 44, 0.72);
+  --theme-text-bright: #faf5ff;
+  --theme-text-muted: #c4b5fd;
+  --theme-selection: rgba(192, 132, 252, 0.3);
+}
+
+[data-theme="matrix-emerald"] {
+  --theme-accent: #10b981;
+  --theme-accent-rgb: 16, 185, 129;
+  --theme-accent-sec: #22c55e;
+  --theme-glow: 0 0 12px rgba(16, 185, 129, 0.45);
+  --theme-glow-strong: 0 0 22px rgba(16, 185, 129, 0.75);
+  --theme-text-glow: 0 0 10px rgba(16, 185, 129, 0.6);
+  --theme-border: rgba(16, 185, 129, 0.28);
+  --theme-border-hover: rgba(16, 185, 129, 0.75);
+  --theme-bg-card: rgba(6, 18, 12, 0.92);
+  --theme-bg-toolbar: rgba(6, 18, 12, 0.95);
+  --theme-bg-box: rgba(10, 30, 20, 0.72);
+  --theme-text-bright: #ecfdf5;
+  --theme-text-muted: #6ee7b7;
+  --theme-selection: rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="amber-horizon"] {
+  --theme-accent: #f59e0b;
+  --theme-accent-rgb: 245, 158, 11;
+  --theme-accent-sec: #f97316;
+  --theme-glow: 0 0 12px rgba(245, 158, 11, 0.45);
+  --theme-glow-strong: 0 0 22px rgba(245, 158, 11, 0.75);
+  --theme-text-glow: 0 0 10px rgba(245, 158, 11, 0.6);
+  --theme-border: rgba(245, 158, 11, 0.28);
+  --theme-border-hover: rgba(245, 158, 11, 0.75);
+  --theme-bg-card: rgba(22, 14, 8, 0.92);
+  --theme-bg-toolbar: rgba(22, 14, 8, 0.95);
+  --theme-bg-box: rgba(36, 22, 12, 0.72);
+  --theme-text-bright: #fffbeb;
+  --theme-text-muted: #fcd34d;
+  --theme-selection: rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="crimson-protocol"] {
+  --theme-accent: #ef4444;
+  --theme-accent-rgb: 239, 68, 68;
+  --theme-accent-sec: #f43f5e;
+  --theme-glow: 0 0 12px rgba(239, 68, 68, 0.45);
+  --theme-glow-strong: 0 0 22px rgba(239, 68, 68, 0.75);
+  --theme-text-glow: 0 0 10px rgba(239, 68, 68, 0.6);
+  --theme-border: rgba(239, 68, 68, 0.28);
+  --theme-border-hover: rgba(239, 68, 68, 0.75);
+  --theme-bg-card: rgba(24, 8, 10, 0.92);
+  --theme-bg-toolbar: rgba(24, 8, 10, 0.95);
+  --theme-bg-box: rgba(38, 14, 18, 0.72);
+  --theme-text-bright: #fff1f2;
+  --theme-text-muted: #fca5a5;
+  --theme-selection: rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="glacial-arctic"] {
+  --theme-accent: #38bdf8;
+  --theme-accent-rgb: 56, 189, 248;
+  --theme-accent-sec: #94a3b8;
+  --theme-glow: 0 0 12px rgba(56, 189, 248, 0.45);
+  --theme-glow-strong: 0 0 22px rgba(56, 189, 248, 0.75);
+  --theme-text-glow: 0 0 10px rgba(56, 189, 248, 0.6);
+  --theme-border: rgba(56, 189, 248, 0.28);
+  --theme-border-hover: rgba(56, 189, 248, 0.75);
+  --theme-bg-card: rgba(12, 20, 32, 0.92);
+  --theme-bg-toolbar: rgba(12, 20, 32, 0.95);
+  --theme-bg-box: rgba(20, 32, 50, 0.72);
+  --theme-text-bright: #f0f9ff;
+  --theme-text-muted: #7dd3fc;
+  --theme-selection: rgba(56, 189, 248, 0.3);
+}

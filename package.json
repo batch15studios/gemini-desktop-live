@@ -1,0 +1,27 @@
+{
+  "name": "gemini-desktop-live",
+  "version": "1.0.0",
+  "description": "Full Desktop PC Assistant powered by Gemini Live with 3-Window Transparent HUD, Native Tools, and MCP Connectivity",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron ."
+  },
+  "keywords": [
+    "gemini-live",
+    "gemini",
+    "ai-assistant",
+    "mcp",
+    "electron"
+  ],
+  "author": "Ryan Satterfield",
+  "license": "MIT",
+  "dependencies": {
+    "@google/genai": "^2.24.0",
+    "dotenv": "^16.4.7",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0"
+  }
+}

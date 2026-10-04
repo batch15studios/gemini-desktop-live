@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini Multimodal Orb</title>
+  <link rel="stylesheet" href="../../assets/themes.css">
+  <link rel="stylesheet" href="orb.css">
+</head>
+<body>
+  <div class="orb-container" id="orbContainer">
+    <!-- Window Drag Bar -->
+    <div class="drag-handle" title="Drag Orb Anywhere">
+      <div class="drag-dots"></div>
+    </div>
+
+    <!-- WebGL / Canvas Energy Orb -->
+    <canvas id="orbCanvas" width="300" height="300"></canvas>
+
+    <!-- State & Audio Ripple Elements -->
+    <div class="state-badge" id="stateBadge">IDLE</div>
+
+    <!-- Quick Controls Floating Toolbar -->
+    <div class="orb-controls">
+      <button class="orb-btn" id="btnMic" title="Toggle Microphone">
+        <svg id="iconMic" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+          <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+        </svg>
+      </button>
+
+      <button class="orb-btn" id="btnPin" title="Toggle Always on Top">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M16 9V4l1 0V2H7v2l1 0v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/>
+        </svg>
+      </button>
+
+      <button class="orb-btn btn-min" id="btnMin" title="Minimize to Floating Toolbar">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M19 13H5v-2h14v2z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Unified Mini Floating Toolbar (Shown when Minimized to Top) -->
+    <div class="mini-toolbar" id="miniToolbar" style="display: none;">
+      <!-- Drag Grip -->
+      <div class="mini-drag-grip" title="Drag to Reposition Toolbar">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      <!-- Live Status Badge -->
+      <div class="mini-status" id="miniStatus">
+        <div class="mini-status-dot" id="miniStatusDot"></div>
+        <span class="mini-status-text" id="miniStatusText">LIVE</span>
+      </div>
+
+      <!-- Real-Time Wave Synth Canvas -->
+      <div class="mini-synth-wrapper" id="miniSynthWrapper" title="Live Wave Synth (Double-click to Expand HUD)">
+        <canvas id="waveSynthCanvas" width="300" height="56"></canvas>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="mini-actions">
+        <!-- Mic Toggle -->
+        <button class="mini-btn" id="btnMiniMic" title="Toggle Microphone">
+          <svg id="iconMiniMic" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+          </svg>
+        </button>
+
+        <!-- Expand / Restore Full HUD -->
+        <button class="mini-btn mini-btn-expand" id="btnExpand" title="Restore Full Desktop HUD">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+          </svg>
+        </button>
+
+        <!-- Minimize to Tray -->
+        <button class="mini-btn mini-btn-tray" id="btnMiniTray" title="Minimize All to System Tray">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+            <path d="M19 13H5v-2h14v2z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WebRTC Render Reference Audio Element for Hardware AEC3 Echo Cancellation -->
+  <audio id="assistantAudioPlayer" autoplay playsinline style="display:none;"></audio>
+
+  <script src="../../assets/theme-registry.js"></script>
+  <script src="orb.js"></script>
+</body>
+</html>

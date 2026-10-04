@@ -1,0 +1,274 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent !important;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.glass-card {
+  width: 100%;
+  height: 100%;
+  background: var(--theme-bg-card, rgba(10, 18, 30, 0.90));
+  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.22));
+  border-radius: 16px;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(var(--theme-accent-rgb, 0, 240, 255), 0.05);
+  display: flex;
+  flex-direction: column;
+  color: var(--theme-text-bright, #e0f2fe);
+}
+
+/* Header */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--theme-border, rgba(0, 240, 255, 0.15));
+  -webkit-app-region: drag;
+  cursor: grab;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--theme-accent, #00f0ff);
+  text-shadow: var(--theme-text-glow, 0 0 10px rgba(0, 240, 255, 0.5));
+}
+
+.vision-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--theme-accent, #00f0ff);
+  box-shadow: var(--theme-glow, 0 0 8px #00f0ff);
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  -webkit-app-region: no-drag;
+}
+
+.btn-icon:hover {
+  color: #ffa502;
+  background: rgba(255, 165, 2, 0.15);
+}
+
+/* Body */
+.hud-body {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hud-body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Monitor Cards */
+.monitor-card {
+  background: var(--theme-bg-box, rgba(15, 28, 48, 0.7));
+  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.15));
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.monitor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.monitor-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--theme-accent, #00f0ff);
+}
+
+.monitor-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-tag {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+}
+
+.live-tag.active {
+  background: rgba(46, 213, 115, 0.2);
+  color: #2ed573;
+  box-shadow: 0 0 8px rgba(46, 213, 115, 0.3);
+}
+
+.toggle-btn {
+  background: rgba(var(--theme-accent-rgb, 0, 240, 255), 0.15);
+  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.3));
+  color: var(--theme-accent, #00f0ff);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+  background: rgba(var(--theme-accent-rgb, 0, 240, 255), 0.3);
+  box-shadow: var(--theme-glow, 0 0 10px rgba(0, 240, 255, 0.4));
+}
+
+.toggle-btn.active {
+  background: rgba(255, 71, 87, 0.2);
+  border-color: rgba(255, 71, 87, 0.4);
+  color: #ff4757;
+}
+
+/* Video Frame Containers */
+.video-container {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  background: #030712;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.2));
+}
+
+.video-container.screen-box {
+  height: 180px;
+}
+
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-container.screen-box video {
+  object-fit: contain;
+  background: #000;
+}
+
+.video-overlay {
+  position: absolute;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+
+/* Targeting Crosshairs */
+.crosshair {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: var(--theme-accent, #00f0ff);
+  pointer-events: none;
+}
+.crosshair.top-left { top: 6px; left: 6px; border-top: 2px solid; border-left: 2px solid; }
+.crosshair.top-right { top: 6px; right: 6px; border-top: 2px solid; border-right: 2px solid; }
+.crosshair.bottom-left { bottom: 6px; left: 6px; border-bottom: 2px solid; border-left: 2px solid; }
+.crosshair.bottom-right { bottom: 6px; right: 6px; border-bottom: 2px solid; border-right: 2px solid; }
+
+.scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(var(--theme-accent-rgb, 0, 240, 255), 0.6), transparent);
+  animation: scan 3s linear infinite;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+@keyframes scan {
+  0% { top: 0%; }
+  100% { top: 100%; }
+}
+
+/* Stats Panel */
+.stats-panel {
+  background: var(--theme-bg-box, rgba(15, 28, 48, 0.7));
+  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.15));
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--theme-text-muted, rgba(220, 245, 255, 0.7));
+}
+
+.stat-highlight {
+  font-weight: 700;
+  color: var(--theme-accent, #00f0ff);
+}
+
+.action-btn-snap {
+  margin-top: 6px;
+  background: linear-gradient(90deg, rgba(var(--theme-accent-rgb, 0, 240, 255), 0.2), rgba(var(--theme-accent-rgb, 0, 240, 255), 0.35));
+  border: 1px solid var(--theme-accent, #00f0ff);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn-snap:hover {
+  background: var(--theme-accent, #00f0ff);
+  color: #0a111e;
+  box-shadow: var(--theme-glow-strong, 0 0 15px rgba(0, 240, 255, 0.6));
+}

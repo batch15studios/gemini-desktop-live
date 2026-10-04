@@ -1,0 +1,342 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent !important;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orb-container {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drag-handle {
+  position: absolute;
+  top: 10px;
+  width: 50px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-app-region: drag;
+  cursor: grab;
+  opacity: 0.2;
+  transition: opacity 0.2s ease;
+  z-index: 20;
+}
+
+.drag-handle:hover {
+  opacity: 0.8;
+}
+
+.drag-dots {
+  width: 30px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--theme-accent, #00f0ff);
+  box-shadow: 0 0 8px var(--theme-accent, rgba(0, 240, 255, 0.4));
+  opacity: 0.7;
+}
+
+#orbCanvas {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  z-index: 5;
+  filter: drop-shadow(0 0 25px rgba(var(--theme-accent-rgb, 0, 240, 255), 0.45));
+  transition: filter 0.3s ease;
+}
+
+.state-badge {
+  position: absolute;
+  bottom: 45px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--theme-accent, #00f0ff);
+  text-shadow: 0 0 10px rgba(var(--theme-accent-rgb, 0, 240, 255), 0.8);
+  background: var(--theme-bg-toolbar, rgba(10, 20, 35, 0.75));
+  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.3));
+  padding: 2px 10px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  z-index: 10;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.orb-controls {
+  position: absolute;
+  bottom: 8px;
+  display: flex;
+  gap: 8px;
+  background: var(--theme-bg-toolbar, rgba(8, 16, 28, 0.85));
+  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.25));
+  padding: 4px 10px;
+  border-radius: 24px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 15;
+  -webkit-app-region: no-drag;
+}
+
+.orb-btn {
+  background: transparent;
+  border: none;
+  color: rgba(220, 245, 255, 0.7);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.orb-btn:hover {
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.15);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+  transform: scale(1.08);
+}
+
+.orb-btn.active {
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.2);
+}
+
+.orb-btn.muted {
+  color: #ff4757;
+  background: rgba(255, 71, 87, 0.15);
+}
+
+.orb-btn.btn-min:hover {
+  color: #ffa502;
+  background: rgba(255, 165, 2, 0.15);
+}
+
+/* ====================================================
+   Mini Mode & Floating Toolbar Styles
+   ==================================================== */
+body.mini-mode {
+  padding: 0;
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.mini-mode .orb-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.mini-mode #orbCanvas,
+body.mini-mode .state-badge,
+body.mini-mode .orb-controls,
+body.mini-mode .drag-handle {
+  display: none !important;
+}
+
+body.mini-mode #miniToolbar {
+  display: flex !important;
+}
+
+.mini-toolbar {
+  width: 100%;
+  height: 42px;
+  background: var(--theme-bg-toolbar, rgba(9, 16, 28, 0.94));
+  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.35));
+  border-radius: 21px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), var(--theme-glow, 0 0 16px rgba(0, 240, 255, 0.2));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 0 10px;
+  gap: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.mini-toolbar:hover {
+  border-color: var(--theme-border-hover, rgba(0, 240, 255, 0.65));
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.8), var(--theme-glow-strong, 0 0 22px rgba(0, 240, 255, 0.35));
+}
+
+.mini-drag-grip {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5px;
+  cursor: grab;
+  -webkit-app-region: drag;
+  padding: 4px 2px;
+  opacity: 0.45;
+  transition: opacity 0.2s ease;
+}
+
+.mini-drag-grip:hover {
+  opacity: 1;
+}
+
+.mini-drag-grip span {
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--theme-accent, #00f0ff);
+  box-shadow: 0 0 4px var(--theme-accent, rgba(0, 240, 255, 0.6));
+}
+
+.mini-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+  cursor: default;
+  min-width: 66px;
+}
+
+.mini-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--theme-accent, #00f0ff);
+  box-shadow: 0 0 8px var(--theme-accent, #00f0ff);
+  transition: all 0.3s ease;
+}
+
+.mini-status-dot.listening {
+  background: #2ed573;
+  box-shadow: 0 0 10px #2ed573;
+}
+
+.mini-status-dot.thinking {
+  background: #ffd32a;
+  box-shadow: 0 0 10px #ffd32a;
+  animation: pulse-dot 1s infinite alternate;
+}
+
+.mini-status-dot.speaking {
+  background: var(--theme-accent, #00f0ff);
+  box-shadow: 0 0 12px var(--theme-accent, #00f0ff);
+  animation: pulse-dot 0.6s infinite alternate;
+}
+
+.mini-status-dot.muted {
+  background: #ff4757;
+  box-shadow: 0 0 8px #ff4757;
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.3); opacity: 1; }
+}
+
+.mini-status-text {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: var(--theme-accent, #00f0ff);
+  text-shadow: 0 0 8px rgba(var(--theme-accent-rgb, 0, 240, 255), 0.6);
+  white-space: nowrap;
+}
+
+.mini-synth-wrapper {
+  flex: 1;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 5, 12, 0.45);
+  border-radius: 14px;
+  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.15));
+  padding: 0 4px;
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.mini-synth-wrapper:hover {
+  border-color: var(--theme-border-hover, rgba(0, 240, 255, 0.4));
+  background: rgba(0, 10, 20, 0.55);
+}
+
+#waveSynthCanvas {
+  width: 150px;
+  height: 28px;
+  display: block;
+}
+
+.mini-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  -webkit-app-region: no-drag;
+}
+
+.mini-btn {
+  background: transparent;
+  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.2));
+  color: var(--theme-text-bright, rgba(220, 245, 255, 0.75));
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+}
+
+.mini-btn:hover {
+  color: var(--theme-accent, #00f0ff);
+  background: rgba(var(--theme-accent-rgb, 0, 240, 255), 0.15);
+  border-color: var(--theme-border-hover, rgba(0, 240, 255, 0.5));
+  box-shadow: var(--theme-glow, 0 0 10px rgba(0, 240, 255, 0.4));
+  transform: scale(1.08);
+}
+
+.mini-btn.muted {
+  color: #ff4757;
+  border-color: rgba(255, 71, 87, 0.4);
+  background: rgba(255, 71, 87, 0.15);
+}
+
+.mini-btn.mini-btn-expand:hover {
+  color: #2ed573;
+  border-color: rgba(46, 213, 115, 0.5);
+  background: rgba(46, 213, 115, 0.15);
+  box-shadow: 0 0 10px rgba(46, 213, 115, 0.4);
+}
+
+.mini-btn.mini-btn-tray:hover {
+  color: #ffa502;
+  border-color: rgba(255, 165, 2, 0.5);
+  background: rgba(255, 165, 2, 0.15);
+  box-shadow: 0 0 10px rgba(255, 165, 2, 0.4);
+}
