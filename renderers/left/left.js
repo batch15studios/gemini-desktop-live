@@ -36,6 +36,14 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
+// Workspace Deck Toggle
+const btnOpenDeck = document.getElementById('btnOpenDeck');
+if (btnOpenDeck) {
+  btnOpenDeck.addEventListener('click', () => {
+    window.assistantApi.toggleWorkspaceDeck();
+  });
+}
+
 // Minimize to Tray
 btnMinimize.addEventListener('click', () => {
   window.assistantApi.minimizeToTray('left');

@@ -13,6 +13,7 @@ require('dotenv').config();
 
 const { GeminiLiveEngine } = require('./gemini-live-engine');
 const { ToolsManager } = require('./native-tools');
+const { registerWorkspaceIpc } = require('./workspace-ipc');
 
 // Enable native Chromium WebRTC Audio Processing Module (AEC3, AGC, NS) & loopback
 app.commandLine.appendSwitch('enable-features', 'WebRtcApmInAudioService,AudioServiceOutOfProcess');
@@ -25,6 +26,7 @@ class AssistantApp {
     this.orbWindow = null;
     this.leftWindow = null;
     this.rightWindow = null;
+    this.workspaceWindow = null;
     this.tray = null;
     this.isAlwaysOnTop = true;
     this.isMiniMode = false;
@@ -237,6 +239,7 @@ class AssistantApp {
     if (this.orbWindow && !this.orbWindow.isDestroyed()) this.orbWindow.webContents.send(channel, data);
     if (this.leftWindow && !this.leftWindow.isDestroyed()) this.leftWindow.webContents.send(channel, data);
     if (this.rightWindow && !this.rightWindow.isDestroyed()) this.rightWindow.webContents.send(channel, data);
+    if (this.workspaceWindow && !this.workspaceWindow.isDestroyed()) this.workspaceWindow.webContents.send(channel, data);
   }
 
   createWindows() {
@@ -329,6 +332,71 @@ class AssistantApp {
     this.createSystemTray();
   }
 
+  createWorkspaceWindow() {
+    if (this.workspaceWindow && !this.workspaceWindow.isDestroyed()) {
+      this.workspaceWindow.show();
+      this.workspaceWindow.focus();
+      return;
+    }
+
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width, height } = primaryDisplay.workAreaSize;
+    const appIcon = path.join(__dirname, 'assets', 'icon.png');
+
+    // Centered in workspace gap between HUDs (92vw x 90vh)
+    const deckW = Math.round(width * 0.92);
+    const deckH = Math.round(height * 0.90);
+    const deckX = Math.round((width - deckW) / 2);
+    const deckY = Math.round((height - deckH) / 2);
+
+    this.workspaceWindow = new BrowserWindow({
+      width: deckW,
+      height: deckH,
+      x: deckX,
+      y: deckY,
+      transparent: true,
+      frame: false,
+      resizable: true,
+      hasShadow: true,
+      backgroundColor: '#00000000',
+      icon: appIcon,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        webviewTag: true,
+        backgroundThrottling: false
+      }
+    });
+
+    this.workspaceWindow.loadFile(path.join(__dirname, 'renderers', 'workspace', 'workspace.html'));
+
+    this.workspaceWindow.once('ready-to-show', () => {
+      this.workspaceWindow.show();
+      this.workspaceWindow.focus();
+    });
+
+    this.workspaceWindow.on('close', (e) => {
+      if (!app.isQuitting) {
+        e.preventDefault();
+        this.workspaceWindow.hide();
+        this.workspaceWindow.webContents.send('workspace:unloaded');
+      }
+    });
+  }
+
+  toggleWorkspaceDeck() {
+    if (!this.workspaceWindow || this.workspaceWindow.isDestroyed()) {
+      this.createWorkspaceWindow();
+    } else if (this.workspaceWindow.isVisible()) {
+      this.workspaceWindow.hide();
+      this.workspaceWindow.webContents.send('workspace:unloaded');
+    } else {
+      this.workspaceWindow.show();
+      this.workspaceWindow.focus();
+    }
+  }
+
   createSystemTray() {
     try {
       const iconPath = path.join(__dirname, 'assets', 'tray-icon.png');
@@ -367,6 +435,10 @@ class AssistantApp {
           this.leftWindow?.hide();
           this.rightWindow?.hide();
         }
+      },
+      {
+        label: 'Workspace Deck (Ctrl+Shift+W)',
+        click: () => this.toggleWorkspaceDeck()
       },
       { type: 'separator' },
       {
@@ -573,6 +645,20 @@ class AssistantApp {
     ipcMain.on('app:wake-or-toggle', () => {
       this.toggleVisibility();
     });
+
+    // Workspace Deck IPC
+    registerWorkspaceIpc(this);
+    ipcMain.on('workspace:toggle', () => {
+      this.toggleWorkspaceDeck();
+    });
+    ipcMain.on('workspace:open', () => {
+      if (!this.workspaceWindow || this.workspaceWindow.isDestroyed()) {
+        this.createWorkspaceWindow();
+      } else {
+        this.workspaceWindow.show();
+        this.workspaceWindow.focus();
+      }
+    });
   }
 
   setMiniMode(isMini) {
@@ -688,7 +774,10 @@ app.whenReady().then(() => {
     globalShortcut.register('CommandOrControl+Shift+G', () => {
       assistant.toggleVisibility();
     });
-    console.log('[Main] Global wake shortcuts registered: Ctrl+Shift+Space / Ctrl+Shift+G');
+    globalShortcut.register('CommandOrControl+Shift+W', () => {
+      assistant.toggleWorkspaceDeck();
+    });
+    console.log('[Main] Global shortcuts registered: Ctrl+Shift+Space / Ctrl+Shift+G (Wake/Standby) | Ctrl+Shift+W (Workspace Deck)');
   } catch (err) {
     console.warn('[Main] Global shortcut registration error:', err);
   }

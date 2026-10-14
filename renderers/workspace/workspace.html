@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEMINI // WORKSPACE DECK</title>
+  <link rel="stylesheet" href="../../assets/themes.css">
+  <link rel="stylesheet" href="workspace.css">
+  <!-- Monaco Editor AMD Loader from CDN with fallback -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+</head>
+<body>
+  <div class="deck-container" id="deckContainer">
+    <!-- 1. Top Windows-Style Titlebar -->
+    <header class="deck-titlebar" id="deckTitlebar">
+      <div class="titlebar-left">
+        <!-- Brand Title Dropdown Button -->
+        <div class="dropdown-wrapper">
+          <button class="title-dropdown-btn" id="btnTitleDropdown">
+            <span class="brand-dot"></span>
+            <span class="brand-text">GEMINI // WORKSPACE DECK</span>
+            <span class="dropdown-caret">▾</span>
+          </button>
+          
+          <!-- Native Windows Style Popout Dropdown Menu -->
+          <div class="deck-popout-menu" id="deckPopoutMenu">
+            <div class="menu-item" data-mode="browser">
+              <span class="menu-icon">🌐</span>
+              <span class="menu-label">Web Browser</span>
+              <span class="menu-shortcut">Alt+1</span>
+            </div>
+            <div class="menu-item active" data-mode="ide">
+              <span class="menu-icon">⚡</span>
+              <span class="menu-label">IDE (10 / 70 / 10)</span>
+              <span class="menu-shortcut">Alt+2</span>
+            </div>
+            <div class="menu-item" data-mode="explorer">
+              <span class="menu-icon">📁</span>
+              <span class="menu-label">File Explorer</span>
+              <span class="menu-shortcut">Alt+3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Window Control Buttons (Native HUD Style) -->
+      <div class="titlebar-controls">
+        <button class="win-btn win-minimize" id="btnWinMinimize" title="Restore Centered View">
+          <svg viewBox="0 0 10 1" width="10" height="1"><rect width="10" height="1" fill="currentColor"/></svg>
+        </button>
+        <button class="win-btn win-maximize" id="btnWinMaximize" title="Toggle Fullscreen">
+          <svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="8" height="8"/></svg>
+        </button>
+        <button class="win-btn win-close" id="btnWinClose" title="Close Workspace Deck">
+          <svg viewBox="0 0 10 10" width="10" height="10" stroke="currentColor" stroke-width="1.2"><path d="M1 1L9 9M9 1L1 9"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. Main Content Viewport -->
+    <main class="deck-viewport" id="deckViewport">
+      
+      <!-- ============================================== -->
+      <!-- VIEW 1: IDE VIEW (14% / 70% / 16%)             -->
+      <!-- ============================================== -->
+      <section class="deck-view active" id="viewIde">
+        <!-- Sub-Toolbar -->
+        <div class="ide-subbar">
+          <div class="subbar-left">
+            <button class="subbar-btn" id="btnCollapseFiles" title="Collapse File Panel">
+              <span class="subbar-label">FILES</span>
+              <span class="subbar-icon">◀</span>
+            </button>
+            <button class="subbar-btn" id="btnToggleLeft">
+              <span>◧</span> Toggle Left
+            </button>
+            
+            <!-- Open File Tabs -->
+            <div class="ide-tabs-container" id="ideTabsContainer">
+              <!-- Dynamically populated or default tabs -->
+              <div class="ide-tab" data-file="preview.html">
+                <span>preview.html</span>
+                <span class="tab-close" data-close="preview.html">×</span>
+              </div>
+              <div class="ide-tab" data-file="main.js">
+                <span>main.js</span>
+                <span class="tab-close" data-close="main.js">×</span>
+              </div>
+              <div class="ide-tab active" data-file="safety-guard.js">
+                <span>safety-guard.js</span>
+                <span class="tab-close" data-close="safety-guard.js">×</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="subbar-right">
+            <button class="subbar-btn btn-action" id="btnSaveFile">Save File</button>
+            <button class="subbar-btn btn-action" id="btnLaunchBrowser">Launch Browser</button>
+            <button class="subbar-btn" id="btnToggleRight">
+              Toggle Right <span>◨</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3-Pane Body -->
+        <div class="ide-body">
+          <!-- Left Pane: File Tree (14%) -->
+          <aside class="ide-pane-left" id="idePaneLeft">
+            <div class="pane-title">FILES</div>
+            <div class="file-tree-list" id="ideFileList">
+              <!-- Dynamically injected file entries -->
+              <div class="file-item" data-path="preview.html">preview.html</div>
+              <div class="file-item" data-path="main.js">main.js</div>
+              <div class="file-item active" data-path="safety-guard.js">safety-guard.js</div>
+              <div class="file-item" data-path="gemini-live-engine.js">gemini-live-engine.js</div>
+              <div class="file-item" data-path="workspace-ipc.js">workspace-ipc.js</div>
+              <div class="file-item" data-path="package.json">package.json</div>
+            </div>
+          </aside>
+
+          <!-- Center Pane: Editor (70%) -->
+          <div class="ide-pane-center" id="idePaneCenter">
+            <!-- Monaco Editor Container -->
+            <div id="monacoEditorContainer" class="monaco-container"></div>
+            <!-- Lightweight Fallback Editor for offline/instant mode -->
+            <div id="fallbackEditorContainer" class="fallback-editor hidden">
+              <div class="fallback-line-numbers" id="fallbackLineNumbers">1<br>2<br>3<br>4</div>
+              <textarea id="fallbackTextarea" spellcheck="false"></textarea>
+            </div>
+          </div>
+
+          <!-- Right Pane: Chat & Logs (16%) -->
+          <aside class="ide-pane-right" id="idePaneRight">
+            <div class="pane-tabs-header">
+              <div class="tab-item active" data-pane-tab="chat">CHAT</div>
+              <div class="tab-item" data-pane-tab="logs">LOGS</div>
+              <div class="pane-header-actions">
+                <span class="action-play">▶</span>
+              </div>
+            </div>
+
+            <div class="pane-tab-body active" id="ideChatStream">
+              <div class="chat-msg system">[Gemini IDE] Connected.</div>
+            </div>
+
+            <div class="pane-tab-body" id="ideLogsStream">
+              <div class="chat-msg system">[System] Workspace Deck ready.</div>
+            </div>
+
+            <div class="pane-input-bar">
+              <input type="text" id="ideChatInput" placeholder="Chat or command..." />
+              <button class="btn-send-chat" id="btnSendChat" title="Send message or run command">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+              </button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 2: FILE EXPLORER VIEW                     -->
+      <!-- ============================================== -->
+      <section class="deck-view" id="viewExplorer">
+        <!-- Path Navigation Bar -->
+        <div class="explorer-pathbar">
+          <button class="nav-back-btn" id="btnExplorerBack" title="Back">←</button>
+          <div class="path-input-wrapper">
+            <input type="text" class="path-input" id="explorerPathInput" value="C:\Users\Ryan\Projects\gemini-desktop-live" spellcheck="false" />
+          </div>
+        </div>
+
+        <!-- 3-Column Explorer Layout -->
+        <div class="explorer-body">
+          <!-- Left: Quick Access -->
+          <aside class="explorer-quick-access">
+            <div class="section-heading">QUICK ACCESS</div>
+            <div class="quick-access-list">
+              <div class="quick-item active" id="qaProjectRoot">
+                <span>gemini-desktop-live</span>
+              </div>
+              <div class="quick-item" id="qaAssets">
+                <span>assets</span>
+              </div>
+              <div class="quick-item" id="qaRenderers">
+                <span>renderers</span>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Center: Files Table -->
+          <div class="explorer-table-wrapper">
+            <table class="explorer-table" id="explorerTable">
+              <thead>
+                <tr>
+                  <th style="width: 32%;">Name</th>
+                  <th style="width: 28%;">Date modified</th>
+                  <th style="width: 25%;">Type</th>
+                  <th style="width: 15%;">Size</th>
+                </tr>
+              </thead>
+              <tbody id="explorerTableBody">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Right: Live Preview Pane -->
+          <aside class="explorer-preview-pane" id="explorerPreviewPane">
+            <div class="preview-header">
+              <span class="preview-title">PREVIEW PANE</span>
+              <span class="preview-filename" id="previewFileName">preview.html</span>
+            </div>
+
+            <div class="preview-actions">
+              <button class="btn-open-preview" id="btnOpenInIde">
+                <span>Click Preview to Open</span>
+                <span class="open-icon">Open ↗</span>
+              </button>
+            </div>
+
+            <div class="preview-content-box">
+              <pre class="preview-code" id="previewCodeText">Loading preview...</pre>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 3: WEB BROWSER VIEW                       -->
+      <!-- ============================================== -->
+      <section class="deck-view" id="viewBrowser">
+        <!-- Browser Navigation Bar -->
+        <div class="browser-nav-bar">
+          <div class="nav-buttons">
+            <button class="btn-nav" id="btnBrowserBack" title="Back">←</button>
+            <button class="btn-nav" id="btnBrowserForward" title="Forward">→</button>
+            <button class="btn-nav" id="btnBrowserReload" title="Reload">↻</button>
+          </div>
+
+          <div class="browser-address-bar">
+            <input type="text" id="browserUrlInput" value="preview.html" placeholder="Enter URL or file path (e.g. preview.html, http://localhost:3000)..." spellcheck="false" />
+            <button class="btn-nav-go" id="btnBrowserGo">Go</button>
+          </div>
+
+          <div class="browser-actions">
+            <button class="btn-edit-source" id="btnEditSource">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              <span>Edit Source in IDE</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Embedded Webview Container -->
+        <div class="browser-frame-container" id="browserFrameContainer">
+          <webview id="deckWebview" src="../../preview.html" allowpopups></webview>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="workspace.js"></script>
+</body>
+</html>

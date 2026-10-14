@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Localhost Live Preview</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 36px;
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      background: linear-gradient(135deg, #07111a, #0d2235);
+      color: #e2f1ff;
+      min-height: 100vh;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hero {
+      max-width: 680px;
+      width: 100%;
+      background: rgba(13, 25, 38, 0.85);
+      border: 1px solid #00e5ff;
+      box-shadow: 0 10px 30px rgba(0, 229, 255, 0.15);
+      border-radius: 14px;
+      padding: 32px;
+      backdrop-filter: blur(8px);
+    }
+    h1 {
+      color: #00e5ff;
+      margin-top: 0;
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+    p {
+      color: #9cb5c9;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: rgba(0, 229, 255, 0.12);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      border-radius: 6px;
+      color: #00e5ff;
+      font-size: 12px;
+      font-family: monospace;
+      margin-bottom: 12px;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .feature-item {
+      font-size: 13px;
+      color: #cfdbe6;
+    }
+    .feature-item strong {
+      color: #ffffff;
+      display: block;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="badge">CHROMIUM LIVE PREVIEW</div>
+    <h1>Localhost Live Preview</h1>
+    <p>This page runs inside the integrated Web Browser. Use the top-left title dropdown to switch modes anytime.</p>
+    <div class="features">
+      <div class="feature-item">
+        <strong>IDE Integration</strong>
+        Click "Edit Source in IDE" above to instantly modify this template.
+      </div>
+      <div class="feature-item">
+        <strong>Live Web Navigation</strong>
+        Enter any URL or localhost port in the address bar to test external web apps.
+      </div>
+    </div>
+  </div>
+</body>
+</html>

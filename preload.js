@@ -125,5 +125,28 @@ contextBridge.exposeInMainWorld('assistantApi', {
     const handler = (e, data) => callback(data);
     ipcRenderer.on('safety:blocked', handler);
     return () => ipcRenderer.removeListener('safety:blocked', handler);
+  },
+  
+  // Workspace Deck (4th Window Integration)
+  openWorkspaceDeck: () => ipcRenderer.send('workspace:toggle'),
+  toggleWorkspaceDeck: () => ipcRenderer.send('workspace:toggle')
+});
+
+contextBridge.exposeInMainWorld('workspaceApi', {
+  minimizeRestore: () => ipcRenderer.send('workspace:minimize-restore'),
+  maximizeToggle: () => ipcRenderer.send('workspace:maximize-toggle'),
+  close: () => ipcRenderer.send('workspace:close'),
+  getWindowState: () => ipcRenderer.invoke('workspace:get-window-state'),
+  getDefaultPath: () => ipcRenderer.invoke('workspace:get-default-path'),
+  readDir: (dirPath) => ipcRenderer.invoke('workspace:read-dir', dirPath),
+  readFile: (filePath) => ipcRenderer.invoke('workspace:read-file', filePath),
+  writeFile: (filePath, content) => ipcRenderer.invoke('workspace:write-file', { filePath, content }),
+  execCmd: (command, cwd) => ipcRenderer.invoke('workspace:exec-cmd', { command, cwd }),
+  sendChat: (text) => ipcRenderer.invoke('workspace:chat-send', text),
+  onUnloaded: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('workspace:unloaded', handler);
+    return () => ipcRenderer.removeListener('workspace:unloaded', handler);
   }
 });
+
