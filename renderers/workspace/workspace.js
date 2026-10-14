@@ -130,6 +130,32 @@
     });
   }
 
+  // AI Remote Automation Hooks (Invoked when Gemini calls workspace_deck)
+  if (window.workspaceApi) {
+    if (window.workspaceApi.onSetMode) {
+      window.workspaceApi.onSetMode((mode) => {
+        if (mode) switchMode(mode);
+      });
+    }
+    if (window.workspaceApi.onNavigate) {
+      window.workspaceApi.onNavigate((url) => {
+        if (url) {
+          switchMode('browser');
+          browserUrlInput.value = url;
+          navigateBrowser();
+        }
+      });
+    }
+    if (window.workspaceApi.onOpenFile) {
+      window.workspaceApi.onOpenFile((filePath) => {
+        if (filePath) {
+          switchMode('ide');
+          openFileTab(filePath);
+        }
+      });
+    }
+  }
+
   // =========================================================================
   // 2. MODE SWITCHING & MEMORY DISPOSAL
   // =========================================================================

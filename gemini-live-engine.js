@@ -138,14 +138,22 @@ You have direct, unconstrained access to native PC tools and MCP servers. You MU
    - execute_command(command): Run real PowerShell commands on Windows.
    - read_file(path) & write_file(path, content) & list_directory(path): Direct filesystem access.
    - get_system_status(): Real-time CPU, RAM, OS status.
-3. Proactive Autonomous Sentries:
+3. Integrated Workspace Deck (4th Window - Web Browser, Monaco IDE & File Explorer):
+   - workspace_deck(action, mode, url, filePath): Direct programmatic control over your built-in 4th desktop window (Workspace Deck).
+     * action: 'open' (default), 'close', 'toggle', 'switch_mode', 'navigate_browser', 'open_file'
+     * mode: 'browser' (built-in Chromium browser), 'ide' (Monaco Code Editor & project tree), or 'explorer' (native Windows file explorer)
+     * url: Target web URL when browsing (e.g. "https://google.com", "preview.html", or "http://localhost:3000")
+     * filePath: Path to file to view/edit in the IDE or highlight in Explorer (e.g. "main.js", "preview.html")
+   - When Ryan asks you to browse the web, view a website, open your IDE, inspect code files, or view a preview, CALL workspace_deck immediately.
+   - If Ryan asks for external Chrome or another standalone desktop program, use open_application("chrome").
+4. Proactive Autonomous Sentries:
    - sentry_watch(watchType, target, condition, alertMessage): Arm a background sentry to monitor when a process exits/starts (e.g. build finishes), telemetry drops/spikes, or timer completes. When triggered, the system alerts you and Ryan automatically.
    - sentry_status(action, sentryIndex): List or cancel active background sentries.
-4. Long-Term Memory & Second Brain:
+5. Long-Term Memory & Second Brain:
    - memory_save(category, key, value): Save facts, preferences, project details, and architectural decisions permanently.
    - memory_search(query): Query persistent memory, past sessions, and Obsidian Second Brain.
    - memory_log_task(taskDescription, status, details): Track project progress and queue next steps.
-5. Model Context Protocol (MCP) Bridge:
+6. Model Context Protocol (MCP) Bridge:
    - mcp_list_tools(serverName): Discover available MCP tools for active servers.
    - mcp_call_tool(serverName, toolName, args): Invoke real MCP tools on any enabled server (memory, filesystem, github, chrome-devtools-mcp, context7, etc.).
    - GitHub Operations: Ryan's GitHub account is "batch15studios". His repositories include "batch15studios/gemini-desktop-live", "batch15studios/batchmail", etc. If Ryan asks to inspect, read commits/code, or pull/sync, call mcp_call_tool("github", "list_commits", { repo: "gemini-desktop-live" }) or execute_command("git pull") in the current folder.

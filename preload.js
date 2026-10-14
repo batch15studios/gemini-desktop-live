@@ -147,6 +147,21 @@ contextBridge.exposeInMainWorld('workspaceApi', {
     const handler = () => callback();
     ipcRenderer.on('workspace:unloaded', handler);
     return () => ipcRenderer.removeListener('workspace:unloaded', handler);
+  },
+  onSetMode: (callback) => {
+    const handler = (e, mode) => callback(mode);
+    ipcRenderer.on('workspace:set-mode', handler);
+    return () => ipcRenderer.removeListener('workspace:set-mode', handler);
+  },
+  onNavigate: (callback) => {
+    const handler = (e, url) => callback(url);
+    ipcRenderer.on('workspace:navigate', handler);
+    return () => ipcRenderer.removeListener('workspace:navigate', handler);
+  },
+  onOpenFile: (callback) => {
+    const handler = (e, filePath) => callback(filePath);
+    ipcRenderer.on('workspace:open-file', handler);
+    return () => ipcRenderer.removeListener('workspace:open-file', handler);
   }
 });
 

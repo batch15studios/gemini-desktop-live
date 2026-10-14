@@ -287,6 +287,31 @@ const TOOL_DEFINITIONS = [
         sentryIndex: { type: 'NUMBER', description: 'Index of sentry to cancel.' }
       }
     }
+  },
+  {
+    name: 'workspace_deck',
+    description: 'Control your integrated GEMINI WORKSPACE DECK (the 4th window). Allows you to open, close, toggle, or switch between your built-in Web Browser, Code IDE (Monaco Editor), and File Explorer. Also allows loading specific URLs into the browser or opening specific files in the IDE.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        action: {
+          type: 'STRING',
+          description: 'Action to perform: "open" (default), "close", "toggle", "switch_mode", "navigate_browser", "open_file".'
+        },
+        mode: {
+          type: 'STRING',
+          description: 'The mode to switch the deck to: "browser" (Chromium Web Browser), "ide" (Monaco Code Editor), or "explorer" (Native File Explorer).'
+        },
+        url: {
+          type: 'STRING',
+          description: 'URL to navigate to when in browser mode (e.g. "http://localhost:3000", "preview.html", or "https://google.com").'
+        },
+        filePath: {
+          type: 'STRING',
+          description: 'Relative or absolute file path to open in the IDE (e.g. "preview.html", "main.js", "safety-guard.js").'
+        }
+      }
+    }
   }
 ];
 
@@ -550,6 +575,9 @@ class ToolsManager {
         case 'sentry_status':
           result = this.getSentryStatus(args?.action, args?.sentryIndex);
           break;
+        case 'workspace_deck':
+          result = await this.controlWorkspaceDeck(args);
+          break;
         default:
           result = { error: `Tool '${name}' not implemented.` };
       }
@@ -561,6 +589,25 @@ class ToolsManager {
       this.emitter?.emit('tool_failed', { name, error: errRes.error, time: new Date().toLocaleTimeString() });
       return errRes;
     }
+  }
+
+  async controlWorkspaceDeck(args = {}) {
+    const action = args.action || 'open';
+    const mode = args.mode || null;
+    const url = args.url || null;
+    const filePath = args.filePath || null;
+
+    console.log(`[ToolsManager] Controlling Workspace Deck: action=${action}, mode=${mode}, url=${url}, file=${filePath}`);
+    this.emitter?.emit('workspace_control', { action, mode, url, filePath });
+
+    return {
+      success: true,
+      action,
+      mode: mode || 'active',
+      url,
+      filePath,
+      message: `Workspace Deck ${action} executed.${mode ? ` Switched view to "${mode}".` : ''}${url ? ` Navigated browser to "${url}".` : ''}${filePath ? ` Opened "${filePath}" in IDE.` : ''}`
+    };
   }
 
   runPowerShell(command) {
@@ -774,6 +821,34 @@ class ToolsManager {
   }
 
   async openApplication(target) {
+    if (!target || typeof target !== 'string') return { error: 'No target provided' };
+    const clean = target.trim().replace(/^["']|["']$/g, '');
+    const targetLower = clean.toLowerCase();
+
+    // Fast-path: Common Windows apps (launch in <10ms via Start-Process without disk walking)
+    const fastApps = {
+      'chrome': 'chrome',
+      'google chrome': 'chrome',
+      'edge': 'msedge',
+      'msedge': 'msedge',
+      'microsoft edge': 'msedge',
+      'firefox': 'firefox',
+      'notepad': 'notepad',
+      'calc': 'calc',
+      'calculator': 'calc',
+      'explorer': 'explorer',
+      'cmd': 'cmd',
+      'terminal': 'wt',
+      'powershell': 'powershell'
+    };
+
+    if (fastApps[targetLower]) {
+      const psRes = await this.runPowerShell(`Start-Process '${fastApps[targetLower]}'`);
+      if (psRes.exitCode === 0) {
+        return { success: true, opened: fastApps[targetLower], fastLaunch: true };
+      }
+    }
+
     const resolved = this.resolveApplicationTarget(target);
     console.log(`[ToolsManager] Launching application '${target}' -> resolved:`, resolved);
 
