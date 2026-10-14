@@ -1,0 +1,84 @@
+# Changelog — Gemini Desktop Live
+
+All notable changes, version milestones, and architectural revisions to `gemini-desktop-live` (`Assistant_Integrated_Advanced`) are documented in this file.
+
+---
+
+## [2.1.0] — 2026-10-14
+### Added
+- **Google Workspace Full Suite Engine (`google-workspace-manager.js`)**:
+  - **Gmail**: Read unread messages (`workspace_get_unread_emails`), search threads (`workspace_search_emails`), compose drafts (`workspace_create_draft`), send emails (`workspace_send_email`).
+  - **Google Calendar**: Today's agenda & upcoming meetings (`workspace_get_calendar_events`), schedule events (`workspace_create_calendar_event`).
+  - **Google Drive**: Search & list files (`workspace_list_drive_files`), upload assets (`workspace_upload_drive_file`), cross-device cloud memory sync (`workspace_sync_drive`).
+  - **Google Docs**: Create docs (`workspace_create_doc`), read doc contents (`workspace_read_doc`), append notes (`workspace_append_doc`).
+  - **Google Sheets**: Create spreadsheets (`workspace_create_sheet`), read cell ranges (`workspace_read_sheet`), append tabular rows (`workspace_append_sheet_row`).
+  - **Google Tasks**: List to-do tasks (`workspace_list_tasks`), create tasks (`workspace_create_task`), mark tasks completed (`workspace_complete_task`).
+  - **Google Contacts (People API)**: Search address book by name/email/phone (`workspace_search_contacts`).
+  - **Google Slides & Forms**: Create presentation decks (`workspace_create_slides`), create forms/surveys (`workspace_create_form`).
+- **Executive Morning Briefing (`workspace_startup_rundown`)**:
+  - Automated multi-stream synthesis on system boot: inspects unread messages, pending tasks, and today's schedule, speaking a crisp natural executive brief in Vega / Leda's voice.
+- **Google Takeout Gemini Chat Importer (`import_gemini_takeout`)**:
+  - Ingests past conversation archives from Google Takeout (`takeout.google.com` → Gemini Apps), parses prompts and answers, extracts user preferences and project milestones, and updates the Knowledge Graph + Obsidian Second Brain (`Gemini Imported Chats Chronicle.md`).
+- **Program Directory & Self-Maintenance Consciousness (Rule 5)**:
+  - Gemini is now explicitly aware of her local codebase directory (`c:\Users\Ryan\.gemini\antigravity\workspaces\Assistant_Integrated_Advanced`) and AppData config directory (`%APPDATA%\gemini-desktop-live`).
+  - Authorized to safely inspect, tweak, and adjust her own application files and boot directives for Ryan, bound by a strict rule never to make destructive edits that could crash or kill the application.
+- **Hardware Telemetry Deck on Right HUD**:
+  - Replaced redundant camera snapshot button with a live cyber-glass telemetry deck displaying CPU thermal zones (°C/°F), operating frequency (GHz/MHz), RAM pressure, and battery status.
+
+### Fixed
+- **Monitor Physical DPI Calibration & Edge Inset Remapping**:
+  - Resolved 125% Windows DPI scaling discrepancy ($1536 \times 864$ DIPs vs $1920 \times 1080$ physical).
+  - Remapped extreme right and bottom cursor boundaries with safe 28px viewable insets, ensuring the cursor icon remains 100% visible across the entire display.
+  - Elongated Right HUD height from 640px to 840px to eliminate vertical scrolling.
+
+---
+
+## [2.0.0] — 2026-10-14 (Major Milestone Release)
+### Added
+- **GEMINI // WORKSPACE DECK (4th Desktop Window)**:
+  - Dedicated on-demand floating window featuring a multi-tab Chromium Web Browser, Monaco Code Editor with full VS syntax highlighting, and Windows File Explorer.
+  - Integrated local live dev server (`http://127.0.0.1:4242`) with automatic hot-reload on file edits.
+- **10 Native Windows Subsystems**:
+  1. *UIAutomation Engine (`UIADriver.exe`)*: Programmatic native control tree search and clicking (`find_ui_element`, `click_ui_element`).
+  2. *Offline Windows OCR (`ocr_screen_region`)*: Pixel-level text extraction from screen regions using `Windows.Media.Ocr.OcrEngine` without cloud delays.
+  3. *Window Choreographer*: Native window listing, snapping, focusing, and closing (`list_windows`, `focus_window`, `snap_window`, `close_window`).
+  4. *Master Volume & Media Control*: Direct media key synthesis (`media_control`).
+  5. *Action Center Desktop Notifications*: Native Windows toast banners (`system_notify`).
+  6. *Clipboard Engine*: Read and write to Windows clipboard (`clipboard_get`, `clipboard_set`).
+  7. *Global Hotkeys*: `Ctrl+Shift+W` (Workspace Deck), `Ctrl+Alt+Space` (Mute Toggle), `Ctrl+Shift+Space` (Wake/Standby).
+  8. *Watchdog & Auto-Reconnect*: 15s health check and 45s silence auto-recovery.
+  9. *Physical High-DPI Cursor Driver*: Upgraded `CursorDriver.exe` with physical resolution query.
+  10. *Situational Awareness Boot Memory*: High-density situational briefing injected into Gemini Live system prompt on boot.
+
+---
+
+## [1.5.0] — 2026-10-07
+### Added
+- Prototype of the 4th Workspace Deck window.
+- IPC bridge between central Electron process and Workspace Deck webviews.
+- Hotkey binding (`Ctrl+Shift+W`) for fast toggle.
+
+---
+
+## [1.0.0] — 2026-10-05
+### Added
+- **Chromium WebRTC APM AEC3 Audio Pipeline**:
+  - Integrated native acoustic echo cancellation, automated gain control, and noise suppression.
+  - Half-duplex 450ms reverb gating to eliminate audio feedback loops.
+- **Gemini 3.8 Live & Extended Thinking Switcher**:
+  - Dual-mode selector for standard low-latency voice or deep multi-step reasoning.
+- **COG Warfare (Gears of War) Custom Skin**:
+  - Riveted steel armor, molten rotating skull, custom intro audio, and Marcus Fenix voice integration.
+- **Windows Safety Guardrails (`safety-guard.js`)**:
+  - Kernel-grade protection preventing destructive deletion of Windows operational files (`C:\Windows`, system processes, volume formats).
+- **Long-Term Memory Manager (`memory-manager.js`)**:
+  - Persistent knowledge graph, user profile preferences, session chronicles, and Obsidian Second Brain sync.
+
+---
+
+## [0.5.0] — 2026-10-01
+### Added
+- Initial project architecture: 3-window transparent floating HUD (Central Voice Orb, Left Control Hub, Right Perception HUD).
+- Real-time bidirectional audio streaming via Gemini Live WebSocket API (`@google/genai`).
+- Native Win32 mouse/keyboard driver (`CursorDriver.exe`).
+- Left Switchboard for MCP servers and hardware monitoring.
