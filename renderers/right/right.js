@@ -263,10 +263,13 @@ pollHardwareTelemetry().then(() => {
 
 // 6. Dynamic Auto-Fit Window Sizing (Zero Scrollbar HUD)
 function autoFitWindow() {
-  const card = document.querySelector('.glass-card');
-  if (card && window.assistantApi?.adjustWindowSize) {
-    // 24px clearance for container padding and window shadow
-    const neededHeight = card.scrollHeight + 24;
+  const header = document.querySelector('.card-header');
+  const body = document.querySelector('.hud-body');
+  if (body && window.assistantApi?.adjustWindowSize) {
+    const headerH = header ? header.offsetHeight : 45;
+    const bodyContentH = body.scrollHeight;
+    // 28px clearance for window padding (10px top/bottom) and card border shadow
+    const neededHeight = headerH + bodyContentH + 28;
     window.assistantApi.adjustWindowSize('right', 430, neededHeight);
   }
 }

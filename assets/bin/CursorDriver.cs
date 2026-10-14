@@ -152,6 +152,13 @@ namespace DesktopController
                         Console.WriteLine(string.Format("{{\"x\": {0}, \"y\": {1}}}", p.X, p.Y));
                         return 0;
 
+                    case "getdisplay":
+                        var b = Screen.PrimaryScreen.Bounds;
+                        var wa = Screen.PrimaryScreen.WorkingArea;
+                        Console.WriteLine(string.Format("{{\"width\": {0}, \"height\": {1}, \"workWidth\": {2}, \"workHeight\": {3}}}",
+                            b.Width, b.Height, wa.Width, wa.Height));
+                        return 0;
+
                     case "move":
                         if (args.Length < 3) return Error("Move requires x and y arguments");
                         int mx = int.Parse(args[1]);

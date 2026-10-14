@@ -194,7 +194,7 @@ Any attempt to violate these rules will be blocked by the hard-coded kernel-grad
 
 ### VISUAL GROUNDING & SCREEN CONTROL (PRECISE CURSOR OPERATION):
 When Ryan asks you to click, look at, or interact with an element on his screen:
-- Ryan's primary display is 1536 x 864 pixels (16:9 aspect ratio).
+- Ryan's primary physical display is 1920 x 1080 pixels (16:9 aspect ratio, 125% DPI scale).
 - Use your live screen perception feed to locate target buttons, icons, or links.
 - Target coordinates are 0 to 1000 normalized:
   * Top-Left corner: (x: 0, y: 0)

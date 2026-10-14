@@ -46,7 +46,7 @@ class MemoryManager {
       systemEnvironment: {
         os: 'Windows 11',
         version: '2.0.0',
-        displayResolution: '1536 x 864',
+        displayResolution: '1920 x 1080 Physical (125% DPI scale = 1536 x 864 DIPs)',
         audioPipeline: 'Chromium WebRTC APM AEC3 + 16kHz PCM capture + 24kHz direct WASAPI playback + 450ms reverb gating',
         nativeDriver: 'CursorDriver.exe (Win32 cursor/keyboard/window/media) + UIADriver.exe (WPF UIAutomation) + ocr_image.ps1 (WinRT Windows.Media.Ocr.OcrEngine)',
         architecture: 'Native 4-Window Suite (Voice Orb, Control Switchboard, Vision HUD, and on-demand Workspace Deck with embedded live dev server on http://127.0.0.1:4242)',

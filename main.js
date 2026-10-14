@@ -273,9 +273,13 @@ class AssistantApp {
   async captureDesktopSnapshotJpeg() {
     try {
       const primary = screen.getPrimaryDisplay();
-      // Downscale to 1280x720 max for AI vision perception (reduces latency by ~85% and eliminates GPU queue spikes)
-      const targetW = Math.min(primary.size.width, 1280);
-      const targetH = Math.min(primary.size.height, 720);
+      const scale = primary.scaleFactor || 1;
+      const physW = Math.round(primary.bounds.width * scale);
+      const physH = Math.round(primary.bounds.height * scale);
+      const aspect = (physW > 0 && physH > 0) ? (physW / physH) : (16 / 9);
+      // Downscale proportionally (1280 max width) for AI vision perception with exact physical aspect ratio
+      const targetW = Math.min(physW, 1280);
+      const targetH = Math.round(targetW / aspect);
       const sources = await desktopCapturer.getSources({
         types: ['screen'],
         thumbnailSize: {
@@ -350,14 +354,14 @@ class AssistantApp {
     });
     this.leftWindow.loadFile(path.join(__dirname, 'renderers', 'left', 'index.html'));
 
-    // 3. Right Window: Perception HUD, Webcam, Screen Share
+    // 3. Right Window: Perception HUD, Webcam, Screen Share & Telemetry Deck
     const rightW = 430;
-    const rightH = Math.min(760, height - 50);
+    const rightH = Math.min(840, height - 16);
     this.rightWindow = new BrowserWindow({
       width: rightW,
       height: rightH,
-      x: width - rightW - 30,
-      y: Math.round((height - rightH) / 2),
+      x: width - rightW - 20,
+      y: Math.max(8, Math.round((height - rightH) / 2)),
       transparent: true,
       frame: false,
       resizable: true,
@@ -610,14 +614,14 @@ class AssistantApp {
       const win = windowName === 'right' ? this.rightWindow : (windowName === 'left' ? this.leftWindow : null);
       if (win && !win.isDestroyed()) {
         const primaryDisplay = screen.getPrimaryDisplay();
-        const maxHeight = primaryDisplay.workAreaSize.height - 40;
+        const maxHeight = primaryDisplay.workAreaSize.height - 16;
         const [currentW, currentH] = win.getSize();
         const targetW = width || currentW;
         const targetH = Math.min(Math.max(Math.round(height), 480), maxHeight);
         if (Math.abs(currentH - targetH) > 4 || currentW !== targetW) {
           win.setSize(targetW, targetH);
           const [currX, currY] = win.getPosition();
-          const newY = Math.max(20, Math.min(currY, primaryDisplay.workAreaSize.height - targetH - 20));
+          const newY = Math.max(8, Math.min(currY, primaryDisplay.workAreaSize.height - targetH - 8));
           win.setPosition(currX, newY);
         }
       }

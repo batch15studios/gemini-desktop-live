@@ -527,6 +527,22 @@ class ToolsManager {
       lastUpdated: 0
     };
     this.initHardwareTelemetryPoller();
+
+    // Physical Display Calibration for Pixel-Perfect Cursor Alignment
+    this.physicalDisplayBounds = { width: 1920, height: 1080 };
+    this.calibrateDisplayBounds();
+  }
+
+  async calibrateDisplayBounds() {
+    try {
+      const res = await this.runCursorDriver('getdisplay');
+      if (res && res.width > 0 && res.height > 0) {
+        this.physicalDisplayBounds = { width: res.width, height: res.height };
+        console.log(`[ToolsManager] Screen calibrated to physical hardware: ${res.width}x${res.height}`);
+      }
+    } catch (e) {
+      console.warn('[ToolsManager] Display calibration notice:', e.message);
+    }
   }
 
   sampleCpu() {
@@ -1510,15 +1526,20 @@ class ToolsManager {
 
   // --- Native Windows Cursor & Keyboard Control Engine ---
   getDisplayBounds() {
-    let width = 1536;
-    let height = 864;
+    if (this.physicalDisplayBounds && this.physicalDisplayBounds.width > 0) {
+      return this.physicalDisplayBounds;
+    }
+
+    let width = 1920;
+    let height = 1080;
     try {
       const electron = require('electron');
       if (electron.screen) {
         const primary = electron.screen.getPrimaryDisplay();
         if (primary && primary.bounds) {
-          width = primary.bounds.width;
-          height = primary.bounds.height;
+          const scale = primary.scaleFactor || 1;
+          width = Math.round(primary.bounds.width * scale);
+          height = Math.round(primary.bounds.height * scale);
         }
       }
     } catch (e) {}
@@ -1527,8 +1548,8 @@ class ToolsManager {
 
   resolveCoordinates(x, y, isNormalized = true) {
     const bounds = this.getDisplayBounds();
-    const screenW = bounds.width;   // 1536
-    const screenH = bounds.height;  // 864
+    const screenW = bounds.width;   // Physical resolution (1920)
+    const screenH = bounds.height;  // Physical resolution (1080)
 
     let numX = parseFloat(x) || 0;
     let numY = parseFloat(y) || 0;
