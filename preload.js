@@ -46,6 +46,15 @@ contextBridge.exposeInMainWorld('assistantApi', {
   toggleMcpServer: (serverName, isEnabled) => ipcRenderer.invoke('mcp:toggle-server', { serverName, isEnabled }),
   callMcpToolDirect: (serverName, toolName, args) => ipcRenderer.invoke('mcp:call-tool', { serverName, toolName, args }),
 
+  // Google Workspace & Productivity Suite
+  getWorkspaceStatus: () => ipcRenderer.invoke('google-workspace:get-status'),
+  saveWorkspaceCredentials: (clientId, clientSecret) => ipcRenderer.invoke('google-workspace:save-credentials', { clientId, clientSecret }),
+  startWorkspaceAuth: () => ipcRenderer.invoke('google-workspace:start-auth'),
+  getWorkspaceRundown: () => ipcRenderer.invoke('google-workspace:get-rundown'),
+  toggleWorkspaceRundown: (enabled) => ipcRenderer.invoke('google-workspace:toggle-rundown', enabled),
+  importTakeoutHistory: (sourcePath) => ipcRenderer.invoke('google-workspace:import-takeout', sourcePath),
+  syncDriveMemory: () => ipcRenderer.invoke('google-workspace:sync-drive'),
+
   // Real-time Event Listeners
   onStatus: (callback) => {
     const handler = (e, data) => callback(data);

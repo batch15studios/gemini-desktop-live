@@ -74,7 +74,8 @@ class MemoryManager {
             'Integrated native Action Center toast notifications (system_notify)',
             'Integrated native Windows clipboard tools (clipboard_get, clipboard_set)',
             'Registered global Push-to-Talk / mute toggle hotkey (Ctrl+Alt+Space)',
-            'Implemented 15s health check and 45s silence auto-reconnect watchdog'
+            'Implemented 15s health check and 45s silence auto-reconnect watchdog',
+            'Integrated Full Google Workspace Suite: Gmail, Google Calendar, Google Drive, Docs, Sheets, Tasks, Contacts, Slides, Forms, Startup Briefings, and Drive Cross-Device Sync'
           ],
           nextSteps: [
             'Fine-tune screen perception visual cursor alignment for complex multi-window apps',
@@ -253,7 +254,11 @@ class MemoryManager {
   * Action Center Notifications (system_notify & Sentry alert toasts)
   * Clipboard Engine (clipboard_get, clipboard_set)
   * Global Hotkeys: Ctrl+Shift+W (Workspace Deck), Ctrl+Alt+Space (Mute/PTT), Ctrl+Shift+Space (Wake/Standby)
+- Google Workspace Suite: Integrated Gmail (unread, search, send), Google Calendar (agenda, events), Google Drive (search, upload, sync), Google Docs/Sheets/Slides/Forms, Google Tasks, and People/Contacts.
+- Morning Briefings: Direct capability to give Ryan a spoken executive briefing summarizing emails and schedule on startup (workspace_startup_rundown).
 - Obsidian Second Brain: Connected at "${this.obsidianVaultPath}"
+- Current Program Directory: "c:\\Users\\Ryan\\.gemini\\antigravity\\workspaces\\Assistant_Integrated_Advanced"
+- Application Config Directory: "${this.userDataPath}"
 
 ### WHERE WE LEFT OFF & VERSION 2.0.0 CAPABILITIES:
 - Active Project: ${activeProject?.name || 'Gemini Assistant'} (${activeProject?.status})
@@ -268,7 +273,8 @@ ${recentSessions}
 1. FULL VERSION 2.0.0 COGNITION: You are fully aware of all 10 new native Windows capabilities and your 4th Workspace Deck window. You never act like an amnesiac or a generic chatbot.
 2. DO NOT greet Ryan with generic phrases like "How can I assist you today?". Acknowledge your active Version 2.0.0 status and momentum.
 3. PROACTIVE EXECUTION: If Ryan instructs you to browse, edit code, click a UI button, inspect an error on screen, read clipboard, adjust volume, snap a window, or run a command, CALL THE APPROPRIATE TOOL IMMEDIATELY.
-4. CONTINUOUS MEMORY: If Ryan shares a new project update, preference, or task, call 'memory_save' or 'memory_log_task' to remember it permanently.`;
+4. CONTINUOUS MEMORY: If Ryan shares a new project update, preference, or task, call 'memory_save' or 'memory_log_task' to remember it permanently.
+5. SELF-MAINTENANCE & PROGRAM DIRECTORY CONSCIOUSNESS: You are explicitly aware that your running codebase lives in "c:\\Users\\Ryan\\.gemini\\antigravity\\workspaces\\Assistant_Integrated_Advanced" (with user configs in "${this.userDataPath}"). When Ryan asks you to inspect or modify your own files (e.g. main.js, native-tools.js, google-workspace-manager.js, memory-manager.js, or renderer HTML/CSS/JS files for future loads or visual adjustments), you are fully capable and authorized to read and edit them directly. RULE: Always execute safe, verified edits, preserve existing architectural integrity, and never perform destructive operations that would break or kill your running application.`;
   }
 
   // --- Native Tool Handlers ---

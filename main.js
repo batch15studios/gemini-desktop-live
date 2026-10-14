@@ -31,6 +31,7 @@ class AssistantApp {
     this.tray = null;
     this.isAlwaysOnTop = true;
     this.isMiniMode = false;
+    this.hasDeliveredStartupRundown = false;
 
     this.engineEmitter = new EventEmitter();
     this.configPath = path.join(app.getPath('userData'), 'assistant_config.json');
@@ -82,6 +83,7 @@ class AssistantApp {
         if (!loaded.enabledMcpServers || !Array.isArray(loaded.enabledMcpServers)) {
           loaded.enabledMcpServers = ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7'];
         }
+        loaded.startupRundownEnabled = loaded.startupRundownEnabled !== undefined ? loaded.startupRundownEnabled : true;
         if (loaded.cursorCalibration && typeof loaded.cursorCalibration === 'object') {
           if (this.toolsManager) {
             this.toolsManager.cursorCalibration = loaded.cursorCalibration;
@@ -103,12 +105,17 @@ class AssistantApp {
       screenShareEnabled: true,
       theme: 'cyber-cyan',
       skin: 'default',
+      startupRundownEnabled: true,
       enabledMcpServers: ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7']
     };
   }
 
   saveConfig(newConfig) {
     if (!newConfig) return { success: false };
+
+    if (typeof newConfig.startupRundownEnabled === 'boolean') {
+      this.config.startupRundownEnabled = newConfig.startupRundownEnabled;
+    }
 
     // Protect apiKey: Only update if a valid non-empty string is provided
     if (newConfig.apiKey && typeof newConfig.apiKey === 'string' && newConfig.apiKey.trim().length > 0) {
@@ -186,7 +193,20 @@ class AssistantApp {
   }
 
   setupEngineEvents() {
-    this.engineEmitter.on('status', (data) => this.broadcast('live:status', data));
+    this.engineEmitter.on('status', (data) => {
+      this.broadcast('live:status', data);
+      if (data?.status === 'connected' && this.config.startupRundownEnabled && !this.hasDeliveredStartupRundown) {
+        this.hasDeliveredStartupRundown = true;
+        setTimeout(() => {
+          console.log('[Main] Delivering automated morning startup briefing...');
+          if (this.liveEngine && this.liveEngine.isConnected) {
+            this.liveEngine.sendTextMessage(
+              '[SYSTEM EVENT: STARTUP EXECUTIVE RUNDOWN] Ryan has booted up the assistant. Please invoke workspace_startup_rundown (or your workspace tools) to inspect Ryan\'s unread emails, pending tasks, and today\'s calendar schedule, then deliver a crisp, natural spoken briefing.'
+            );
+          }
+        }, 3000);
+      }
+    });
     this.engineEmitter.on('transcript', (data) => this.broadcast('live:transcript', data));
     this.engineEmitter.on('audio_output_chunk', (chunk) => this.broadcast('live:audio-chunk', chunk));
     this.engineEmitter.on('interrupted', () => this.broadcast('live:interrupted'));
@@ -735,6 +755,30 @@ class AssistantApp {
         this.workspaceWindow.show();
         this.workspaceWindow.focus();
       }
+    });
+
+    // Google Workspace & Productivity Suite IPC
+    ipcMain.handle('google-workspace:get-status', () => {
+      return this.toolsManager.workspaceManager.getStatus();
+    });
+    ipcMain.handle('google-workspace:save-credentials', (e, { clientId, clientSecret }) => {
+      return this.toolsManager.workspaceManager.saveCredentials(clientId, clientSecret);
+    });
+    ipcMain.handle('google-workspace:start-auth', async () => {
+      return await this.toolsManager.workspaceManager.startAuthFlow();
+    });
+    ipcMain.handle('google-workspace:get-rundown', async () => {
+      return await this.toolsManager.workspaceManager.getStartupRundown();
+    });
+    ipcMain.handle('google-workspace:toggle-rundown', (e, enabled) => {
+      this.saveConfig({ startupRundownEnabled: enabled });
+      return this.config.startupRundownEnabled;
+    });
+    ipcMain.handle('google-workspace:import-takeout', (e, sourcePath) => {
+      return this.toolsManager.workspaceManager.importTakeoutConversations(sourcePath, this.toolsManager.memoryManager);
+    });
+    ipcMain.handle('google-workspace:sync-drive', async () => {
+      return await this.toolsManager.workspaceManager.syncMemoryToDrive(this.toolsManager.memoryManager.memory);
     });
   }
 

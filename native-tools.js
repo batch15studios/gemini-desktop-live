@@ -22,6 +22,7 @@ try {
 const { MemoryManager } = require('./memory-manager');
 const { safetyGuard } = require('./safety-guard.js');
 const { WindowTools } = require('./window-tools.js');
+const { GoogleWorkspaceManager } = require('./google-workspace-manager.js');
 
 // Standard Tool Declarations for Gemini Live / Function Calling
 const TOOL_DEFINITIONS = [
@@ -449,6 +450,271 @@ const TOOL_DEFINITIONS = [
         height: { type: 'NUMBER', description: 'Normalized height of region (1-1000). Defaults to 1000 (full height).' }
       }
     }
+  },
+  {
+    name: 'workspace_get_unread_emails',
+    description: 'Fetch unread emails from Ryan\'s Gmail inbox, including senders, subjects, dates, and preview snippets.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        maxResults: { type: 'NUMBER', description: 'Maximum unread emails to retrieve (default: 5).' }
+      }
+    }
+  },
+  {
+    name: 'workspace_search_emails',
+    description: 'Search Ryan\'s Gmail messages using standard Gmail query syntax (e.g. "from:ryan", "is:unread", "subject:project", "after:2026/10/01").',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        query: { type: 'STRING', description: 'Gmail search query string.' },
+        maxResults: { type: 'NUMBER', description: 'Max results to return (default: 10).' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'workspace_send_email',
+    description: 'Send an email directly from Ryan\'s Gmail account to a recipient with subject and body.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        to: { type: 'STRING', description: 'Recipient email address.' },
+        subject: { type: 'STRING', description: 'Email subject line.' },
+        body: { type: 'STRING', description: 'Plaintext body content of the email.' }
+      },
+      required: ['to', 'subject', 'body']
+    }
+  },
+  {
+    name: 'workspace_create_draft',
+    description: 'Compose and save a draft email in Ryan\'s Gmail account without sending it immediately.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        to: { type: 'STRING', description: 'Recipient email address.' },
+        subject: { type: 'STRING', description: 'Draft subject line.' },
+        body: { type: 'STRING', description: 'Draft email body.' }
+      },
+      required: ['to', 'subject', 'body']
+    }
+  },
+  {
+    name: 'workspace_get_calendar_events',
+    description: 'Retrieve scheduled events, meetings, and agenda from Ryan\'s primary Google Calendar for today or a specified timeframe.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        timeMin: { type: 'STRING', description: 'Start time in ISO format (defaults to beginning of today).' },
+        timeMax: { type: 'STRING', description: 'End time in ISO format (defaults to end of today).' },
+        maxResults: { type: 'NUMBER', description: 'Maximum events to return (default: 10).' }
+      }
+    }
+  },
+  {
+    name: 'workspace_create_calendar_event',
+    description: 'Schedule a new event or meeting on Ryan\'s Google Calendar with summary, start time, end time, and optional location/description.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        summary: { type: 'STRING', description: 'Event title or meeting name.' },
+        startDateTime: { type: 'STRING', description: 'Start date/time in ISO format (e.g. "2026-10-15T14:00:00Z").' },
+        endDateTime: { type: 'STRING', description: 'End date/time in ISO format (e.g. "2026-10-15T15:00:00Z").' },
+        description: { type: 'STRING', description: 'Optional meeting notes or description.' },
+        location: { type: 'STRING', description: 'Optional physical location or meeting link.' }
+      },
+      required: ['summary', 'startDateTime', 'endDateTime']
+    }
+  },
+  {
+    name: 'workspace_list_drive_files',
+    description: 'List or search files and folders in Ryan\'s Google Drive with modified dates, links, and mimeTypes.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        query: { type: 'STRING', description: 'Optional search keyword or filter.' },
+        pageSize: { type: 'NUMBER', description: 'Number of files to return (default: 15).' }
+      }
+    }
+  },
+  {
+    name: 'workspace_upload_drive_file',
+    description: 'Upload a file from the local Windows PC directly into Ryan\'s Google Drive.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        filePath: { type: 'STRING', description: 'Absolute or relative local file path to upload.' },
+        customName: { type: 'STRING', description: 'Optional custom name for the uploaded file.' }
+      },
+      required: ['filePath']
+    }
+  },
+  {
+    name: 'workspace_create_doc',
+    description: 'Create a new Google Doc on Ryan\'s Google Drive with a specified title and optional initial content.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        title: { type: 'STRING', description: 'Title of the new Google Doc.' },
+        initialContent: { type: 'STRING', description: 'Initial text content to insert.' }
+      },
+      required: ['title']
+    }
+  },
+  {
+    name: 'workspace_read_doc',
+    description: 'Read the full text content of an existing Google Doc given its documentId.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        documentId: { type: 'STRING', description: 'The Google Doc ID.' }
+      },
+      required: ['documentId']
+    }
+  },
+  {
+    name: 'workspace_append_doc',
+    description: 'Append text, notes, or code to the end of an existing Google Doc given its documentId.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        documentId: { type: 'STRING', description: 'The Google Doc ID.' },
+        text: { type: 'STRING', description: 'Text to append.' }
+      },
+      required: ['documentId', 'text']
+    }
+  },
+  {
+    name: 'workspace_create_sheet',
+    description: 'Create a new Google Sheets spreadsheet with title and optional header row.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        title: { type: 'STRING', description: 'Title of the spreadsheet.' },
+        headers: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Column headers array.' }
+      },
+      required: ['title']
+    }
+  },
+  {
+    name: 'workspace_read_sheet',
+    description: 'Read cell values from a Google Sheets spreadsheet given its spreadsheetId and optional range.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        spreadsheetId: { type: 'STRING', description: 'The Google Spreadsheet ID.' },
+        range: { type: 'STRING', description: 'Cell range (e.g. "Sheet1!A1:Z50"). Defaults to "Sheet1!A1:Z50".' }
+      },
+      required: ['spreadsheetId']
+    }
+  },
+  {
+    name: 'workspace_append_sheet_row',
+    description: 'Append a row of data values into a Google Sheets spreadsheet.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        spreadsheetId: { type: 'STRING', description: 'The Google Spreadsheet ID.' },
+        values: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Array of cell values for the row.' },
+        range: { type: 'STRING', description: 'Target range or sheet (default: "Sheet1!A1").' }
+      },
+      required: ['spreadsheetId', 'values']
+    }
+  },
+  {
+    name: 'workspace_list_tasks',
+    description: 'List pending tasks and to-do items from Google Tasks.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        showCompleted: { type: 'BOOLEAN', description: 'Whether to include completed tasks (default: false).' }
+      }
+    }
+  },
+  {
+    name: 'workspace_create_task',
+    description: 'Create a new task in Google Tasks with a title, optional notes, and optional due date.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        title: { type: 'STRING', description: 'Title of the task.' },
+        notes: { type: 'STRING', description: 'Optional task details or notes.' },
+        due: { type: 'STRING', description: 'Optional due date in ISO format.' }
+      },
+      required: ['title']
+    }
+  },
+  {
+    name: 'workspace_complete_task',
+    description: 'Mark a task completed in Google Tasks by its taskId.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        taskId: { type: 'STRING', description: 'The ID of the task to complete.' }
+      },
+      required: ['taskId']
+    }
+  },
+  {
+    name: 'workspace_search_contacts',
+    description: 'Search Ryan\'s Google Contacts address book by name, email, or phone number.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        query: { type: 'STRING', description: 'Name, email, or phone number to search for.' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'workspace_create_slides',
+    description: 'Create a new Google Slides presentation deck with title.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        title: { type: 'STRING', description: 'Title of the presentation.' }
+      },
+      required: ['title']
+    }
+  },
+  {
+    name: 'workspace_create_form',
+    description: 'Create a new Google Form survey/quiz with title and description.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        title: { type: 'STRING', description: 'Title of the form.' },
+        description: { type: 'STRING', description: 'Optional description of the form.' }
+      },
+      required: ['title']
+    }
+  },
+  {
+    name: 'workspace_startup_rundown',
+    description: 'Generate an executive morning rundown summarizing unread emails, today\'s calendar schedule, and pending tasks with a spoken voice brief.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {}
+    }
+  },
+  {
+    name: 'workspace_sync_drive',
+    description: 'Synchronize assistant memory, preferences, and knowledge graph to Google Drive for seamless cross-device continuity.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {}
+    }
+  },
+  {
+    name: 'import_gemini_takeout',
+    description: 'Import past conversation histories exported from Google Takeout (JSON or directory), extracting preferences, past topics, and syncing them into persistent memory and Obsidian.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        sourcePath: { type: 'STRING', description: 'Path to Google Takeout JSON file or extracted folder.' }
+      },
+      required: ['sourcePath']
+    }
   }
 ];
 
@@ -513,6 +779,7 @@ class ToolsManager {
   constructor(eventEmitter, initialEnabledServers = null) {
     this.emitter = eventEmitter;
     this.memoryManager = new MemoryManager();
+    this.workspaceManager = new GoogleWorkspaceManager({ emitter: this.emitter });
     this.mcpServersPath = path.join(os.homedir(), '.gemini', 'antigravity', 'mcp');
     this.mcpConfigPath = path.join(os.homedir(), '.gemini', 'config', 'mcp_config.json');
     this.mcpConfig = this.loadMcpConfig();
@@ -924,6 +1191,75 @@ class ToolsManager {
           break;
         case 'ocr_screen_region':
           result = await this.ocrScreenRegion(args?.x, args?.y, args?.width, args?.height);
+          break;
+        case 'workspace_get_unread_emails':
+          result = await this.workspaceManager.getUnreadEmails(args?.maxResults);
+          break;
+        case 'workspace_search_emails':
+          result = await this.workspaceManager.searchEmails(args?.query, args?.maxResults);
+          break;
+        case 'workspace_send_email':
+          result = await this.workspaceManager.sendEmail(args?.to, args?.subject, args?.body);
+          break;
+        case 'workspace_create_draft':
+          result = await this.workspaceManager.createDraft(args?.to, args?.subject, args?.body);
+          break;
+        case 'workspace_get_calendar_events':
+          result = await this.workspaceManager.getUpcomingEvents(args?.timeMin, args?.timeMax, args?.maxResults);
+          break;
+        case 'workspace_create_calendar_event':
+          result = await this.workspaceManager.createCalendarEvent(args?.summary, args?.startDateTime, args?.endDateTime, args?.description, args?.location);
+          break;
+        case 'workspace_list_drive_files':
+          result = await this.workspaceManager.listDriveFiles(args?.pageSize, args?.query);
+          break;
+        case 'workspace_upload_drive_file':
+          result = await this.workspaceManager.uploadFileToDrive(args?.filePath, args?.customName);
+          break;
+        case 'workspace_create_doc':
+          result = await this.workspaceManager.createGoogleDoc(args?.title, args?.initialContent);
+          break;
+        case 'workspace_read_doc':
+          result = await this.workspaceManager.readGoogleDoc(args?.documentId);
+          break;
+        case 'workspace_append_doc':
+          result = await this.workspaceManager.appendDocText(args?.documentId, args?.text);
+          break;
+        case 'workspace_create_sheet':
+          result = await this.workspaceManager.createSpreadsheet(args?.title, args?.headers);
+          break;
+        case 'workspace_read_sheet':
+          result = await this.workspaceManager.readSheetValues(args?.spreadsheetId, args?.range);
+          break;
+        case 'workspace_append_sheet_row':
+          result = await this.workspaceManager.appendSheetRow(args?.spreadsheetId, args?.values, args?.range);
+          break;
+        case 'workspace_list_tasks':
+          result = await this.workspaceManager.listTasks(args?.taskListId, args?.showCompleted);
+          break;
+        case 'workspace_create_task':
+          result = await this.workspaceManager.createTask(args?.title, args?.notes, args?.due, args?.taskListId);
+          break;
+        case 'workspace_complete_task':
+          result = await this.workspaceManager.completeTask(args?.taskId, args?.taskListId);
+          break;
+        case 'workspace_search_contacts':
+          result = await this.workspaceManager.searchContacts(args?.query, args?.maxResults);
+          break;
+        case 'workspace_create_slides':
+          result = await this.workspaceManager.createPresentation(args?.title);
+          break;
+        case 'workspace_create_form':
+          result = await this.workspaceManager.createForm(args?.title, args?.description);
+          break;
+        case 'workspace_startup_rundown':
+          result = await this.workspaceManager.getStartupRundown();
+          break;
+        case 'workspace_sync_drive':
+          result = await this.workspaceManager.syncMemoryToDrive(this.memoryManager.memory);
+          break;
+        case 'import_gemini_takeout':
+          result = this.workspaceManager.importTakeoutConversations(args?.sourcePath, this.memoryManager);
           break;
         default:
           result = { error: `Tool '${name}' not implemented.` };

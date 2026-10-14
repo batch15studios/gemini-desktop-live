@@ -412,6 +412,118 @@ async function init() {
       telRam.innerText = `${s.memory.usedGB} / ${s.memory.totalGB} (${s.memory.usagePercent})`;
     }
   }, 5000);
+
+  // Google Workspace UI Integration
+  initWorkspaceUi(config);
+}
+
+// Google Workspace UI Handlers
+function initWorkspaceUi(config) {
+  const workspaceStatusBadge = document.getElementById('workspaceStatusBadge');
+  const inputWorkspaceClientId = document.getElementById('inputWorkspaceClientId');
+  const inputWorkspaceClientSecret = document.getElementById('inputWorkspaceClientSecret');
+  const btnSaveWorkspaceCreds = document.getElementById('btnSaveWorkspaceCreds');
+  const btnAuthWorkspace = document.getElementById('btnAuthWorkspace');
+  const btnTestRundown = document.getElementById('btnTestRundown');
+  const chkStartupRundown = document.getElementById('chkStartupRundown');
+  const inputTakeoutPath = document.getElementById('inputTakeoutPath');
+  const btnImportTakeout = document.getElementById('btnImportTakeout');
+
+  if (chkStartupRundown && config) {
+    chkStartupRundown.checked = config.startupRundownEnabled !== false;
+    chkStartupRundown.addEventListener('change', async () => {
+      await window.assistantApi.toggleWorkspaceRundown(chkStartupRundown.checked);
+      addLogEntry('System', `Startup morning briefing toggled ${chkStartupRundown.checked ? 'ON' : 'OFF'}.`, 'system');
+    });
+  }
+
+  async function refreshWorkspaceStatus() {
+    if (!window.assistantApi.getWorkspaceStatus) return;
+    try {
+      const status = await window.assistantApi.getWorkspaceStatus();
+      if (!workspaceStatusBadge) return;
+
+      if (status.authenticated) {
+        workspaceStatusBadge.innerText = 'AUTHENTICATED';
+        workspaceStatusBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+        workspaceStatusBadge.style.color = '#10b981';
+      } else if (status.configured) {
+        workspaceStatusBadge.innerText = 'READY TO CONNECT';
+        workspaceStatusBadge.style.background = 'rgba(0, 240, 255, 0.2)';
+        workspaceStatusBadge.style.color = '#00f0ff';
+      } else {
+        workspaceStatusBadge.innerText = 'NOT CONFIGURED';
+        workspaceStatusBadge.style.background = 'rgba(255, 170, 0, 0.2)';
+        workspaceStatusBadge.style.color = '#ffaa00';
+      }
+    } catch (e) {
+      console.warn('Workspace status check error:', e);
+    }
+  }
+
+  refreshWorkspaceStatus();
+
+  if (btnSaveWorkspaceCreds) {
+    btnSaveWorkspaceCreds.addEventListener('click', async () => {
+      const cid = inputWorkspaceClientId ? inputWorkspaceClientId.value.trim() : '';
+      const csec = inputWorkspaceClientSecret ? inputWorkspaceClientSecret.value.trim() : '';
+      if (!cid || !csec) {
+        alert('Please provide both Client ID and Client Secret.');
+        return;
+      }
+      btnSaveWorkspaceCreds.innerText = 'Saving...';
+      const res = await window.assistantApi.saveWorkspaceCredentials(cid, csec);
+      btnSaveWorkspaceCreds.innerText = res.success ? 'Saved!' : 'Error';
+      setTimeout(() => { btnSaveWorkspaceCreds.innerText = 'Save'; }, 1800);
+      refreshWorkspaceStatus();
+      addLogEntry('System', 'Google Workspace OAuth credentials saved.', 'system');
+    });
+  }
+
+  if (btnAuthWorkspace) {
+    btnAuthWorkspace.addEventListener('click', async () => {
+      btnAuthWorkspace.innerText = 'Authorizing...';
+      addLogEntry('System', 'Opening Google authentication prompt in browser...', 'system');
+      const res = await window.assistantApi.startWorkspaceAuth();
+      btnAuthWorkspace.innerText = 'Connect Workspace';
+      if (res && res.success) {
+        addLogEntry('System', 'Google Workspace successfully authorized!', 'system');
+      } else if (res && res.error) {
+        addLogEntry('System', `Google Workspace auth notice: ${res.error}`, 'error');
+      }
+      refreshWorkspaceStatus();
+    });
+  }
+
+  if (btnTestRundown) {
+    btnTestRundown.addEventListener('click', async () => {
+      btnTestRundown.innerText = 'Running...';
+      const res = await window.assistantApi.getWorkspaceRundown();
+      btnTestRundown.innerText = 'Test Briefing';
+      if (res) {
+        addLogEntry('Gemini', res.spokenBriefing || 'Rundown complete.', 'assistant');
+      }
+    });
+  }
+
+  if (btnImportTakeout) {
+    btnImportTakeout.addEventListener('click', async () => {
+      const targetPath = inputTakeoutPath ? inputTakeoutPath.value.trim() : '';
+      if (!targetPath) {
+        alert('Please enter path to your Google Takeout JSON or folder.');
+        return;
+      }
+      btnImportTakeout.innerText = 'Importing...';
+      addLogEntry('System', `Importing Google Takeout conversation history from "${targetPath}"...`, 'system');
+      const res = await window.assistantApi.importTakeoutHistory(targetPath);
+      btnImportTakeout.innerText = 'Import';
+      if (res && res.success) {
+        addLogEntry('System', `Takeout Import Success! Ingested ${res.importedConversations} conversations and created Obsidian chronicle.`, 'system');
+      } else {
+        addLogEntry('System', `Import failed: ${res?.error || 'Unknown error'}`, 'error');
+      }
+    });
+  }
 }
 
 init();
