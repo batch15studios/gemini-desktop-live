@@ -45,9 +45,11 @@ class MemoryManager {
       },
       systemEnvironment: {
         os: 'Windows 11',
+        version: '2.0.0',
         displayResolution: '1536 x 864',
         audioPipeline: 'Chromium WebRTC APM AEC3 + 16kHz PCM capture + 24kHz direct WASAPI playback + 450ms reverb gating',
-        nativeDriver: 'CursorDriver.exe (C++ Win32 mouse/keyboard automation)',
+        nativeDriver: 'CursorDriver.exe (Win32 cursor/keyboard/window/media) + UIADriver.exe (WPF UIAutomation) + ocr_image.ps1 (WinRT Windows.Media.Ocr.OcrEngine)',
+        architecture: 'Native 4-Window Suite (Voice Orb, Control Switchboard, Vision HUD, and on-demand Workspace Deck with embedded live dev server on http://127.0.0.1:4242)',
         workspaces: [
           'C:\\Users\\Ryan\\.gemini\\antigravity\\workspaces\\Assistant_Integrated_Advanced',
           'C:\\Users\\Ryan\\.gemini\\antigravity\\workspaces\\Game Project'
@@ -59,13 +61,19 @@ class MemoryManager {
       ongoingProjects: [
         {
           id: 'gemini-desktop-live',
-          name: 'Gemini Multimodal PC Assistant (Assistant_Integrated_Advanced)',
-          status: 'Active Development',
+          name: 'Gemini Multimodal PC Assistant (v2.0.0)',
+          status: 'Active Development - Version 2.0.0 Major Release',
           recentMilestones: [
-            'Completed unified minimize-to-top floating toolbar with 60 FPS Wave Synth canvas',
-            'Implemented 6-theme skinning engine (themes.css & theme-registry.js)',
-            'Solved acoustic echo cancellation (AEC) & eliminated self-interruption stutter loop',
-            'Integrated persistent memory manager and boot situational awareness'
+            'Version 2.0.0 Major Architecture Upgrade deployed',
+            'Integrated 4th Window: Workspace Deck (Web Browser, Monaco IDE, and File Explorer with live dev server & hot-reload)',
+            'Integrated Windows UIAutomation (UIA) engine via UIADriver.exe (find_ui_element, click_ui_element)',
+            'Integrated native Windows offline OCR engine (ocr_screen_region via Windows.Media.Ocr.OcrEngine)',
+            'Integrated native Windows window choreographer (list_windows, focus_window, snap_window, close_window)',
+            'Integrated master volume and media playback controls (media_control)',
+            'Integrated native Action Center toast notifications (system_notify)',
+            'Integrated native Windows clipboard tools (clipboard_get, clipboard_set)',
+            'Registered global Push-to-Talk / mute toggle hotkey (Ctrl+Alt+Space)',
+            'Implemented 15s health check and 45s silence auto-reconnect watchdog'
           ],
           nextSteps: [
             'Fine-tune screen perception visual cursor alignment for complex multi-window apps',
@@ -93,9 +101,10 @@ class MemoryManager {
             name: 'Assistant_Integrated_Advanced',
             entityType: 'Software Application',
             observations: [
-              'Electron 3-window transparent HUD (Orb, Left Control Dock, Right Vision HUD)',
+              'Version 2.0.0 Major Upgrade',
+              'Electron 4-window transparent suite (Orb, Left Control Dock, Right Vision HUD, and Workspace Deck)',
               'Powered by Gemini Live WebSocket API (gemini-3.8-live)',
-              'Includes C++ CursorDriver for instant pixel-accurate mouse/keyboard automation'
+              'Equipped with 10 native Windows subsystems: UIAutomation, offline OCR, window choreographer, media control, clipboard, toasts, hotkeys, watchdog, high-DPI, and live dev server'
             ]
           }
         ],
@@ -105,8 +114,8 @@ class MemoryManager {
       },
       sessionChronicle: [
         {
-          date: '2026-10-04',
-          summary: 'AEC acoustic filter overhaul, zero-latency direct WASAPI audio output, top mini toolbar with live wave synth, themes engine, and memory integration.'
+          date: '2026-10-14',
+          summary: 'Version 2.0.0 Major Upgrade: Implemented and verified all 10 native Windows tools (Clipboard, Window Choreographer, Action Center Toasts, Media Controls, Hotkeys, Watchdog, High-DPI, UIAutomation, Local Offline OCR, and Workspace Deck Dev Server with hot-reload). Bumped version to 2.0.0.'
         }
       ]
     };
@@ -220,20 +229,32 @@ class MemoryManager {
     const dateStr = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     const activeProject = mem.ongoingProjects.find(p => p.id === 'gemini-desktop-live') || mem.ongoingProjects[0];
-    const recentMilestones = activeProject?.recentMilestones?.slice(-3).map(m => `  * ${m}`).join('\n') || 'None recorded.';
+    const recentMilestones = activeProject?.recentMilestones?.map(m => `  * ${m}`).join('\n') || 'None recorded.';
     const nextSteps = activeProject?.nextSteps?.map(n => `  * ${n}`).join('\n') || 'None recorded.';
-    const recentSessions = mem.sessionChronicle?.slice(-2).map(s => `  * [${s.date}]: ${s.summary}`).join('\n') || 'None recorded.';
+    const recentSessions = mem.sessionChronicle?.slice(-3).map(s => `  * [${s.date}]: ${s.summary}`).join('\n') || 'None recorded.';
 
     return `
-### SITUATIONAL AWARENESS & GROUNDING (AUTOMATIC BOOT MEMORY):
+### SITUATIONAL AWARENESS & GROUNDING (AUTOMATIC BOOT MEMORY - VERSION 2.0.0):
 - Current Real-World Time: ${dateStr}, ${timeStr}
+- System Version: Gemini Multimodal PC Assistant v2.0.0 (Major Release)
 - Primary User: ${mem.userProfile.name} (${mem.userProfile.location})
 - Persona Mandate: ${mem.userProfile.communicationStyle}
 - Current Environment: Windows 11 Desktop (Primary Screen: ${mem.systemEnvironment.displayResolution})
-- Assistant Architecture: Native 3-window transparent HUD with live Wave Synth toolbar, direct WASAPI audio, C++ CursorDriver, and local MCP tool bridge.
+- Assistant Architecture: Native 4-Window Suite:
+  1. Central Multimodal Voice Orb (live voice stream & 60 FPS Wave Synth toolbar)
+  2. Left Control Hub & Switchboard (real-time telemetry, model/voice selectors, MCP toggles)
+  3. Right Vision & Spatial HUD (live camera, screen perception, visual grounding)
+  4. GEMINI // WORKSPACE DECK (on-demand 4th window: Web Browser, Monaco IDE & File Explorer with local live dev server on http://127.0.0.1:4242 & auto hot-reload)
+- Native Subsystems & 10 Integrated Tools:
+  * Win32 CursorDriver (mouse/keyboard automation, window snapping/focus/close, media/volume controls)
+  * WPF UIAutomation (UIADriver.exe for native control tree search & programmatic click/invoke)
+  * Windows.Media.Ocr Engine (local offline OCR on any screen region without cloud delays)
+  * Action Center Notifications (system_notify & Sentry alert toasts)
+  * Clipboard Engine (clipboard_get, clipboard_set)
+  * Global Hotkeys: Ctrl+Shift+W (Workspace Deck), Ctrl+Alt+Space (Mute/PTT), Ctrl+Shift+Space (Wake/Standby)
 - Obsidian Second Brain: Connected at "${this.obsidianVaultPath}"
 
-### WHERE WE LEFT OFF & ONGOING WORK:
+### WHERE WE LEFT OFF & VERSION 2.0.0 CAPABILITIES:
 - Active Project: ${activeProject?.name || 'Gemini Assistant'} (${activeProject?.status})
 - Recent Milestones Accomplished:
 ${recentMilestones}
@@ -243,9 +264,9 @@ ${nextSteps}
 ${recentSessions}
 
 ### EXECUTIVE BEHAVIORAL DIRECTIVES:
-1. NEVER act like an amnesiac or a generic chatbot. You already know Ryan, you know your capabilities, and you know where we left off.
-2. DO NOT greet Ryan with generic phrases like "How can I assist you today?". Greet him with context and momentum (e.g. acknowledging where we left off).
-3. PROACTIVE EXECUTION: If Ryan instructs you to click, scroll, type, open a file, run a command, or search memory, DO IT IMMEDIATELY using your tools. Do not ask for confirmation or explain what you are going to do before doing it.
+1. FULL VERSION 2.0.0 COGNITION: You are fully aware of all 10 new native Windows capabilities and your 4th Workspace Deck window. You never act like an amnesiac or a generic chatbot.
+2. DO NOT greet Ryan with generic phrases like "How can I assist you today?". Acknowledge your active Version 2.0.0 status and momentum.
+3. PROACTIVE EXECUTION: If Ryan instructs you to browse, edit code, click a UI button, inspect an error on screen, read clipboard, adjust volume, snap a window, or run a command, CALL THE APPROPRIATE TOOL IMMEDIATELY.
 4. CONTINUOUS MEMORY: If Ryan shares a new project update, preference, or task, call 'memory_save' or 'memory_log_task' to remember it permanently.`;
   }
 
