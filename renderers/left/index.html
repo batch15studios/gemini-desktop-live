@@ -1,5 +1,7 @@
+1
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +9,7 @@
   <link rel="stylesheet" href="../../assets/themes.css">
   <link rel="stylesheet" href="left.css">
 </head>
+
 <body>
   <div class="glass-card">
     <!-- Draggable Header -->
@@ -18,7 +21,7 @@
       <div class="header-actions">
         <button class="btn-icon" id="btnMinimize" title="Minimize Panel to System Tray">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-            <path d="M19 13H5v-2h14v2z"/>
+            <path d="M19 13H5v-2h14v2z" />
           </svg>
         </button>
       </div>
@@ -54,28 +57,35 @@
       </div>
     </div>
 
-    <!-- TAB 2: Native Tools & MCP Connectivity -->
+    <!-- TAB 2: MCP Server Switchboard & Native Tools -->
     <div class="tab-content" id="tabMcp">
-      <div class="section-title">NATIVE PC TOOLS</div>
+      <div class="switchboard-header">
+        <div class="switchboard-title-group">
+          <div class="section-title">MCP SERVER SWITCHBOARD</div>
+          <div class="section-subtitle">Toggle MCP integrations on or off. Active servers wire live tool declarations directly into Gemini.</div>
+        </div>
+        <div class="mcp-count-badge" id="mcpActiveCountBadge">0 ACTIVE</div>
+      </div>
+
+      <!-- Interactive Switchboard Cards -->
+      <div class="mcp-switchboard" id="mcpSwitchboard">
+        <div class="mcp-loading">Loading MCP integrations...</div>
+      </div>
+
+      <!-- Native PC Automation Overview -->
+      <div class="section-title" style="margin-top: 18px;">NATIVE PC AUTOMATION ENGINE</div>
       <div class="tool-list">
-        <div class="tool-pill"><span class="tool-badge">CURSOR</span> mouse_click / move / drag</div>
-        <div class="tool-pill"><span class="tool-badge">INPUT</span> keyboard_type / hotkey</div>
+        <div class="tool-pill"><span class="tool-badge">CURSOR</span> mouse_click · move · drag · scroll</div>
+        <div class="tool-pill"><span class="tool-badge">KEYBOARD</span> keyboard_type · hotkey</div>
         <div class="tool-pill"><span class="tool-badge">POWERSHELL</span> execute_command</div>
-        <div class="tool-pill"><span class="tool-badge">FS</span> read_file / write_file</div>
-        <div class="tool-pill"><span class="tool-badge">DIR</span> list_directory</div>
-        <div class="tool-pill"><span class="tool-badge">APP</span> open_application</div>
-        <div class="tool-pill"><span class="tool-badge">SYS</span> get_system_status</div>
+        <div class="tool-pill"><span class="tool-badge">APP LAUNCH</span> open_application</div>
       </div>
 
-      <div class="section-title" style="margin-top: 15px;">DISCOVERED MCP SERVERS</div>
-      <div class="mcp-list" id="mcpServerList">
-        <div class="mcp-item">Scanning MCP servers...</div>
-      </div>
-
-      <div class="section-title" style="margin-top: 15px;">SYSTEM TELEMETRY</div>
+      <!-- Hardware Telemetry -->
+      <div class="section-title" style="margin-top: 18px;">SYSTEM TELEMETRY</div>
       <div class="telemetry-grid" id="telemetryGrid">
         <div class="telemetry-box">
-          <div class="tel-label">CPU</div>
+          <div class="tel-label">CPU CORES</div>
           <div class="tel-value" id="telCpu">--</div>
         </div>
         <div class="telemetry-box">
@@ -97,12 +107,33 @@
       </div>
 
       <div class="form-group">
-        <label for="selectVoice">Live Assistant Voice</label>
+        <label for="selectModel">Gemini AI Model (Core Engine)</label>
+        <select id="selectModel">
+          <option value="gemini-3.8-live" selected>Live 3.8 (Real-Time Bidirectional Voice)</option>
+          <option value="gemini-3.8-live-extended-thinking">Live 3.8 Extended Thinking (Deeper Reasoning)</option>
+        </select>
+        <span class="form-hint">Choose between standard low-latency bidirectional voice or extended thinking mode for complex multi-step reasoning.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="inputGhToken">GitHub Personal Access Token (batch15studios)</label>
+        <div class="input-with-button">
+          <input type="password" id="inputGhToken" placeholder="github_pat_..." />
+          <button id="btnSaveGhKey">Save</button>
+        </div>
+        <span class="form-hint">Enables GitHub MCP repository inspection, commits, and code tools.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="selectVoice">Standard Assistant Voice</label>
         <select id="selectVoice">
-          <option value="Charon" selected>Charon (Deep, Measured - Male)</option>
+          <option value="Vega" selected>Vega (Bright, Conversational - Standard Default)</option>
+          <option value="Charon">Charon (Deep, Measured - Male)</option>
           <option value="Aoede">Aoede (Warm, Engaging - Female)</option>
+          <option value="Fenrir">Fenrir (Authoritative, Forceful - Male)</option>
+          <option value="Gacrux">Gacrux (Mature, Weathered - Male)</option>
+          <option value="Algenib">Algenib (Gravelly, Battle-Hardened - Male)</option>
           <option value="Puck">Puck (Upbeat, Conversational - Male)</option>
-          <option value="Fenrir">Fenrir (Authoritative, Clear - Male)</option>
           <option value="Kore">Kore (Smooth, Calm - Female)</option>
           <option value="Zephyr">Zephyr (Bright, Dynamic - Female)</option>
           <option value="Leda">Leda (Youthful, Expressive - Female)</option>
@@ -112,9 +143,34 @@
           <option value="Algieba">Algieba (Smooth, Melodic - Female)</option>
           <option value="Sulafat">Sulafat (Warm, Resonant - Female)</option>
         </select>
+        <span class="form-hint">Default voice for standard and cyber themes.</span>
       </div>
 
-      <div class="section-title" style="margin-top: 18px;">INTERFACE SKINS & THEMES</div>
+      <div class="form-group" style="margin-top: 14px;">
+        <label for="inputGearsVoice">Gears of War Custom Voice (Google AI Studio Voice ID)</label>
+        <div class="input-with-button">
+          <input type="text" id="inputGearsVoice" placeholder="e.g. voices/marcus-fenix (leave blank until created)" />
+          <button id="btnSaveGearsVoice">Save</button>
+        </div>
+        <span class="form-hint">Auto-loads whenever Gears of War skin is active. Switching back to standard restores Vega.</span>
+      </div>
+
+      <div class="section-title" style="margin-top: 18px;">VISUAL SKINS (GEOMETRY & TEXTURES)</div>
+      <div class="skin-grid" id="skinGrid">
+        <div class="skin-card active" data-skin-id="default" title="Nexus Hologram Glassmorphism & Energy Orb">
+          <div class="skin-badge">CYBER</div>
+          <div class="skin-name">Nexus Hologram</div>
+          <div class="skin-desc">Sleek frosted glass panels & celestial energy orb</div>
+        </div>
+
+        <div class="skin-card" data-skin-id="gears" title="Gears of War Armored Plates & COG Gear">
+          <div class="skin-badge" style="color: #ff3333;">GEARS OF WAR</div>
+          <div class="skin-name">COG Warfare</div>
+          <div class="skin-desc">Riveted steel armor, rotating gear & molten skull</div>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top: 14px;">COLOR PALETTES</div>
       <div class="theme-grid" id="themeGrid">
         <div class="theme-card active" data-theme-id="cyber-cyan" title="Select Cyber Cyan Theme">
           <div class="theme-card-header">
@@ -214,4 +270,5 @@
   <script src="../../assets/theme-registry.js"></script>
   <script src="left.js"></script>
 </body>
+
 </html>

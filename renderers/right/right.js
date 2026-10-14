@@ -176,15 +176,24 @@ toggleWebcam().then(() => {
   setTimeout(autoFitWindow, 300);
 });
 
-// Theme Management
+// Theme & Skin Management
 function applyTheme(themeId) {
   document.documentElement.setAttribute('data-theme', themeId || 'cyber-cyan');
+}
+
+function applySkin(skinId) {
+  document.documentElement.setAttribute('data-skin', skinId || 'default');
 }
 
 window.assistantApi.onThemeChanged((themeId) => {
   applyTheme(themeId);
 });
 
+window.assistantApi.onSkinChanged((skinId) => {
+  applySkin(skinId);
+});
+
 window.assistantApi.loadConfig().then(cfg => {
   if (cfg && cfg.theme) applyTheme(cfg.theme);
-}).catch(err => console.warn('[Right HUD] Failed to load config theme:', err));
+  if (cfg && cfg.skin) applySkin(cfg.skin);
+}).catch(err => console.warn('[Right HUD] Failed to load config theme/skin:', err));

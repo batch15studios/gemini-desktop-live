@@ -19,6 +19,12 @@ namespace DesktopController
         [DllImport("user32.dll")]
         public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool SetProcessDpiAwarenessContext(IntPtr dpiContext);
+
+        [DllImport("user32.dll")]
+        public static extern bool SetProcessDPIAware();
+
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
         {
@@ -36,8 +42,53 @@ namespace DesktopController
 
         private const uint KEYEVENTF_KEYUP = 0x0002;
 
+        static void EnableDpiAwareness()
+        {
+            try
+            {
+                // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4
+                SetProcessDpiAwarenessContext((IntPtr)(-4));
+            }
+            catch
+            {
+                try { SetProcessDPIAware(); } catch { }
+            }
+        }
+
+        static void SmoothMove(int targetX, int targetY, int durationMs = 70)
+        {
+            POINT current;
+            GetCursorPos(out current);
+            int startX = current.X;
+            int startY = current.Y;
+
+            double dist = Math.Sqrt(Math.Pow(targetX - startX, 2) + Math.Pow(targetY - startY, 2));
+            if (dist < 5)
+            {
+                SetCursorPos(targetX, targetY);
+                return;
+            }
+
+            int steps = Math.Max(5, Math.Min(16, (int)(dist / 35)));
+            int stepDelay = Math.Max(3, durationMs / steps);
+
+            for (int i = 1; i <= steps; i++)
+            {
+                double t = (double)i / steps;
+                // Ease-out cubic for smooth visual deceleration
+                double ease = 1.0 - Math.Pow(1.0 - t, 3);
+                int curX = (int)(startX + (targetX - startX) * ease);
+                int curY = (int)(startY + (targetY - startY) * ease);
+                SetCursorPos(curX, curY);
+                Thread.Sleep(stepDelay);
+            }
+            SetCursorPos(targetX, targetY);
+        }
+
         static int Main(string[] args)
         {
+            EnableDpiAwareness();
+
             if (args.Length == 0)
             {
                 Console.WriteLine("{\"error\": \"No command specified. Usage: CursorDriver <command> [args]\"}");
@@ -60,7 +111,7 @@ namespace DesktopController
                         if (args.Length < 3) return Error("Move requires x and y arguments");
                         int mx = int.Parse(args[1]);
                         int my = int.Parse(args[2]);
-                        SetCursorPos(mx, my);
+                        SmoothMove(mx, my, 80);
                         Console.WriteLine(string.Format("{{\"success\": true, \"action\": \"move\", \"x\": {0}, \"y\": {1}}}", mx, my));
                         return 0;
 
@@ -71,7 +122,7 @@ namespace DesktopController
                         string button = args.Length > 3 ? args[3].ToLower() : "left";
                         bool isDouble = args.Length > 4 && (args[4].ToLower() == "true" || args[4] == "1");
 
-                        SetCursorPos(cx, cy);
+                        SmoothMove(cx, cy, 60);
                         Thread.Sleep(20);
 
                         PerformClick(button);

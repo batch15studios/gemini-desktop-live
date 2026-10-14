@@ -34,10 +34,16 @@ contextBridge.exposeInMainWorld('assistantApi', {
   saveConfig: (config) => ipcRenderer.invoke('config:save', config),
   loadConfig: () => ipcRenderer.invoke('config:load'),
   setTheme: (themeId) => ipcRenderer.send('theme:set', themeId),
+  setSkin: (skinId) => ipcRenderer.send('skin:set', skinId),
 
   // System State & Native Tools
   getSystemStatus: () => ipcRenderer.invoke('tools:system-status'),
   executeCommand: (cmd) => ipcRenderer.invoke('tools:exec-cmd', cmd),
+
+  // MCP Switchboard & Tool Execution
+  getMcpServersDetailed: () => ipcRenderer.invoke('mcp:get-detailed'),
+  toggleMcpServer: (serverName, isEnabled) => ipcRenderer.invoke('mcp:toggle-server', { serverName, isEnabled }),
+  callMcpToolDirect: (serverName, toolName, args) => ipcRenderer.invoke('mcp:call-tool', { serverName, toolName, args }),
 
   // Real-time Event Listeners
   onStatus: (callback) => {
@@ -59,6 +65,11 @@ contextBridge.exposeInMainWorld('assistantApi', {
     const handler = () => callback();
     ipcRenderer.on('live:interrupted', handler);
     return () => ipcRenderer.removeListener('live:interrupted', handler);
+  },
+  onTurnComplete: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('live:turn-complete', handler);
+    return () => ipcRenderer.removeListener('live:turn-complete', handler);
   },
   onToolActivity: (callback) => {
     const handler = (e, data) => callback(data);
@@ -89,5 +100,30 @@ contextBridge.exposeInMainWorld('assistantApi', {
     const handler = (e, themeId) => callback(themeId);
     ipcRenderer.on('theme:changed', handler);
     return () => ipcRenderer.removeListener('theme:changed', handler);
+  },
+  onSkinChanged: (callback) => {
+    const handler = (e, skinId) => callback(skinId);
+    ipcRenderer.on('skin:changed', handler);
+    return () => ipcRenderer.removeListener('skin:changed', handler);
+  },
+  onVoiceChanged: (callback) => {
+    const handler = (e, voiceName) => callback(voiceName);
+    ipcRenderer.on('voice:changed', handler);
+    return () => ipcRenderer.removeListener('voice:changed', handler);
+  },
+  onModelChanged: (callback) => {
+    const handler = (e, model) => callback(model);
+    ipcRenderer.on('model:changed', handler);
+    return () => ipcRenderer.removeListener('model:changed', handler);
+  },
+  onSentryFired: (callback) => {
+    const handler = (e, sentry) => callback(sentry);
+    ipcRenderer.on('sentry:fired', handler);
+    return () => ipcRenderer.removeListener('sentry:fired', handler);
+  },
+  onSafetyBlocked: (callback) => {
+    const handler = (e, data) => callback(data);
+    ipcRenderer.on('safety:blocked', handler);
+    return () => ipcRenderer.removeListener('safety:blocked', handler);
   }
 });

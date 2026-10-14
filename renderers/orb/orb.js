@@ -25,18 +25,63 @@ const miniSynthWrapper = document.getElementById('miniSynthWrapper');
 
 let isMiniMode = false;
 let currentTheme = 'cyber-cyan';
+let currentSkin = 'default';
 let currentState = 'IDLE'; // IDLE, LISTENING, THINKING, SPEAKING
 let micLevel = 0;
 let outputLevel = 0;
 let isMuted = false;
 let isPinned = true;
 let animAngle = 0;
+let gearAngle = 0;
+let smoothPulse = 0;
+
+// Preload Gears of War COG assets for instant GPU rendering
+const cogFullCrimson = new Image();
+cogFullCrimson.src = '../../assets/skins/gears/cog-full-crimson.png';
+const cogGearImg = new Image();
+cogGearImg.src = '../../assets/skins/gears/cog-gear-only.png';
+const cogSkullImg = new Image();
+cogSkullImg.src = '../../assets/skins/gears/cog-skull-only.png';
+
+// Fiery Ember Particles for Gears COG skin (reusable pool, zero GC pressure)
+const embers = [];
+const numEmbers = 35;
+for (let i = 0; i < numEmbers; i++) {
+  const angle = Math.random() * Math.PI * 2;
+  const dist = Math.random() * 50 + 30;
+  embers.push({
+    x: Math.cos(angle) * dist,
+    y: Math.sin(angle) * dist,
+    vx: (Math.random() - 0.5) * 0.9,
+    vy: -(Math.random() * 1.6 + 0.6),
+    size: Math.random() * 2.5 + 1.2,
+    alpha: Math.random() * 0.8 + 0.2,
+    decay: Math.random() * 0.025 + 0.012,
+    hue: Math.floor(Math.random() * 28 + 8) // 8-36: deep blood crimson to burning amber
+  });
+}
+
+function applySkin(skinId) {
+  currentSkin = skinId || 'default';
+  document.documentElement.setAttribute('data-skin', currentSkin);
+  if (currentSkin === 'gears') {
+    preloadMarcusAudio();
+  }
+  if (canvas) {
+    if (currentSkin === 'gears') {
+      canvas.style.filter = 'drop-shadow(0 0 28px rgba(255, 30, 20, 0.65))';
+    } else {
+      const pal = (typeof getThemePalette === 'function') ? getThemePalette(currentTheme) : null;
+      canvas.style.filter = pal ? `drop-shadow(0 0 25px ${pal.glow})` : 'drop-shadow(0 0 25px rgba(0, 220, 255, 0.45))';
+    }
+  }
+}
 
 function applyTheme(themeId) {
   currentTheme = themeId || 'cyber-cyan';
   document.documentElement.setAttribute('data-theme', currentTheme);
   const pal = (typeof getThemePalette === 'function') ? getThemePalette(currentTheme) : null;
-  if (canvas && currentState === 'IDLE' && pal) {
+  if (canvas && currentState === 'IDLE' && pal && currentSkin !== 'gears') {
     canvas.style.filter = `drop-shadow(0 0 25px ${pal.glow})`;
   }
 }
@@ -194,6 +239,178 @@ function renderOrb() {
 }
 
 // ----------------------------------------------------
+// COG Warfare (Gears of War) Canvas Render Engine
+// ----------------------------------------------------
+function drawProceduralGear(c, innerR, outerR, numTeeth) {
+  c.beginPath();
+  const step = (Math.PI * 2) / numTeeth;
+  for (let i = 0; i < numTeeth; i++) {
+    const a0 = i * step;
+    const a1 = a0 + step * 0.25;
+    const a2 = a0 + step * 0.65;
+    const a3 = a0 + step * 0.9;
+    c.lineTo(Math.cos(a0) * innerR, Math.sin(a0) * innerR);
+    c.lineTo(Math.cos(a1) * outerR, Math.sin(a1) * outerR);
+    c.lineTo(Math.cos(a2) * outerR, Math.sin(a2) * outerR);
+    c.lineTo(Math.cos(a3) * innerR, Math.sin(a3) * innerR);
+  }
+  c.closePath();
+  c.fillStyle = '#22252c';
+  c.fill();
+  c.strokeStyle = '#ff3333';
+  c.lineWidth = 2;
+  c.stroke();
+}
+
+function drawProceduralSkull(c, r) {
+  c.beginPath();
+  c.arc(0, -r * 0.2, r * 0.7, 0, Math.PI * 2);
+  c.rect(-r * 0.45, r * 0.1, r * 0.9, r * 0.5);
+  c.fillStyle = '#111216';
+  c.fill();
+  c.strokeStyle = '#ff2222';
+  c.lineWidth = 1.5;
+  c.stroke();
+}
+
+function renderGearsOrb() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+
+  // Smooth heartbeat pulse + audio volume lerp for silky 60 FPS transitions
+  let targetPulse = 0;
+  if (currentState === 'SPEAKING') {
+    targetPulse = outputLevel * 38;
+  } else if (currentState === 'LISTENING') {
+    targetPulse = micLevel * 25;
+  } else if (currentState === 'THINKING') {
+    targetPulse = Math.sin(animAngle * 4) * 8;
+  } else {
+    // Gears of War rhythmic health omen heartbeat breathing
+    targetPulse = Math.sin(animAngle * 1.8) * 4;
+  }
+  smoothPulse += (targetPulse - smoothPulse) * 0.15;
+
+  animAngle += (currentState === 'THINKING' ? 0.05 : 0.02);
+  gearAngle += (currentState === 'THINKING' ? 0.03 : (currentState === 'SPEAKING' ? 0.012 : 0.004));
+
+  // 1. Gears of War Blood-Red Ambient Aura
+  const outerGlow = ctx.createRadialGradient(cx, cy, 35, cx, cy, 140 + smoothPulse * 0.6);
+  if (currentState === 'SPEAKING') {
+    outerGlow.addColorStop(0, 'rgba(255, 30, 20, 0.7)');
+    outerGlow.addColorStop(0.5, 'rgba(200, 10, 10, 0.4)');
+    outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  } else if (currentState === 'LISTENING') {
+    outerGlow.addColorStop(0, 'rgba(255, 80, 20, 0.55)');
+    outerGlow.addColorStop(0.5, 'rgba(180, 40, 10, 0.28)');
+    outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  } else if (currentState === 'THINKING') {
+    outerGlow.addColorStop(0, 'rgba(255, 140, 0, 0.7)');
+    outerGlow.addColorStop(0.5, 'rgba(220, 40, 0, 0.35)');
+    outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  } else {
+    outerGlow.addColorStop(0, 'rgba(180, 15, 15, 0.5)');
+    outerGlow.addColorStop(0.6, 'rgba(120, 5, 5, 0.2)');
+    outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  }
+  ctx.fillStyle = outerGlow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 140 + smoothPulse * 0.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. Tactical Rotating Mechanical Reticle / Ticks (Subtle outer gear orbit)
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(gearAngle);
+  const reticleR = 104 + smoothPulse * 0.3;
+  ctx.beginPath();
+  ctx.arc(0, 0, reticleR, 0, Math.PI * 2);
+  ctx.strokeStyle = (currentState === 'SPEAKING') ? 'rgba(255, 40, 20, 0.6)' : 'rgba(180, 20, 20, 0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 12]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // 3. Fiery Molten Embers & Sparks (Drifting upwards like Lancer chainsaw sparks)
+  embers.forEach(e => {
+    e.y += e.vy * (currentState === 'SPEAKING' ? 2.0 : 1.0);
+    e.x += e.vx + Math.sin(animAngle * 3 + e.y * 0.05) * 0.4;
+    e.alpha -= e.decay;
+    if (e.alpha <= 0 || Math.abs(e.y) > 130) {
+      const spawnAngle = Math.random() * Math.PI * 2;
+      const spawnR = Math.random() * 45 + 30;
+      e.x = Math.cos(spawnAngle) * spawnR;
+      e.y = Math.sin(spawnAngle) * spawnR;
+      e.vx = (Math.random() - 0.5) * (currentState === 'SPEAKING' ? 2.5 : 1.0);
+      e.vy = -(Math.random() * 2.0 + 0.8);
+      e.alpha = Math.random() * 0.8 + 0.3;
+      e.size = Math.random() * 2.5 + 1;
+    }
+
+    ctx.beginPath();
+    ctx.arc(cx + e.x, cy + e.y, e.size, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${e.hue}, 100%, ${currentState === 'SPEAKING' ? 65 : 50}%, ${e.alpha})`;
+    ctx.shadowColor = `hsl(${e.hue}, 100%, 50%)`;
+    ctx.shadowBlur = 4;
+    ctx.fill();
+  });
+  ctx.shadowBlur = 0;
+
+  // 4. Central Molten Lava Backlight behind the Skull
+  ctx.save();
+  const flareR = 52 + smoothPulse * 0.4;
+  const flareGrad = ctx.createRadialGradient(cx, cy, 5, cx, cy, flareR);
+  if (currentState === 'SPEAKING') {
+    flareGrad.addColorStop(0, '#ffffff');
+    flareGrad.addColorStop(0.3, '#ff3b14');
+    flareGrad.addColorStop(0.7, '#8b0000');
+    flareGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  } else if (currentState === 'THINKING') {
+    flareGrad.addColorStop(0, '#ffffff');
+    flareGrad.addColorStop(0.3, '#ffaa00');
+    flareGrad.addColorStop(0.7, '#cc2200');
+    flareGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  } else {
+    flareGrad.addColorStop(0, 'rgba(255, 60, 20, 0.7)');
+    flareGrad.addColorStop(0.4, 'rgba(180, 15, 15, 0.45)');
+    flareGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  }
+  ctx.fillStyle = flareGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, flareR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // 5. The Legendary Gears of War Crimson Omen Emblem (Crisp, High-Resolution, Upright)
+  ctx.save();
+  ctx.translate(cx, cy);
+  const emblemScale = 1.0 + (smoothPulse / 260);
+  ctx.scale(emblemScale, emblemScale);
+
+  // Intense blood-red drop-shadow glow
+  ctx.shadowColor = (currentState === 'SPEAKING') ? '#ff1100' : 'rgba(200, 10, 10, 0.85)';
+  ctx.shadowBlur = (currentState === 'SPEAKING') ? 22 : 12;
+
+  const targetW = 205;
+  const targetH = 197;
+
+  if (cogFullCrimson.complete && cogFullCrimson.naturalWidth > 0) {
+    ctx.drawImage(cogFullCrimson, -targetW / 2, -targetH / 2, targetW, targetH);
+  } else if (cogGearImg.complete && cogGearImg.naturalWidth > 0) {
+    ctx.drawImage(cogGearImg, -targetW / 2, -targetH / 2, targetW, targetH);
+    if (cogSkullImg.complete && cogSkullImg.naturalWidth > 0) {
+      ctx.drawImage(cogSkullImg, -targetW / 2, -targetH / 2, targetW, targetH);
+    }
+  } else {
+    drawProceduralGear(ctx, 75, 95, 12);
+    drawProceduralSkull(ctx, 42);
+  }
+  ctx.restore();
+}
+
+// ----------------------------------------------------
 // Real-Time Wave Synth Canvas Visualizer (Mini Mode)
 // ----------------------------------------------------
 function renderWaveSynth() {
@@ -256,7 +473,28 @@ function renderWaveSynth() {
     const yTop = midY - halfH;
 
     const barGrad = synthCtx.createLinearGradient(0, yTop, 0, yTop + barHeight);
-    if (synthTheme === 'assistant') {
+    if (currentSkin === 'gears') {
+      if (synthTheme === 'assistant') {
+        barGrad.addColorStop(0, '#ffffff');
+        barGrad.addColorStop(0.3, '#ff3b14');
+        barGrad.addColorStop(1, '#8b0000');
+        synthCtx.shadowColor = 'rgba(255, 34, 17, 0.8)';
+      } else if (synthTheme === 'user') {
+        barGrad.addColorStop(0, '#ff9900');
+        barGrad.addColorStop(0.5, '#ff4400');
+        barGrad.addColorStop(1, '#8b0000');
+        synthCtx.shadowColor = 'rgba(255, 120, 0, 0.7)';
+      } else if (synthTheme === 'thinking') {
+        barGrad.addColorStop(0, '#ffdd00');
+        barGrad.addColorStop(0.5, '#ff5500');
+        barGrad.addColorStop(1, '#ff0000');
+        synthCtx.shadowColor = 'rgba(255, 200, 0, 0.7)';
+      } else {
+        barGrad.addColorStop(0, 'rgba(255, 40, 20, 0.6)');
+        barGrad.addColorStop(1, 'rgba(120, 10, 10, 0.2)');
+        synthCtx.shadowColor = 'transparent';
+      }
+    } else if (synthTheme === 'assistant') {
       barGrad.addColorStop(0, '#00f0ff');
       barGrad.addColorStop(0.5, '#70a1ff');
       barGrad.addColorStop(1, '#00d2d3');
@@ -317,9 +555,11 @@ function renderWaveSynth() {
     else synthCtx.lineTo(x, yTop);
   }
   const pal = (typeof getThemePalette === 'function') ? getThemePalette(currentTheme) : null;
-  synthCtx.strokeStyle = (synthTheme === 'assistant') ? '#ffffff'
+  synthCtx.strokeStyle = (currentSkin === 'gears') 
+    ? (synthTheme === 'assistant' ? '#ffffff' : (synthTheme === 'user' ? '#ff9900' : '#ff3311'))
+    : ((synthTheme === 'assistant') ? '#ffffff'
     : (synthTheme === 'user' ? '#a8ff78'
-    : (synthTheme === 'thinking' ? '#fff275' : (pal ? pal.synthWave : 'rgba(0, 240, 255, 0.6)')));
+    : (synthTheme === 'thinking' ? '#fff275' : (pal ? pal.synthWave : 'rgba(0, 240, 255, 0.6)'))));
   synthCtx.lineWidth = 1.4;
   synthCtx.stroke();
   synthCtx.shadowBlur = 0;
@@ -330,7 +570,11 @@ function renderVisuals() {
     animAngle += (currentState === 'THINKING' ? 0.05 : 0.02);
     renderWaveSynth();
   } else {
-    renderOrb();
+    if (currentSkin === 'gears') {
+      renderGearsOrb();
+    } else {
+      renderOrb();
+    }
   }
   requestAnimationFrame(renderVisuals);
 }
@@ -347,6 +591,8 @@ let playbackQueue = [];
 let nextPlayTime = 0;
 let isPlayingAudio = false;
 let isAssistantSpeaking = false;
+let turnActive = false;
+let turnSilenceTimer = null;
 let roomReverbDecayUntil = 0;
 let interruptionSustainedFrames = 0;
 
@@ -383,8 +629,58 @@ function detectSoundSnapOrClap(freqArray) {
   return false;
 }
 
+// ----------------------------------------------------
+// Marcus Fenix Audio Quotes (Clean, Smooth, Unfiltered)
+// ----------------------------------------------------
+const marcusQuotes = [
+  '../../assets/skins/gears/audio/marcus-i-found-a-way-to-sneak-in.mp3',
+  '../../assets/skins/gears/audio/marcus-anybody-need-some-sniper-practice.mp3',
+  '../../assets/skins/gears/audio/marcus-that-s-alota-blood.mp3',
+  '../../assets/skins/gears/audio/marcus-always-the-closest-to-home.mp3'
+];
+
+let decodedMarcusBuffers = [];
+
+async function preloadMarcusAudio() {
+  if (decodedMarcusBuffers.length > 0) return;
+  initPlaybackContext();
+  for (const url of marcusQuotes) {
+    try {
+      const resp = await fetch(url);
+      const arrayBuf = await resp.arrayBuffer();
+      const decoded = await playbackContext.decodeAudioData(arrayBuf);
+      decodedMarcusBuffers.push(decoded);
+    } catch (err) {
+      console.warn('[Orb] Preloading Marcus clip error:', url, err.message);
+    }
+  }
+}
+
+function playMarcusVoiceQuote() {
+  initPlaybackContext();
+  if (decodedMarcusBuffers.length === 0) return false;
+  try {
+    const buffer = decodedMarcusBuffers[Math.floor(Math.random() * decodedMarcusBuffers.length)];
+    const src = playbackContext.createBufferSource();
+    src.buffer = buffer;
+    src.connect(playbackContext.destination);
+    if (mediaStreamDest) {
+      try { src.connect(mediaStreamDest); } catch (e) {}
+    }
+    src.start(0);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 // Futuristic Web Audio Synthesizer Chime
 function playWakeChime(isSleep = false) {
+  if (currentSkin === 'gears' && !isSleep) {
+    const played = playMarcusVoiceQuote('wake');
+    if (played) return;
+  }
+
   initPlaybackContext();
   try {
     const osc = playbackContext.createOscillator();
@@ -424,14 +720,14 @@ async function startMicrophoneCapture() {
       audio: {
         channelCount: 1,
         sampleRate: 16000,
-        echoCancellation: { ideal: true },
-        noiseSuppression: { ideal: true },
-        autoGainControl: { ideal: true },
-        googEchoCancellation: { ideal: true },
-        googAutoGainControl: { ideal: true },
-        googNoiseSuppression: { ideal: true },
-        googHighpassFilter: { ideal: true },
-        googTypingNoiseDetection: { ideal: true }
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        googEchoCancellation: true,
+        googAutoGainControl: true,
+        googNoiseSuppression: true,
+        googHighpassFilter: true,
+        googTypingNoiseDetection: true
       }
     });
 
@@ -502,27 +798,13 @@ async function startMicrophoneCapture() {
       detectSoundSnapOrClap(micFreqData);
 
       const now = Date.now();
-      const isEchoPeriod = isAssistantSpeaking || (now < roomReverbDecayUntil);
+      const isEchoPeriod = isAssistantSpeaking || turnActive || (now < roomReverbDecayUntil);
 
       if (isEchoPeriod) {
-        // Assistant is actively speaking or room reverberation is decaying.
+        // --- ACOUSTIC ECHO GUARD & HALF-DUPLEX SUPPRESSION ---
+        // Assistant is actively generating/speaking or room reverberation is decaying.
         // Gating is critical: do NOT stream mic audio to Gemini Live to prevent
-        // the assistant from hearing its own voice and creating an acoustic feedback loop.
-        
-        // Check for genuine deliberate user barge-in (sustained high energy above speaker bleed)
-        if (micLevel > 0.45) {
-          interruptionSustainedFrames++;
-          if (interruptionSustainedFrames >= 3) {
-            console.log('[Orb] User voice barge-in detected over speaker playback!');
-            clearAudioQueue();
-            updateState('LISTENING');
-            interruptionSustainedFrames = 0;
-          }
-        } else {
-          interruptionSustainedFrames = Math.max(0, interruptionSustainedFrames - 1);
-        }
-
-        // Drop transmission while assistant is speaking or reverb is decaying
+        // the assistant from hearing its own voice through the physical speakers.
         return;
       }
 
@@ -574,11 +856,10 @@ function initPlaybackContext() {
     playbackFreqData = new Uint8Array(playbackAnalyser.frequencyBinCount);
 
     // WebRTC AEC Loopback Destination:
-    // Routing through MediaStreamDestination into an HTML5 <audio> element ensures Chromium's
-    // native WebRTC AEC3 engine recognizes this playback stream as the "Far-End Render Reference".
     mediaStreamDest = playbackContext.createMediaStreamDestination();
     if (assistantAudio) {
       assistantAudio.srcObject = mediaStreamDest.stream;
+      assistantAudio.muted = true; // Muted: direct output via playbackContext.destination ensures 0ms latency & no duplicate sound
       assistantAudio.play().catch(e => console.warn('[Orb] Audio element auto-play:', e));
     }
   }
@@ -589,7 +870,13 @@ function initPlaybackContext() {
 
 function playAudioChunk(base64Data) {
   initPlaybackContext();
+
+  turnActive = true;
   isAssistantSpeaking = true;
+  if (turnSilenceTimer) {
+    clearTimeout(turnSilenceTimer);
+    turnSilenceTimer = null;
+  }
   updateState('SPEAKING');
 
   const binaryString = atob(base64Data);
@@ -621,17 +908,18 @@ function playAudioChunk(base64Data) {
     sourceNode.connect(playbackAnalyser);
   }
 
-  // Route to WebRTC AEC reference loopback (with fallback to direct destination)
+  // Pure, direct physical audio output with zero filter alteration
+  sourceNode.connect(playbackContext.destination);
+
+  // Also route to WebRTC AEC reference loopback destination
   if (mediaStreamDest) {
-    sourceNode.connect(mediaStreamDest);
-  } else {
-    sourceNode.connect(playbackContext.destination);
+    try { sourceNode.connect(mediaStreamDest); } catch (e) {}
   }
 
   const now = playbackContext.currentTime;
-  // If nextPlayTime is behind the current audio clock, start slightly in front of now (20ms buffer)
+  // If nextPlayTime is behind current audio clock, start slightly in front of now (25ms buffer)
   if (nextPlayTime < now) {
-    nextPlayTime = now + 0.02;
+    nextPlayTime = now + 0.025;
   }
 
   sourceNode.start(nextPlayTime);
@@ -644,15 +932,33 @@ function playAudioChunk(base64Data) {
     if (idx !== -1) activeSources.splice(idx, 1);
     if (activeSources.length === 0) {
       outputLevel = 0;
-      isAssistantSpeaking = false;
-      nextPlayTime = 0; // Flush timeline anchor to eliminate clock drift between turns
-      roomReverbDecayUntil = Date.now() + 350; // Allow 350ms for speaker echo in the room to decay
-      updateState('IDLE');
+      scheduleTurnCompletion();
     }
   };
 }
 
+function scheduleTurnCompletion(forceImmediate = false) {
+  if (turnSilenceTimer) {
+    clearTimeout(turnSilenceTimer);
+  }
+  const delay = forceImmediate ? 0 : 350;
+  turnSilenceTimer = setTimeout(() => {
+    turnSilenceTimer = null;
+    if (activeSources.length === 0) {
+      turnActive = false;
+      isAssistantSpeaking = false;
+      nextPlayTime = 0;
+      roomReverbDecayUntil = Date.now() + 450; // Allow 450ms for room echo to decay
+      updateState('IDLE');
+    }
+  }, delay);
+}
+
 function clearAudioQueue() {
+  if (turnSilenceTimer) {
+    clearTimeout(turnSilenceTimer);
+    turnSilenceTimer = null;
+  }
   // Actively stop all playing and queued buffer sources
   for (const src of activeSources) {
     try {
@@ -663,9 +969,22 @@ function clearAudioQueue() {
   activeSources = [];
   nextPlayTime = 0; // Reset scheduling anchor immediately
   outputLevel = 0;
+  turnActive = false;
   isAssistantSpeaking = false;
   roomReverbDecayUntil = Date.now() + 300; // Allow 300ms acoustic grace period
   updateState('IDLE');
+}
+
+function userBargeIn() {
+  if (isAssistantSpeaking || turnActive) {
+    console.log('[Orb] User manual barge-in initiated (stopping speech & opening mic)');
+    clearAudioQueue();
+    turnActive = false;
+    isAssistantSpeaking = false;
+    roomReverbDecayUntil = 0; // Immediately open microphone for user
+    window.assistantApi.sendAudioStreamEnd();
+    updateState('LISTENING');
+  }
 }
 
 // ----------------------------------------------------
@@ -673,16 +992,13 @@ function clearAudioQueue() {
 // ----------------------------------------------------
 // Click on the orb or press Spacebar to immediately interrupt speech
 canvas.addEventListener('click', () => {
-  if (isAssistantSpeaking) {
-    console.log('[Orb] Clicked orb to barge-in / stop speech');
-    clearAudioQueue();
-  }
+  userBargeIn();
 });
 
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'Space' && isAssistantSpeaking) {
-    console.log('[Orb] Spacebar pressed to barge-in / stop speech');
-    clearAudioQueue();
+  if (e.code === 'Space' && (isAssistantSpeaking || turnActive)) {
+    e.preventDefault();
+    userBargeIn();
   }
 });
 
@@ -750,6 +1066,10 @@ window.assistantApi.onStatus((data) => {
   console.log('[Orb] Status:', data);
   if (data.status === 'connecting') updateState('THINKING');
   else if (data.status === 'connected') updateState('IDLE');
+  else if (data.status === 'disconnected') {
+    clearAudioQueue();
+    updateState('IDLE');
+  }
 });
 
 window.assistantApi.onAudioOutputChunk((chunk) => {
@@ -760,9 +1080,16 @@ window.assistantApi.onInterrupted(() => {
   clearAudioQueue();
 });
 
+window.assistantApi.onTurnComplete(() => {
+  console.log('[Orb] Server turn complete received');
+  scheduleTurnCompletion(false);
+});
+
 window.assistantApi.onToolActivity((activity) => {
   if (activity.type === 'executing') updateState('THINKING');
-  else if (activity.type === 'completed') updateState('IDLE');
+  else if (activity.type === 'completed') {
+    updateState('IDLE');
+  }
 });
 
 window.assistantApi.onMuteChanged((muted) => {
@@ -788,6 +1115,36 @@ window.assistantApi.onWokenUp(() => {
   updateState('LISTENING');
 });
 
+// Autonomous Sentry Notification Handling
+if (window.assistantApi.onSentryFired) {
+  window.assistantApi.onSentryFired((sentry) => {
+    console.log('[Orb] Autonomous Sentry Triggered:', sentry.alertMessage);
+    playWakeChime(false);
+    updateState('THINKING');
+    setTimeout(() => {
+      if (currentState === 'THINKING') updateState('IDLE');
+    }, 2500);
+  });
+}
+
+// Windows System Integrity Shield Visual Feedback
+if (window.assistantApi.onSafetyBlocked) {
+  window.assistantApi.onSafetyBlocked((data) => {
+    console.warn('[Orb] System Safety Guard Interception:', data.reason);
+    if (stateBadge) {
+      const prevText = stateBadge.innerText;
+      stateBadge.innerText = 'SHIELD';
+      stateBadge.style.color = '#ff3344';
+      stateBadge.style.borderColor = '#ff3344';
+      setTimeout(() => {
+        stateBadge.innerText = prevText;
+        stateBadge.style.color = '';
+        stateBadge.style.borderColor = '';
+      }, 3500);
+    }
+  });
+}
+
 // Boot Audio, Microphone Listeners & Theme Sync
 startMicrophoneCapture();
 
@@ -796,8 +1153,16 @@ window.assistantApi.onThemeChanged((themeId) => {
   applyTheme(themeId);
 });
 
+window.assistantApi.onSkinChanged((skinId) => {
+  console.log('[Orb] Skin changed to:', skinId);
+  applySkin(skinId);
+});
+
 window.assistantApi.loadConfig().then(cfg => {
   if (cfg && cfg.theme) {
     applyTheme(cfg.theme);
   }
-}).catch(err => console.warn('[Orb] Failed to load config theme:', err));
+  if (cfg && cfg.skin) {
+    applySkin(cfg.skin);
+  }
+}).catch(err => console.warn('[Orb] Failed to load config theme/skin:', err));

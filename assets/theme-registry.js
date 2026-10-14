@@ -132,13 +132,40 @@ const THEME_PALETTES = {
     coreC: '#94a3b8',
     synthGradient: ['#38bdf8', '#94a3b8', '#e2e8f0'],
     synthWave: '#f0f9ff'
+  },
+  'gears': {
+    primary: '#ff2222',
+    secondary: '#ff6600',
+    glow: 'rgba(255, 34, 34, 0.65)',
+    aura: 'rgba(200, 15, 15, 0.5)',
+    ring: 'rgba(255, 60, 60, 0.55)',
+    coreA: '#ffffff',
+    coreB: '#ff3311',
+    coreC: '#8b0000',
+    synthGradient: ['#ff2222', '#ff6600', '#8b0000'],
+    synthWave: '#ffffff'
   }
 };
+
+const SKINS = [
+  {
+    id: 'default',
+    name: 'Nexus Hologram',
+    tag: 'Cyber Glass',
+    desc: 'Sleek frosted glass panels & celestial energy orb'
+  },
+  {
+    id: 'gears',
+    name: 'COG Warfare',
+    tag: 'Gears of War',
+    desc: 'Armored steel plates, rivets & rotating COG gear with molten skull'
+  }
+];
 
 function getThemePalette(themeId) {
   return THEME_PALETTES[themeId] || THEME_PALETTES['cyber-cyan'];
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { THEMES, THEME_PALETTES, getThemePalette };
+  module.exports = { THEMES, SKINS, THEME_PALETTES, getThemePalette };
 }

@@ -7,6 +7,7 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, screen, desktopCapturer, nativeImage, session, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const EventEmitter = require('events');
 require('dotenv').config();
 
@@ -29,13 +30,21 @@ class AssistantApp {
     this.isMiniMode = false;
 
     this.engineEmitter = new EventEmitter();
-    this.toolsManager = new ToolsManager(this.engineEmitter);
     this.configPath = path.join(app.getPath('userData'), 'assistant_config.json');
     this.config = this.loadConfig();
+    this.toolsManager = new ToolsManager(this.engineEmitter, this.config.enabledMcpServers);
+    this.toolsManager.setScreenCaptureProvider(() => this.captureDesktopSnapshotJpeg());
+
+    const activeVoice = (this.config.skin === 'gears' && this.config.gearsVoice && this.config.gearsVoice.trim() !== '')
+      ? this.config.gearsVoice.trim()
+      : (this.config.standardVoice || 'Vega');
+
+    this.config.voiceName = activeVoice;
 
     this.liveEngine = new GeminiLiveEngine({
       apiKey: this.config.apiKey || process.env.GEMINI_API_KEY || '',
-      voiceName: this.config.voiceName || 'Aoede',
+      voiceName: activeVoice,
+      model: this.config.model,
       toolsManager: this.toolsManager,
       emitter: this.engineEmitter
     });
@@ -50,7 +59,26 @@ class AssistantApp {
         if (!loaded.apiKey && process.env.GEMINI_API_KEY) {
           loaded.apiKey = process.env.GEMINI_API_KEY;
         }
+        if (!loaded.githubToken) {
+          try {
+            const mcpCfgPath = path.join(os.homedir(), '.gemini', 'config', 'mcp_config.json');
+            if (fs.existsSync(mcpCfgPath)) {
+              const mcpCfg = JSON.parse(fs.readFileSync(mcpCfgPath, 'utf-8'));
+              loaded.githubToken = mcpCfg.mcpServers?.github?.env?.GITHUB_PERSONAL_ACCESS_TOKEN || '';
+            }
+          } catch (e) {}
+        }
         loaded.theme = loaded.theme || 'cyber-cyan';
+        loaded.skin = loaded.skin || 'default';
+        loaded.standardVoice = loaded.standardVoice || 'Vega';
+        loaded.gearsVoice = loaded.gearsVoice || '';
+        loaded.model = loaded.model || 'gemini-3.8-live';
+        loaded.voiceName = (loaded.skin === 'gears' && loaded.gearsVoice && loaded.gearsVoice.trim() !== '')
+          ? loaded.gearsVoice.trim()
+          : (loaded.standardVoice || 'Vega');
+        if (!loaded.enabledMcpServers || !Array.isArray(loaded.enabledMcpServers)) {
+          loaded.enabledMcpServers = ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7'];
+        }
         return loaded;
       }
     } catch (e) {
@@ -58,23 +86,91 @@ class AssistantApp {
     }
     return {
       apiKey: process.env.GEMINI_API_KEY || '',
-      voiceName: 'Aoede',
+      githubToken: '',
+      standardVoice: 'Vega',
+      gearsVoice: '',
+      voiceName: 'Vega',
+      model: 'gemini-3.8-live',
       visionEnabled: true,
       screenShareEnabled: true,
-      theme: 'cyber-cyan'
+      theme: 'cyber-cyan',
+      skin: 'default',
+      enabledMcpServers: ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7']
     };
   }
 
   saveConfig(newConfig) {
-    this.config = { ...this.config, ...newConfig };
+    if (!newConfig) return { success: false };
+
+    // Protect apiKey: Only update if a valid non-empty string is provided
+    if (newConfig.apiKey && typeof newConfig.apiKey === 'string' && newConfig.apiKey.trim().length > 0) {
+      this.config.apiKey = newConfig.apiKey.trim();
+      this.liveEngine.setApiKey(this.config.apiKey);
+    }
+    if (newConfig.githubToken && typeof newConfig.githubToken === 'string' && newConfig.githubToken.trim().length > 0) {
+      this.config.githubToken = newConfig.githubToken.trim();
+      try {
+        const mcpCfgPath = path.join(os.homedir(), '.gemini', 'config', 'mcp_config.json');
+        if (fs.existsSync(mcpCfgPath)) {
+          const mcpCfg = JSON.parse(fs.readFileSync(mcpCfgPath, 'utf-8'));
+          if (!mcpCfg.mcpServers) mcpCfg.mcpServers = {};
+          if (!mcpCfg.mcpServers.github) mcpCfg.mcpServers.github = {};
+          if (!mcpCfg.mcpServers.github.env) mcpCfg.mcpServers.github.env = {};
+          mcpCfg.mcpServers.github.env.GITHUB_PERSONAL_ACCESS_TOKEN = this.config.githubToken;
+          fs.writeFileSync(mcpCfgPath, JSON.stringify(mcpCfg, null, 2), 'utf-8');
+          if (this.toolsManager) {
+            this.toolsManager.mcpConfig = mcpCfg;
+          }
+          console.log('[Main] GitHub PAT synchronized to mcp_config.json and ToolsManager');
+        }
+      } catch (err) {
+        console.warn('[Main] Warning updating mcp_config.json with githubToken:', err.message);
+      }
+    }
+    if (newConfig.standardVoice) {
+      this.config.standardVoice = newConfig.standardVoice;
+      if (this.config.skin !== 'gears') {
+        this.config.voiceName = newConfig.standardVoice;
+        this.liveEngine.setVoice(newConfig.standardVoice);
+        this.broadcast('voice:changed', newConfig.standardVoice);
+      }
+    }
+    if (newConfig.gearsVoice !== undefined) {
+      this.config.gearsVoice = (newConfig.gearsVoice || '').trim();
+      if (this.config.skin === 'gears' && this.config.gearsVoice) {
+        this.config.voiceName = this.config.gearsVoice;
+        this.liveEngine.setVoice(this.config.gearsVoice);
+        this.broadcast('voice:changed', this.config.gearsVoice);
+      }
+    }
+    if (newConfig.voiceName && !newConfig.standardVoice && newConfig.gearsVoice === undefined) {
+      this.config.voiceName = newConfig.voiceName;
+      if (this.config.skin === 'gears' && this.config.gearsVoice) {
+        this.config.gearsVoice = newConfig.voiceName;
+      } else {
+        this.config.standardVoice = newConfig.voiceName;
+      }
+      this.liveEngine.setVoice(newConfig.voiceName);
+      this.broadcast('voice:changed', newConfig.voiceName);
+    }
+    if (newConfig.theme) this.config.theme = newConfig.theme;
+    if (newConfig.skin) this.config.skin = newConfig.skin;
+    if (newConfig.enabledMcpServers && Array.isArray(newConfig.enabledMcpServers)) {
+      this.config.enabledMcpServers = newConfig.enabledMcpServers;
+      if (this.toolsManager) {
+        this.toolsManager.setEnabledMcpServers(this.config.enabledMcpServers);
+      }
+    }
+    if (typeof newConfig.visionEnabled === 'boolean') this.config.visionEnabled = newConfig.visionEnabled;
+    if (typeof newConfig.screenShareEnabled === 'boolean') this.config.screenShareEnabled = newConfig.screenShareEnabled;
+    if (newConfig.model) {
+      this.config.model = newConfig.model;
+      this.liveEngine.setModel(newConfig.model);
+      this.broadcast('model:changed', newConfig.model);
+    }
+
     try {
       fs.writeFileSync(this.configPath, JSON.stringify(this.config, null, 2), 'utf-8');
-      if (newConfig.apiKey) {
-        this.liveEngine.setApiKey(newConfig.apiKey);
-      }
-      if (newConfig.voiceName) {
-        this.liveEngine.setVoice(newConfig.voiceName);
-      }
       return { success: true };
     } catch (e) {
       return { success: false, error: e.message };
@@ -89,7 +185,52 @@ class AssistantApp {
     this.engineEmitter.on('tool_executing', (data) => this.broadcast('live:tool-activity', { type: 'executing', ...data }));
     this.engineEmitter.on('tool_completed', (data) => this.broadcast('live:tool-activity', { type: 'completed', ...data }));
     this.engineEmitter.on('tool_failed', (data) => this.broadcast('live:tool-activity', { type: 'failed', ...data }));
+    this.engineEmitter.on('turn_complete', () => this.broadcast('live:turn-complete'));
     this.engineEmitter.on('mute_changed', (isMuted) => this.broadcast('live:mute-changed', isMuted));
+
+    // Screen action feedback: feed fresh screen frames immediately into Gemini Live's vision perception buffer
+    this.engineEmitter.on('screen_action_feedback', (base64Jpeg) => {
+      if (this.liveEngine && this.liveEngine.isConnected) {
+        this.liveEngine.sendVideoFrame(base64Jpeg, 'screen');
+      }
+      this.broadcast('screen:feedback-captured', { timestamp: Date.now() });
+    });
+
+    // Autonomous Sentry Trigger: broadcast alert to UI and command Gemini to proactively speak
+    this.engineEmitter.on('sentry_fired', (sentry) => {
+      console.log('[Main] Sentry condition triggered:', sentry.alertMessage);
+      this.broadcast('sentry:fired', sentry);
+      if (this.liveEngine && this.liveEngine.isConnected) {
+        this.liveEngine.sendTextMessage(`[SENTRY ALERT - PROACTIVELY SPEAK TO RYAN NOW]: ${sentry.alertMessage}`);
+      }
+    });
+
+    // Windows Safety Guard: broadcast blocked action
+    this.engineEmitter.on('safety_blocked', (data) => {
+      console.warn('[Main] Windows System Integrity Guard intercepted unsafe action:', data.reason);
+      this.broadcast('safety:blocked', data);
+    });
+  }
+
+  async captureDesktopSnapshotJpeg() {
+    try {
+      const primary = screen.getPrimaryDisplay();
+      const sources = await desktopCapturer.getSources({
+        types: ['screen'],
+        thumbnailSize: {
+          width: primary.size.width,
+          height: primary.size.height
+        }
+      });
+      if (sources && sources.length > 0) {
+        const thumb = sources[0].thumbnail;
+        const jpegBuf = thumb.toJPEG(75);
+        return jpegBuf.toString('base64');
+      }
+    } catch (err) {
+      console.error('[Main] Desktop snapshot capture error:', err);
+    }
+    return null;
   }
 
   broadcast(channel, data) {
@@ -165,6 +306,15 @@ class AssistantApp {
       webPreferences: commonWebPreferences
     });
     this.rightWindow.loadFile(path.join(__dirname, 'renderers', 'right', 'index.html'));
+
+    // Explicitly show windows once ready and ensure focus
+    [this.orbWindow, this.leftWindow, this.rightWindow].forEach(win => {
+      win.once('ready-to-show', () => {
+        win.show();
+      });
+      win.show();
+    });
+    this.orbWindow.focus();
 
     // Prevent full close on window 'close' to allow minimizing to tray
     [this.orbWindow, this.leftWindow, this.rightWindow].forEach(win => {
@@ -357,10 +507,50 @@ class AssistantApp {
       this.broadcast('theme:changed', themeId);
       console.log('[Main] Theme applied and broadcast to all windows:', themeId);
     });
+    ipcMain.on('skin:set', (e, skinId) => {
+      this.config.skin = skinId;
+
+      // Auto-load voice based on active skin
+      let targetVoice = this.config.standardVoice || 'Vega';
+      if (skinId === 'gears' && this.config.gearsVoice && this.config.gearsVoice.trim() !== '') {
+        targetVoice = this.config.gearsVoice.trim();
+      }
+
+      if (this.config.voiceName !== targetVoice) {
+        this.config.voiceName = targetVoice;
+        this.liveEngine.setVoice(targetVoice);
+        this.broadcast('voice:changed', targetVoice);
+        console.log(`[Main] Skin changed to "${skinId}". Auto-switched voice to "${targetVoice}".`);
+      }
+
+      this.saveConfig({ skin: skinId, voiceName: this.config.voiceName });
+      this.broadcast('skin:changed', skinId);
+      console.log('[Main] Skin applied and broadcast to all windows:', skinId);
+    });
 
     // Native Tools & System Status
     ipcMain.handle('tools:system-status', () => this.toolsManager.getSystemStatus());
     ipcMain.handle('tools:exec-cmd', (e, cmd) => this.toolsManager.runPowerShell(cmd));
+
+    // MCP Switchboard & Tool Execution Handlers
+    ipcMain.handle('mcp:get-detailed', () => {
+      return this.toolsManager.getMcpServersDetailed(this.config.enabledMcpServers);
+    });
+
+    ipcMain.handle('mcp:toggle-server', (e, { serverName, isEnabled }) => {
+      let enabled = this.config.enabledMcpServers || [];
+      if (isEnabled) {
+        if (!enabled.includes(serverName)) enabled.push(serverName);
+      } else {
+        enabled = enabled.filter(s => s !== serverName);
+      }
+      this.saveConfig({ enabledMcpServers: enabled });
+      return { success: true, enabledMcpServers: enabled };
+    });
+
+    ipcMain.handle('mcp:call-tool', async (e, { serverName, toolName, args }) => {
+      return await this.toolsManager.callMcpTool(serverName, toolName, args);
+    });
 
     // Screen Share Sources
     ipcMain.handle('screen:get-sources', async () => {
@@ -375,22 +565,8 @@ class AssistantApp {
 
     // Fast Desktop Screen Snapshot (Zero-WebRTC, 100% reliable)
     ipcMain.handle('screen:capture-snapshot', async () => {
-      try {
-        const primary = screen.getPrimaryDisplay();
-        const sources = await desktopCapturer.getSources({
-          types: ['screen'],
-          thumbnailSize: {
-            width: Math.min(1280, primary.size.width),
-            height: Math.min(720, primary.size.height)
-          }
-        });
-        if (sources && sources.length > 0) {
-          return sources[0].thumbnail.toDataURL();
-        }
-      } catch (err) {
-        console.error('[Main] Desktop snapshot error:', err);
-      }
-      return null;
+      const base64 = await this.captureDesktopSnapshotJpeg();
+      return base64 ? `data:image/jpeg;base64,${base64}` : null;
     });
 
     // Wake / Standby Toggle

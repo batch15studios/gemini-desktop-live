@@ -16,6 +16,9 @@ try {
   // Standalone environment
 }
 
+const { MemoryManager } = require('./memory-manager');
+const { safetyGuard } = require('./safety-guard.js');
+
 // Standard Tool Declarations for Gemini Live / Function Calling
 const TOOL_DEFINITIONS = [
   {
@@ -83,43 +86,43 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: 'mouse_click',
-    description: 'Move the mouse cursor to a specific screen coordinate (x, y) and perform a mouse click (left, right, or double-click). Use to click buttons, icons, links, or window controls shown in the desktop screen share. Coordinates can be standard pixels or normalized 0-1000 scale.',
+    description: 'Click on any UI element on Ryan\'s screen. Provide coordinates on a 0-1000 normalized scale (where 0,0 is top-left and 1000,1000 is bottom-right). Example: center of screen is x: 500, y: 500. Identify the target location from your desktop screen perception image and aim for the center of the target button, icon, link, or input field.',
     parameters: {
       type: 'OBJECT',
       properties: {
-        x: { type: 'NUMBER', description: 'Horizontal coordinate on screen (pixel coordinate or 0-1000 normalized).' },
-        y: { type: 'NUMBER', description: 'Vertical coordinate on screen (pixel coordinate or 0-1000 normalized).' },
+        x: { type: 'NUMBER', description: 'Normalized 0-1000 horizontal coordinate (0=left, 1000=right).' },
+        y: { type: 'NUMBER', description: 'Normalized 0-1000 vertical coordinate (0=top, 1000=bottom).' },
         button: { type: 'STRING', description: 'Mouse button to click: "left" (default), "right", or "middle".' },
-        doubleClick: { type: 'BOOLEAN', description: 'Set to true to double-click (e.g. to open an app or select a word).' },
-        normalized: { type: 'BOOLEAN', description: 'Set to true if coordinates are on a 0-1000 normalized scale.' }
+        doubleClick: { type: 'BOOLEAN', description: 'Set to true to double-click (e.g. to open an app or desktop icon).' },
+        normalized: { type: 'BOOLEAN', description: 'Defaults to true. Set to false only if passing raw physical pixels.' }
       },
       required: ['x', 'y']
     }
   },
   {
     name: 'mouse_move',
-    description: 'Move the mouse cursor smoothly to coordinates (x, y) without clicking. Use to hover over elements or preview locations.',
+    description: 'Move the mouse cursor smoothly to coordinates (x, y) without clicking. Use 0-1000 normalized scale.',
     parameters: {
       type: 'OBJECT',
       properties: {
-        x: { type: 'NUMBER', description: 'Horizontal coordinate.' },
-        y: { type: 'NUMBER', description: 'Vertical coordinate.' },
-        normalized: { type: 'BOOLEAN', description: 'Set to true if coordinates are on a 0-1000 normalized scale.' }
+        x: { type: 'NUMBER', description: 'Normalized 0-1000 horizontal coordinate (0=left, 1000=right).' },
+        y: { type: 'NUMBER', description: 'Normalized 0-1000 vertical coordinate (0=top, 1000=bottom).' },
+        normalized: { type: 'BOOLEAN', description: 'Defaults to true.' }
       },
       required: ['x', 'y']
     }
   },
   {
     name: 'mouse_drag',
-    description: 'Click and drag from (startX, startY) to (endX, endY). Use to drag and drop files, move windows, or select text.',
+    description: 'Click and drag from (startX, startY) to (endX, endY) using 0-1000 normalized coordinates. Use to drag files, move windows, or select text.',
     parameters: {
       type: 'OBJECT',
       properties: {
-        startX: { type: 'NUMBER', description: 'Starting horizontal coordinate.' },
-        startY: { type: 'NUMBER', description: 'Starting vertical coordinate.' },
-        endX: { type: 'NUMBER', description: 'Ending horizontal coordinate.' },
-        endY: { type: 'NUMBER', description: 'Ending vertical coordinate.' },
-        normalized: { type: 'BOOLEAN', description: 'Set to true if coordinates are on a 0-1000 normalized scale.' }
+        startX: { type: 'NUMBER', description: 'Starting horizontal coordinate (0-1000).' },
+        startY: { type: 'NUMBER', description: 'Starting vertical coordinate (0-1000).' },
+        endX: { type: 'NUMBER', description: 'Ending horizontal coordinate (0-1000).' },
+        endY: { type: 'NUMBER', description: 'Ending vertical coordinate (0-1000).' },
+        normalized: { type: 'BOOLEAN', description: 'Defaults to true.' }
       },
       required: ['startX', 'startY', 'endX', 'endY']
     }
@@ -188,14 +191,272 @@ const TOOL_DEFINITIONS = [
       },
       required: ['serverName', 'toolName']
     }
+  },
+  {
+    name: 'memory_save',
+    description: 'Save an important fact, project decision, technical detail, or user preference permanently into persistent long-term memory and Obsidian Second Brain. Use proactively whenever Ryan shares preferences, project context, or architectural decisions.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        category: { type: 'STRING', description: 'Category: "preference", "project", "system", or "fact".' },
+        key: { type: 'STRING', description: 'Subject or entity name (e.g. "Audio Settings", "Ryan", "Game Project").' },
+        value: { type: 'STRING', description: 'The exact observation, preference, or detail to remember.' }
+      },
+      required: ['category', 'key', 'value']
+    }
+  },
+  {
+    name: 'memory_search',
+    description: 'Search persistent long-term memory, knowledge graph, past session logs, and Obsidian Second Brain for relevant facts, project details, or user preferences.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        query: { type: 'STRING', description: 'Keyword or topic to search for in memory.' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'memory_log_task',
+    description: 'Log an accomplished milestone or queue a next step in the persistent project task tracker and session chronicle.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        taskDescription: { type: 'STRING', description: 'Clear description of the milestone or task.' },
+        status: { type: 'STRING', description: 'Status: "completed" or "in-progress".' },
+        details: { type: 'STRING', description: 'Optional extra technical context or notes.' }
+      },
+      required: ['taskDescription']
+    }
+  },
+  {
+    name: 'chain_actions',
+    description: 'Execute a sequential chain of desktop actions in rapid succession with micro-delays between steps (e.g. click a field, type text, press Enter, hotkeys). Ideal for atomic workflows like form entry, dialog submission, or rapid multi-step GUI navigation.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        actions: {
+          type: 'ARRAY',
+          description: 'Ordered list of action objects to execute sequentially.',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              tool: { type: 'STRING', description: 'Tool name to call (e.g. "mouse_click", "keyboard_type", "keyboard_hotkey", "open_application", "execute_command").' },
+              args: { type: 'OBJECT', description: 'Arguments for the tool.' },
+              delayAfterMs: { type: 'NUMBER', description: 'Optional pause in milliseconds after executing this step (default: 250ms).' }
+            },
+            required: ['tool', 'args']
+          }
+        },
+        goalDescription: { type: 'STRING', description: 'Brief description of the intended multi-step outcome.' }
+      },
+      required: ['actions']
+    }
+  },
+  {
+    name: 'verify_screen',
+    description: 'Force an immediate high-resolution screen snapshot capture to visually verify the state of a window, dialog, or UI element after taking actions.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        focusArea: { type: 'STRING', description: 'Optional description of what to verify on screen (e.g. "save dialog", "terminal output", "browser tab").' }
+      }
+    }
+  },
+  {
+    name: 'sentry_watch',
+    description: 'Activate autonomous Sentry Mode to watch Ryan\'s PC for a specific condition (e.g. when a build finishes, a process exits, high CPU/RAM usage drops, or a timer expires). Runs autonomously in the background and proactively alerts Ryan via voice chime and speech when triggered.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        watchType: { type: 'STRING', description: 'Type of sentry: "process" (watch a program/script), "telemetry" (watch CPU/RAM), "timer" (countdown timer), or "command_output" (watch output of a command).' },
+        target: { type: 'STRING', description: 'Target process name (e.g. "node", "cargo", "git"), threshold (e.g. "cpu>80"), or timer duration in seconds.' },
+        condition: { type: 'STRING', description: 'Trigger condition: "exits", "starts", "stabilizes", or "expires".' },
+        alertMessage: { type: 'STRING', description: 'The exact spoken alert message Gemini should say when the trigger fires (e.g. "Ryan, your PowerShell build has finished!").' }
+      },
+      required: ['watchType', 'alertMessage']
+    }
+  },
+  {
+    name: 'sentry_status',
+    description: 'Check active sentry watchers or cancel an active watcher.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        action: { type: 'STRING', description: '"list" to inspect active sentries, or "cancel" to cancel.' },
+        sentryIndex: { type: 'NUMBER', description: 'Index of sentry to cancel.' }
+      }
+    }
   }
 ];
 
+const MCP_SERVER_METADATA = {
+  'memory': {
+    displayName: 'Persistent Memory & Graph',
+    description: 'Knowledge graph, user preferences, past session chronicle, and Obsidian Second Brain sync.',
+    icon: '🧠',
+    category: 'Memory'
+  },
+  'filesystem': {
+    displayName: 'Filesystem Driver',
+    description: 'Direct file reading, writing, directory listing, file moving, and filesystem inspection.',
+    icon: '📁',
+    category: 'System'
+  },
+  'github': {
+    displayName: 'GitHub Integration',
+    description: 'Inspect repositories, pull requests, issue tracking, and global code searches.',
+    icon: '🐙',
+    category: 'Development'
+  },
+  'chrome-devtools-mcp': {
+    displayName: 'Chrome DevTools Automation',
+    description: 'Live browser page automation, element clicks, DOM evaluation, and page screenshots.',
+    icon: '🌐',
+    category: 'Browser'
+  },
+  'context7': {
+    displayName: 'Context7 Technical Docs',
+    description: 'Real-time documentation search and API lookups across libraries and frameworks.',
+    icon: '📚',
+    category: 'Knowledge'
+  },
+  'tauri': {
+    displayName: 'Tauri Desktop Runtime',
+    description: 'Tauri application window automation, IPC events, and Webview interaction.',
+    icon: '⚡',
+    category: 'System'
+  },
+  'firebase': {
+    displayName: 'Firebase Cloud Platform',
+    description: 'Firestore databases, security rules, authentication, and hosting deployment.',
+    icon: '🔥',
+    category: 'Cloud'
+  },
+  'gcloud': {
+    displayName: 'Google Cloud Platform',
+    description: 'GCloud command execution, project management, and Cloud SDK services.',
+    icon: '☁️',
+    category: 'Cloud'
+  },
+  'genkit-mcp-server': {
+    displayName: 'Genkit AI Workflows',
+    description: 'Flow execution, runtime telemetry, traces, and Genkit documentation.',
+    icon: '🤖',
+    category: 'AI'
+  }
+};
+
 class ToolsManager {
-  constructor(eventEmitter) {
+  constructor(eventEmitter, initialEnabledServers = null) {
     this.emitter = eventEmitter;
+    this.memoryManager = new MemoryManager();
     this.mcpServersPath = path.join(os.homedir(), '.gemini', 'antigravity', 'mcp');
+    this.mcpConfigPath = path.join(os.homedir(), '.gemini', 'config', 'mcp_config.json');
+    this.mcpConfig = this.loadMcpConfig();
     this.availableMcpServers = this.discoverMcpServers();
+    this.enabledMcpServers = initialEnabledServers || ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7'];
+    this.activeSentries = [];
+    this.screenCaptureProvider = null;
+  }
+
+  loadMcpConfig() {
+    try {
+      if (fs.existsSync(this.mcpConfigPath)) {
+        return JSON.parse(fs.readFileSync(this.mcpConfigPath, 'utf-8'));
+      }
+    } catch (e) {
+      console.warn('[ToolsManager] Warning reading mcp_config.json:', e.message);
+    }
+    return { mcpServers: {} };
+  }
+
+  setEnabledMcpServers(servers) {
+    if (Array.isArray(servers)) {
+      this.enabledMcpServers = [...servers];
+      console.log('[ToolsManager] Enabled MCP servers updated:', this.enabledMcpServers);
+    }
+  }
+
+  isMcpServerEnabled(serverName) {
+    if (!this.enabledMcpServers || !Array.isArray(this.enabledMcpServers)) return true;
+    return this.enabledMcpServers.includes(serverName);
+  }
+
+  getMcpServersDetailed(customEnabledList = null) {
+    const enabled = customEnabledList || this.enabledMcpServers || [];
+    const discovered = this.discoverMcpServers();
+    const result = [];
+
+    for (const serverName of discovered) {
+      const serverDir = path.join(this.mcpServersPath, serverName);
+      let tools = [];
+      try {
+        const files = fs.readdirSync(serverDir).filter(f => f.endsWith('.json'));
+        tools = files.map(f => {
+          try {
+            const raw = fs.readFileSync(path.join(serverDir, f), 'utf-8');
+            const parsed = JSON.parse(raw);
+            return {
+              name: parsed.name || f.replace('.json', ''),
+              description: parsed.description || 'MCP Tool',
+              parameters: parsed.parameters || {}
+            };
+          } catch (e) {
+            return { name: f.replace('.json', ''), description: 'Tool schema' };
+          }
+        });
+      } catch (e) {}
+
+      const meta = MCP_SERVER_METADATA[serverName] || {
+        displayName: serverName,
+        description: `Local Model Context Protocol server for ${serverName}.`,
+        icon: '🔌',
+        category: 'Integration'
+      };
+
+      result.push({
+        id: serverName,
+        displayName: meta.displayName,
+        description: meta.description,
+        icon: meta.icon,
+        category: meta.category,
+        toolCount: tools.length,
+        isEnabled: enabled.includes(serverName),
+        tools
+      });
+    }
+
+    return result;
+  }
+
+  getEnabledMcpContext() {
+    const detailed = this.getMcpServersDetailed();
+    const activeServers = detailed.filter(s => s.isEnabled);
+    if (activeServers.length === 0) {
+      return `### ACTIVE MODEL CONTEXT PROTOCOL (MCP) SERVERS:
+(No MCP servers currently toggled ON in the Left Window Switchboard. Ryan can enable servers anytime).`;
+    }
+
+    const lines = [
+      '### ACTIVE MODEL CONTEXT PROTOCOL (MCP) SERVERS (AVAILABLE FOR PROACTIVE CALLING):',
+      'Ryan has enabled the following MCP servers. You have permission and are expected to use their capabilities proactively by calling mcp_call_tool(serverName, toolName, args):'
+    ];
+
+    for (const s of activeServers) {
+      const toolNames = s.tools.map(t => t.name).slice(0, 8).join(', ');
+      const extra = s.tools.length > 8 ? ` (+${s.tools.length - 8} more)` : '';
+      lines.push(`- **${s.id}** (${s.displayName}): [${toolNames}${extra}] - ${s.description}`);
+      if (s.id === 'github') {
+        lines.push('  * GitHub Identity: Account "batch15studios" (email: batch15studios@gmail.com).');
+        lines.push('  * Accessible Repos: "batch15studios/gemini-desktop-live", "batch15studios/batchmail", "batch15studios/BatchMail_v1.2", "batch15studios/BatchScribe_V_1.0.0", "batch15studios/desktop-tutorial", "batch15studios/edl-ng-windows-arm64", "batch15studios/Strategic-Insights-Pensacola".');
+        lines.push('  * Always use owner: "batch15studios" when calling GitHub tools (never "Ryan" or "batf15").');
+        lines.push('  * If Ryan asks to "pull" or "sync" the local repo on disk, use execute_command("git pull") or mcp_call_tool("github", "list_commits", { repo: "gemini-desktop-live" }).');
+      }
+    }
+
+    lines.push('\nRULE: Whenever Ryan requests actions relating to these services (e.g. check GitHub, search filesystem, read memory, query docs), CALL `mcp_call_tool` PROACTIVELY.');
+    return lines.join('\n');
   }
 
   discoverMcpServers() {
@@ -242,13 +503,13 @@ class ToolsManager {
           result = await this.openApplication(args.target);
           break;
         case 'mouse_click':
-          result = await this.mouseClick(args.x, args.y, args.button, args.doubleClick, args.normalized);
+          result = await this.mouseClick(args.x, args.y, args.button, args.doubleClick, args.normalized !== false);
           break;
         case 'mouse_move':
-          result = await this.mouseMove(args.x, args.y, args.normalized);
+          result = await this.mouseMove(args.x, args.y, args.normalized !== false);
           break;
         case 'mouse_drag':
-          result = await this.mouseDrag(args.startX, args.startY, args.endX, args.endY, args.normalized);
+          result = await this.mouseDrag(args.startX, args.startY, args.endX, args.endY, args.normalized !== false);
           break;
         case 'mouse_scroll':
           result = await this.mouseScroll(args.deltaY);
@@ -268,6 +529,27 @@ class ToolsManager {
         case 'mcp_call_tool':
           result = await this.callMcpTool(args.serverName, args.toolName, args.args || {});
           break;
+        case 'memory_save':
+          result = this.memoryManager.saveMemoryItem(args.category, args.key, args.value);
+          break;
+        case 'memory_search':
+          result = this.memoryManager.searchMemory(args.query);
+          break;
+        case 'memory_log_task':
+          result = this.memoryManager.logTask(args.taskDescription, args.status, args.details);
+          break;
+        case 'chain_actions':
+          result = await this.chainActions(args.actions, args.goalDescription);
+          break;
+        case 'verify_screen':
+          result = await this.verifyScreenState(args.focusArea);
+          break;
+        case 'sentry_watch':
+          result = await this.startSentryWatch(args);
+          break;
+        case 'sentry_status':
+          result = this.getSentryStatus(args?.action, args?.sentryIndex);
+          break;
         default:
           result = { error: `Tool '${name}' not implemented.` };
       }
@@ -282,6 +564,17 @@ class ToolsManager {
   }
 
   runPowerShell(command) {
+    const check = safetyGuard.validateCommand(command);
+    if (!check.allowed) {
+      console.warn(`[ToolsManager] PowerShell command intercepted by Windows Safety Guard: ${check.reason}`);
+      this.emitter?.emit('safety_blocked', { command, reason: check.reason });
+      return Promise.resolve({
+        exitCode: 1,
+        stdout: '',
+        stderr: `[WINDOWS SYSTEM INTEGRITY SHIELD] ${check.reason}`
+      });
+    }
+
     return new Promise((resolve) => {
       exec(`powershell -NoProfile -NonInteractive -Command "${command.replace(/"/g, '`"')}"`, {
         windowsHide: true,
@@ -306,10 +599,32 @@ class ToolsManager {
   }
 
   async writeFile(filePath, content) {
-    const resolved = path.resolve(filePath);
-    fs.mkdirSync(path.dirname(resolved), { recursive: true });
-    fs.writeFileSync(resolved, content, 'utf-8');
-    return { success: true, path: resolved, bytesWritten: Buffer.byteLength(content) };
+    try {
+      safetyGuard.assertPathSafety(filePath, 'write');
+      const resolved = path.resolve(filePath);
+      fs.mkdirSync(path.dirname(resolved), { recursive: true });
+      fs.writeFileSync(resolved, content, 'utf-8');
+      await this.triggerVisualFeedbackHook('write_file');
+      return { success: true, path: resolved, bytesWritten: Buffer.byteLength(content) };
+    } catch (err) {
+      console.warn('[ToolsManager] writeFile blocked or failed:', err.message);
+      return { error: err.message };
+    }
+  }
+
+  async deleteFile(filePath) {
+    try {
+      safetyGuard.assertPathSafety(filePath, 'delete');
+      const resolved = path.resolve(filePath);
+      if (fs.existsSync(resolved)) {
+        fs.unlinkSync(resolved);
+        return { success: true, deleted: resolved };
+      }
+      return { error: `File not found: ${resolved}` };
+    } catch (err) {
+      console.warn('[ToolsManager] deleteFile blocked or failed:', err.message);
+      return { error: err.message };
+    }
   }
 
   async listDirectory(dirPath) {
@@ -532,6 +847,12 @@ class ToolsManager {
   }
 
   async callMcpTool(serverName, toolName, parameters = {}) {
+    if (!this.isMcpServerEnabled(serverName)) {
+      return {
+        error: `MCP server '${serverName}' is currently toggled OFF in the Left Window Switchboard. Ryan can enable it in the Tools & MCP tab whenever needed.`
+      };
+    }
+
     const serverDir = path.join(this.mcpServersPath, serverName);
     if (!fs.existsSync(serverDir)) {
       return { error: `MCP server '${serverName}' not found.` };
@@ -541,18 +862,206 @@ class ToolsManager {
       return { error: `Tool '${toolName}' not found in MCP server '${serverName}'.` };
     }
 
+    // 1. Memory Server
+    if (serverName === 'memory') {
+      return this.memoryManager.handleMcpMemoryCall(toolName, parameters);
+    }
+
+    // 2. Filesystem Server
     if (serverName === 'filesystem') {
-      if (toolName === 'read_file' || toolName === 'read_text_file') {
-        return await this.readFile(parameters.path);
-      }
-      if (toolName === 'write_file') {
-        return await this.writeFile(parameters.path, parameters.content);
-      }
-      if (toolName === 'list_directory') {
-        return await this.listDirectory(parameters.path || process.cwd());
+      try {
+        if (toolName === 'read_file' || toolName === 'read_text_file') {
+          return await this.readFile(parameters.path);
+        }
+        if (toolName === 'write_file') {
+          safetyGuard.assertPathSafety(parameters.path, 'write');
+          return await this.writeFile(parameters.path, parameters.content);
+        }
+        if (toolName === 'list_directory') {
+          return await this.listDirectory(parameters.path || process.cwd());
+        }
+        if (toolName === 'get_file_info') {
+          const stats = fs.statSync(path.resolve(parameters.path));
+          return { size: stats.size, isDirectory: stats.isDirectory(), modified: stats.mtime };
+        }
+        if (toolName === 'move_file') {
+          safetyGuard.assertPathSafety(parameters.source, 'delete');
+          safetyGuard.assertPathSafety(parameters.destination, 'write');
+          fs.renameSync(path.resolve(parameters.source), path.resolve(parameters.destination));
+          return { success: true, moved: `${parameters.source} -> ${parameters.destination}` };
+        }
+      } catch (fsErr) {
+        return { error: fsErr.message };
       }
     }
 
+    // 3. GitHub Server (Direct REST API execution with Ryan's GitHub Token)
+    if (serverName === 'github') {
+      const ghConfig = this.mcpConfig?.mcpServers?.github;
+      const ghToken = ghConfig?.env?.GITHUB_PERSONAL_ACCESS_TOKEN || process.env.GITHUB_TOKEN;
+      if (ghToken) {
+        try {
+          const headers = {
+            'Authorization': `Bearer ${ghToken}`,
+            'User-Agent': 'Gemini-Desktop-Assistant',
+            'Accept': 'application/vnd.github.v3+json'
+          };
+
+          // Resolve owner & repo with automatic normalization
+          let owner = parameters.owner || 'batch15studios';
+          let repo = parameters.repo || '';
+          if (['ryan', 'batf15', 'batch15', 'batch15studio'].includes(owner.toLowerCase())) {
+            owner = 'batch15studios';
+          }
+          if (repo.includes('/')) {
+            const parts = repo.split('/');
+            owner = parts[0];
+            repo = parts[1];
+          }
+          if (!repo && (toolName === 'list_commits' || toolName === 'get_file_contents')) {
+            repo = 'gemini-desktop-live';
+          }
+
+          if (toolName === 'search_repositories') {
+            const q = parameters.query || '';
+            // If query is user-focused or empty, query user's repos directly
+            if (!q || q.includes('batf15') || q.includes('batch15') || q.includes('user:') || q.toLowerCase().includes('gemini')) {
+              const resp = await fetch('https://api.github.com/user/repos?per_page=50&sort=updated', { headers });
+              const repos = await resp.json();
+              if (Array.isArray(repos)) {
+                return {
+                  totalCount: repos.length,
+                  user: 'batch15studios',
+                  items: repos.slice(0, 10).map(r => ({
+                    name: r.full_name,
+                    description: r.description,
+                    private: r.private,
+                    html_url: r.html_url,
+                    updated_at: r.updated_at
+                  }))
+                };
+              }
+            }
+            const encodedQ = encodeURIComponent(q);
+            const resp = await fetch(`https://api.github.com/search/repositories?q=${encodedQ}`, { headers });
+            const data = await resp.json();
+            return {
+              totalCount: data.total_count,
+              items: (data.items || []).slice(0, 5).map(r => ({ name: r.full_name, description: r.description, url: r.html_url }))
+            };
+          }
+
+          if (toolName === 'list_commits') {
+            const targetRepo = repo || 'gemini-desktop-live';
+            const url = `https://api.github.com/repos/${owner}/${targetRepo}/commits?per_page=${parameters.per_page || 10}`;
+            const resp = await fetch(url, { headers });
+            const data = await resp.json();
+            if (Array.isArray(data)) {
+              return {
+                repo: `${owner}/${targetRepo}`,
+                commits: data.map(c => ({
+                  sha: c.sha.substring(0, 7),
+                  author: c.commit.author.name,
+                  date: c.commit.author.date,
+                  message: c.commit.message
+                }))
+              };
+            }
+            return data;
+          }
+
+          if (toolName === 'get_file_contents') {
+            const targetRepo = repo || 'gemini-desktop-live';
+            const filePath = parameters.path || 'package.json';
+            const resp = await fetch(`https://api.github.com/repos/${owner}/${targetRepo}/contents/${filePath}`, { headers });
+            const data = await resp.json();
+            if (data.content && data.encoding === 'base64') {
+              data.decodedContent = Buffer.from(data.content, 'base64').toString('utf-8');
+            }
+            return data;
+          }
+
+          if (toolName === 'list_issues') {
+            const targetRepo = repo || 'gemini-desktop-live';
+            const url = targetRepo
+              ? `https://api.github.com/repos/${owner}/${targetRepo}/issues`
+              : `https://api.github.com/user/issues`;
+            const resp = await fetch(url, { headers });
+            const data = await resp.json();
+            return {
+              status: resp.status,
+              issues: Array.isArray(data) ? data.slice(0, 10).map(i => ({ number: i.number, title: i.title, state: i.state, url: i.html_url })) : data
+            };
+          }
+
+          if (toolName === 'create_issue') {
+            const targetRepo = repo || 'gemini-desktop-live';
+            const resp = await fetch(`https://api.github.com/repos/${owner}/${targetRepo}/issues`, {
+              method: 'POST',
+              headers: { ...headers, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: parameters.title,
+                body: parameters.body || ''
+              })
+            });
+            return await resp.json();
+          }
+
+          if (toolName === 'list_pull_requests') {
+            const targetRepo = repo || 'gemini-desktop-live';
+            const resp = await fetch(`https://api.github.com/repos/${owner}/${targetRepo}/pulls`, { headers });
+            const data = await resp.json();
+            return { pulls: Array.isArray(data) ? data.slice(0, 10).map(p => ({ number: p.number, title: p.title, state: p.state })) : data };
+          }
+
+          if (toolName === 'search_code') {
+            const targetRepo = repo ? `+repo:${owner}/${repo}` : `+user:${owner}`;
+            const q = encodeURIComponent(parameters.q || parameters.query || '') + targetRepo;
+            const resp = await fetch(`https://api.github.com/search/code?q=${q}`, { headers });
+            const data = await resp.json();
+            return {
+              totalCount: data.total_count,
+              items: (data.items || []).slice(0, 5).map(item => ({ name: item.name, path: item.path, repository: item.repository?.full_name }))
+            };
+          }
+        } catch (ghErr) {
+          console.warn('[ToolsManager] GitHub API call error:', ghErr);
+          return { error: ghErr.message };
+        }
+      } else {
+        return { error: 'No GitHub Personal Access Token configured in mcp_config.json' };
+      }
+    }
+
+    // 4. Context7 Documentation Server (Direct HTTP call)
+    if (serverName === 'context7') {
+      const c7Config = this.mcpConfig?.mcpServers?.context7;
+      const c7Url = c7Config?.serverUrl || 'https://mcp.context7.com/mcp';
+      const c7Auth = c7Config?.headers?.Authorization;
+      if (c7Auth) {
+        try {
+          const resp = await fetch(c7Url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': c7Auth
+            },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              id: Date.now(),
+              method: `tools/${toolName}`,
+              params: parameters
+            })
+          });
+          const data = await resp.json();
+          return data.result || data;
+        } catch (c7Err) {
+          console.warn('[ToolsManager] Context7 call error:', c7Err);
+        }
+      }
+    }
+
+    // 5. Schema Read & Standard Execution Confirmation
     let schema = {};
     try {
       schema = JSON.parse(fs.readFileSync(schemaFile, 'utf-8'));
@@ -584,18 +1093,32 @@ class ToolsManager {
     return { width, height };
   }
 
-  normalizeCoordinate(val, max) {
-    if (typeof val !== 'number') val = parseFloat(val) || 0;
-    // 0.0 to 1.0 (float percentage)
-    if (val > 0 && val <= 1.0) {
-      return Math.round(val * max);
+  resolveCoordinates(x, y, isNormalized = true) {
+    const bounds = this.getDisplayBounds();
+    const screenW = bounds.width;   // 1536
+    const screenH = bounds.height;  // 864
+
+    let numX = parseFloat(x) || 0;
+    let numY = parseFloat(y) || 0;
+
+    let targetX, targetY;
+
+    if (isNormalized === false) {
+      // Raw physical pixels requested explicitly
+      targetX = numX;
+      targetY = numY;
+    } else {
+      // Standard normalized coordinates: handles 0.0-1.0 float ratios or 0-1000 integer grid
+      const isRatio = (numX <= 1.0 && numY <= 1.0 && (numX > 0 || numY > 0));
+      targetX = isRatio ? (numX * screenW) : ((numX / 1000) * screenW);
+      targetY = isRatio ? (numY * screenH) : ((numY / 1000) * screenH);
     }
-    // 0 to 1000 scale
-    if (val > 1.0 && val <= 1000 && max > 1000) {
-      return Math.round((val / 1000) * max);
-    }
-    // Direct pixel value
-    return Math.round(val);
+
+    // Clamp strictly within screen boundaries to guarantee validity
+    targetX = Math.max(0, Math.min(Math.round(targetX), screenW - 1));
+    targetY = Math.max(0, Math.min(Math.round(targetY), screenH - 1));
+
+    return { x: targetX, y: targetY };
   }
 
   runCursorDriver(driverArgs) {
@@ -616,44 +1139,236 @@ class ToolsManager {
     });
   }
 
-  async mouseClick(x, y, button = 'left', doubleClick = false, isNormalized = false) {
-    const bounds = this.getDisplayBounds();
-    const finalX = isNormalized ? Math.round((x / 1000) * bounds.width) : this.normalizeCoordinate(x, bounds.width);
-    const finalY = isNormalized ? Math.round((y / 1000) * bounds.height) : this.normalizeCoordinate(y, bounds.height);
-    return await this.runCursorDriver(`click ${finalX} ${finalY} ${button} ${doubleClick ? 'true' : 'false'}`);
+  async mouseClick(x, y, button = 'left', doubleClick = false, isNormalized = true) {
+    const coords = this.resolveCoordinates(x, y, isNormalized !== false);
+    console.log(`[ToolsManager] mouse_click: Input(${x}, ${y}) -> Target(${coords.x}px, ${coords.y}px), Button: ${button}`);
+    const res = await this.runCursorDriver(`click ${coords.x} ${coords.y} ${button} ${doubleClick ? 'true' : 'false'}`);
+    await this.triggerVisualFeedbackHook('mouse_click');
+    return res;
   }
 
-  async mouseMove(x, y, isNormalized = false) {
-    const bounds = this.getDisplayBounds();
-    const finalX = isNormalized ? Math.round((x / 1000) * bounds.width) : this.normalizeCoordinate(x, bounds.width);
-    const finalY = isNormalized ? Math.round((y / 1000) * bounds.height) : this.normalizeCoordinate(y, bounds.height);
-    return await this.runCursorDriver(`move ${finalX} ${finalY}`);
+  async mouseMove(x, y, isNormalized = true) {
+    const coords = this.resolveCoordinates(x, y, isNormalized !== false);
+    console.log(`[ToolsManager] mouse_move: Input(${x}, ${y}) -> Target(${coords.x}px, ${coords.y}px)`);
+    return await this.runCursorDriver(`move ${coords.x} ${coords.y}`);
   }
 
-  async mouseDrag(startX, startY, endX, endY, isNormalized = false) {
-    const bounds = this.getDisplayBounds();
-    const sx = isNormalized ? Math.round((startX / 1000) * bounds.width) : this.normalizeCoordinate(startX, bounds.width);
-    const sy = isNormalized ? Math.round((startY / 1000) * bounds.height) : this.normalizeCoordinate(startY, bounds.height);
-    const ex = isNormalized ? Math.round((endX / 1000) * bounds.width) : this.normalizeCoordinate(endX, bounds.width);
-    const ey = isNormalized ? Math.round((endY / 1000) * bounds.height) : this.normalizeCoordinate(endY, bounds.height);
-    return await this.runCursorDriver(`drag ${sx} ${sy} ${ex} ${ey}`);
+  async mouseDrag(startX, startY, endX, endY, isNormalized = true) {
+    const start = this.resolveCoordinates(startX, startY, isNormalized !== false);
+    const end = this.resolveCoordinates(endX, endY, isNormalized !== false);
+    console.log(`[ToolsManager] mouse_drag: From(${start.x}, ${start.y}) -> To(${end.x}, ${end.y})`);
+    const res = await this.runCursorDriver(`drag ${start.x} ${start.y} ${end.x} ${end.y}`);
+    await this.triggerVisualFeedbackHook('mouse_drag');
+    return res;
   }
 
   async mouseScroll(deltaY) {
-    return await this.runCursorDriver(`scroll ${Math.round(deltaY || -120)}`);
+    const res = await this.runCursorDriver(`scroll ${Math.round(deltaY || -120)}`);
+    await this.triggerVisualFeedbackHook('mouse_scroll');
+    return res;
   }
 
   async keyboardType(text, pressEnter = false) {
     const cleanText = (text || '').replace(/"/g, '""');
-    return await this.runCursorDriver(`type "${cleanText}" ${pressEnter ? 'true' : 'false'}`);
+    const res = await this.runCursorDriver(`type "${cleanText}" ${pressEnter ? 'true' : 'false'}`);
+    await this.triggerVisualFeedbackHook('keyboard_type');
+    return res;
   }
 
   async keyboardHotkey(combo) {
-    return await this.runCursorDriver(`hotkey "${(combo || '').trim()}"`);
+    const res = await this.runCursorDriver(`hotkey "${(combo || '').trim()}"`);
+    await this.triggerVisualFeedbackHook('keyboard_hotkey');
+    return res;
   }
 
   async getCursorPosition() {
     return await this.runCursorDriver('getpos');
+  }
+
+  // --- Visual Feedback & Perception Synchronization ---
+  setScreenCaptureProvider(provider) {
+    this.screenCaptureProvider = provider;
+  }
+
+  async captureVisualFeedback() {
+    if (typeof this.screenCaptureProvider === 'function') {
+      try {
+        const base64Jpeg = await this.screenCaptureProvider();
+        if (base64Jpeg) {
+          this.emitter?.emit('screen_action_feedback', base64Jpeg);
+          return base64Jpeg;
+        }
+      } catch (e) {
+        console.warn('[ToolsManager] Screen capture feedback warning:', e.message);
+      }
+    }
+    return null;
+  }
+
+  async triggerVisualFeedbackHook(actionName) {
+    // 180ms delay for Windows UI animations or modal renders to complete
+    await new Promise(r => setTimeout(r, 180));
+    return await this.captureVisualFeedback();
+  }
+
+  // --- Autonomous Action Chaining & Multi-Step Goals ---
+  async chainActions(actions, goalDescription = '') {
+    if (!Array.isArray(actions) || actions.length === 0) {
+      return { error: 'Actions must be a non-empty array of action objects.' };
+    }
+
+    const stepResults = [];
+    console.log(`[ToolsManager] Starting action chain (${actions.length} steps): "${goalDescription}"`);
+
+    for (let i = 0; i < actions.length; i++) {
+      const step = actions[i];
+      console.log(`[ToolsManager] Action Chain Step [${i + 1}/${actions.length}]: ${step.tool}`, step.args);
+      const res = await this.executeTool(step.tool, step.args);
+      stepResults.push({ step: i + 1, tool: step.tool, result: res });
+
+      if (res && res.error) {
+        console.warn(`[ToolsManager] Action Chain stopped at step ${i + 1} due to error:`, res.error);
+        return {
+          status: 'partial_failure',
+          failedAtStep: i + 1,
+          error: res.error,
+          completedSteps: stepResults
+        };
+      }
+
+      const pause = typeof step.delayAfterMs === 'number' ? step.delayAfterMs : 250;
+      if (pause > 0 && i < actions.length - 1) {
+        await new Promise(r => setTimeout(r, pause));
+      }
+    }
+
+    await this.triggerVisualFeedbackHook('chain_actions');
+
+    return {
+      status: 'completed',
+      goalDescription,
+      totalSteps: actions.length,
+      stepResults
+    };
+  }
+
+  async verifyScreenState(focusArea = '') {
+    await this.captureVisualFeedback();
+    return {
+      status: 'screen_captured',
+      focusArea,
+      timestamp: Date.now(),
+      message: 'High-resolution screen frame refreshed in your visual perception buffer. Analyze current UI layout to confirm action outcome.'
+    };
+  }
+
+  // --- Autonomous Sentry Watcher Engine ---
+  startSentryWatch(args) {
+    const { watchType, target, condition = 'exits', alertMessage } = args;
+    const sentry = {
+      id: Date.now(),
+      watchType: watchType || 'timer',
+      target: (target || '').trim(),
+      condition: condition.toLowerCase(),
+      alertMessage: alertMessage || 'Sentry condition triggered.',
+      startTime: Date.now(),
+      active: true,
+      timer: null
+    };
+
+    if (sentry.watchType === 'timer') {
+      const sec = parseFloat(sentry.target) || 60;
+      sentry.timer = setTimeout(() => {
+        this.triggerSentry(sentry);
+      }, sec * 1000);
+    } else if (sentry.watchType === 'process') {
+      const procName = sentry.target.toLowerCase().replace('.exe', '');
+      let wasRunning = false;
+      const interval = setInterval(async () => {
+        if (!sentry.active) {
+          clearInterval(interval);
+          return;
+        }
+        const isRunning = await this.checkProcessRunning(procName);
+        if (isRunning) wasRunning = true;
+        if (sentry.condition === 'exits' && wasRunning && !isRunning) {
+          clearInterval(interval);
+          this.triggerSentry(sentry);
+        } else if (sentry.condition === 'starts' && isRunning) {
+          clearInterval(interval);
+          this.triggerSentry(sentry);
+        }
+      }, 3000);
+      sentry.timer = interval;
+    } else if (sentry.watchType === 'telemetry') {
+      const interval = setInterval(() => {
+        if (!sentry.active) {
+          clearInterval(interval);
+          return;
+        }
+        const status = this.getSystemStatus();
+        const ramPct = parseFloat(status.memory.usagePercent) || 0;
+        if (sentry.target.includes('ram>') && ramPct > parseFloat(sentry.target.split('>')[1])) {
+          clearInterval(interval);
+          this.triggerSentry(sentry);
+        }
+      }, 4000);
+      sentry.timer = interval;
+    } else {
+      sentry.timer = setTimeout(() => {
+        this.triggerSentry(sentry);
+      }, 30000);
+    }
+
+    this.activeSentries.push(sentry);
+    return {
+      status: 'sentry_active',
+      sentryIndex: this.activeSentries.length - 1,
+      watchType: sentry.watchType,
+      target: sentry.target,
+      condition: sentry.condition,
+      alertMessage: sentry.alertMessage,
+      message: `Sentry armed. Watching ${sentry.target || 'target'} in background. Will proactively notify when ${sentry.condition}.`
+    };
+  }
+
+  triggerSentry(sentry) {
+    if (!sentry.active) return;
+    sentry.active = false;
+    console.log('[ToolsManager] SENTRY FIRED:', sentry.alertMessage);
+    this.emitter?.emit('sentry_fired', sentry);
+
+    if (this.memoryManager) {
+      this.memoryManager.logTask(`Sentry Alert: ${sentry.alertMessage}`, 'completed');
+    }
+  }
+
+  getSentryStatus(action = 'list', index = null) {
+    if (action === 'cancel' && index !== null && this.activeSentries[index]) {
+      const s = this.activeSentries[index];
+      s.active = false;
+      if (s.timer) clearTimeout(s.timer);
+      return { status: 'cancelled', sentry: s };
+    }
+    return {
+      activeSentriesCount: this.activeSentries.filter(s => s.active).length,
+      sentries: this.activeSentries.map((s, idx) => ({
+        index: idx,
+        type: s.watchType,
+        target: s.target,
+        active: s.active,
+        alertMessage: s.alertMessage,
+        elapsedSec: Math.round((Date.now() - s.startTime) / 1000)
+      }))
+    };
+  }
+
+  checkProcessRunning(procName) {
+    return new Promise((resolve) => {
+      exec(`powershell -NoProfile -Command "Get-Process -Name '${procName}' -ErrorAction SilentlyContinue"`, { windowsHide: true }, (err, stdout) => {
+        resolve(!!(stdout && stdout.trim().length > 0));
+      });
+    });
   }
 }
 

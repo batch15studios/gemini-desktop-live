@@ -13,8 +13,10 @@ const btnSendText = document.getElementById('btnSendText');
 
 const inputApiKey = document.getElementById('inputApiKey');
 const btnSaveKey = document.getElementById('btnSaveKey');
+const selectModel = document.getElementById('selectModel');
 const selectVoice = document.getElementById('selectVoice');
-const mcpServerList = document.getElementById('mcpServerList');
+const mcpSwitchboard = document.getElementById('mcpSwitchboard');
+const mcpActiveCountBadge = document.getElementById('mcpActiveCountBadge');
 const telCpu = document.getElementById('telCpu');
 const telRam = document.getElementById('telRam');
 
@@ -63,15 +65,26 @@ textPrompt.addEventListener('keydown', (e) => {
 
 // Connect / Disconnect Live Session
 btnConnect.addEventListener('click', async () => {
+  if (btnConnect.disabled) return;
+
   if (isConnected) {
+    btnConnect.disabled = true;
+    btnConnect.innerText = 'Disconnecting...';
     await window.assistantApi.disconnectLive();
+    btnConnect.disabled = false;
   } else {
     const key = inputApiKey.value.trim();
     const voice = selectVoice.value;
+    btnConnect.disabled = true;
     btnConnect.innerText = 'Connecting...';
     headerDot.className = 'status-dot connecting';
     liveStatusText.innerText = 'Connecting...';
-    await window.assistantApi.connectLive({ apiKey: key, voiceName: voice });
+
+    const connectConfig = { voiceName: voice };
+    if (key) connectConfig.apiKey = key;
+
+    await window.assistantApi.connectLive(connectConfig);
+    btnConnect.disabled = false;
   }
 });
 
@@ -79,15 +92,102 @@ btnConnect.addEventListener('click', async () => {
 btnSaveKey.addEventListener('click', async () => {
   const key = inputApiKey.value.trim();
   const voice = selectVoice.value;
-  await window.assistantApi.saveConfig({ apiKey: key, voiceName: voice });
+  await window.assistantApi.saveConfig({ apiKey: key, standardVoice: voice, voiceName: voice });
   btnSaveKey.innerText = 'Saved!';
   setTimeout(() => { btnSaveKey.innerText = 'Save'; }, 1800);
   addLogEntry('System', 'Configuration updated successfully.', 'system');
 });
 
+const inputGhToken = document.getElementById('inputGhToken');
+const btnSaveGhKey = document.getElementById('btnSaveGhKey');
+
+if (btnSaveGhKey) {
+  btnSaveGhKey.addEventListener('click', async () => {
+    const ghKey = inputGhToken ? inputGhToken.value.trim() : '';
+    if (ghKey) {
+      await window.assistantApi.saveConfig({ githubToken: ghKey });
+      btnSaveGhKey.innerText = 'Saved!';
+      setTimeout(() => { btnSaveGhKey.innerText = 'Save'; }, 1800);
+      addLogEntry('System', 'GitHub Personal Access Token updated for batch15studios.', 'system');
+    }
+  });
+}
+
+const inputGearsVoice = document.getElementById('inputGearsVoice');
+const btnSaveGearsVoice = document.getElementById('btnSaveGearsVoice');
+
+if (btnSaveGearsVoice) {
+  btnSaveGearsVoice.addEventListener('click', async () => {
+    const customVoice = inputGearsVoice ? inputGearsVoice.value.trim() : '';
+    await window.assistantApi.saveConfig({ gearsVoice: customVoice });
+    btnSaveGearsVoice.innerText = 'Saved!';
+    setTimeout(() => { btnSaveGearsVoice.innerText = 'Save'; }, 1800);
+    if (customVoice) {
+      addLogEntry('System', `Gears of War custom voice saved: "${customVoice}". Auto-loads when Gears skin is active.`, 'system');
+    } else {
+      addLogEntry('System', 'Gears of War custom voice cleared. Will use standard voice until configured.', 'system');
+    }
+  });
+}
+
 selectVoice.addEventListener('change', async () => {
-  await window.assistantApi.saveConfig({ voiceName: selectVoice.value });
-  addLogEntry('System', `Assistant voice changed to ${selectVoice.value}.`, 'system');
+  const chosen = selectVoice.value;
+  await window.assistantApi.saveConfig({ standardVoice: chosen, voiceName: chosen });
+  addLogEntry('System', `Standard assistant voice changed to "${chosen}".`, 'system');
+});
+
+if (window.assistantApi.onVoiceChanged) {
+  window.assistantApi.onVoiceChanged((voiceName) => {
+    const hasOption = Array.from(selectVoice.options).some(o => o.value === voiceName);
+    if (hasOption) {
+      selectVoice.value = voiceName;
+    }
+    addLogEntry('System', `Active Live voice is now "${voiceName}".`, 'system');
+  });
+}
+
+if (selectModel) {
+  selectModel.addEventListener('change', async () => {
+    const chosen = selectModel.value;
+    await window.assistantApi.saveConfig({ model: chosen });
+    addLogEntry('System', `Gemini core model changed to "${chosen}".`, 'system');
+  });
+}
+
+if (window.assistantApi.onModelChanged) {
+  window.assistantApi.onModelChanged((model) => {
+    if (selectModel) selectModel.value = model;
+    addLogEntry('System', `Active model is now "${model}".`, 'system');
+  });
+}
+
+// Skin Selection Handlers
+function setActiveSkin(skinId) {
+  document.documentElement.setAttribute('data-skin', skinId || 'default');
+  document.querySelectorAll('.skin-card').forEach(card => {
+    card.classList.toggle('active', card.dataset.skinId === (skinId || 'default'));
+  });
+}
+
+document.querySelectorAll('.skin-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const skinId = card.dataset.skinId;
+    setActiveSkin(skinId);
+    window.assistantApi.setSkin(skinId);
+    const skinName = card.querySelector('.skin-name')?.innerText || skinId;
+    addLogEntry('System', `Visual skin changed to "${skinName}".`, 'system');
+    
+    // Play the custom Marcus Fenix voice quote!
+    if (skinId === 'gears') {
+      const audio = new Audio('../../assets/gears-intro.mp3');
+      audio.volume = 0.8;
+      audio.play().catch(e => console.warn('Could not play gears intro', e));
+    }
+  });
+});
+
+window.assistantApi.onSkinChanged((skinId) => {
+  setActiveSkin(skinId);
 });
 
 // Theme Selection Handlers
@@ -104,7 +204,7 @@ document.querySelectorAll('.theme-card').forEach(card => {
     setActiveTheme(themeId);
     window.assistantApi.setTheme(themeId);
     const themeName = card.querySelector('.theme-name')?.innerText || themeId;
-    addLogEntry('System', `Interface skin changed to "${themeName}".`, 'system');
+    addLogEntry('System', `Palette changed to "${themeName}".`, 'system');
   });
 });
 
@@ -152,31 +252,149 @@ window.assistantApi.onToolActivity((activity) => {
   }
 });
 
+// Autonomous Sentry Trigger Log
+if (window.assistantApi.onSentryFired) {
+  window.assistantApi.onSentryFired((sentry) => {
+    addLogEntry('Sentry', `🚨 ALERT: ${sentry.alertMessage} (Condition: ${sentry.condition} on ${sentry.target || 'target'})`, 'system');
+  });
+}
+
+// Windows System Integrity Shield Interceptions
+if (window.assistantApi.onSafetyBlocked) {
+  window.assistantApi.onSafetyBlocked((data) => {
+    addLogEntry('🛡️ SHIELD', `BLOCKED CRITICAL SYSTEM ACTION: ${data.reason}`, 'user');
+  });
+}
+
+// MCP Switchboard Renderer & Interactive Toggles
+let detailedMcpServers = [];
+
+async function renderMcpSwitchboard() {
+  if (!mcpSwitchboard) return;
+  try {
+    detailedMcpServers = await window.assistantApi.getMcpServersDetailed();
+    if (!detailedMcpServers || detailedMcpServers.length === 0) {
+      mcpSwitchboard.innerHTML = '<div class="mcp-loading">No local MCP servers found</div>';
+      if (mcpActiveCountBadge) mcpActiveCountBadge.innerText = '0 ACTIVE';
+      return;
+    }
+
+    const activeCount = detailedMcpServers.filter(s => s.isEnabled).length;
+    if (mcpActiveCountBadge) {
+      mcpActiveCountBadge.innerText = `${activeCount} / ${detailedMcpServers.length} ACTIVE`;
+    }
+
+    mcpSwitchboard.innerHTML = detailedMcpServers.map(server => {
+      const isChecked = server.isEnabled ? 'checked' : '';
+      const activeClass = server.isEnabled ? 'active' : '';
+      const stateLabel = server.isEnabled ? 'ON' : 'OFF';
+
+      const toolChips = (server.tools || []).map(t => `
+        <span class="mcp-tool-chip" title="${(t.description || '').replace(/"/g, '&quot;')}">${t.name}</span>
+      `).join('');
+
+      return `
+        <div class="mcp-card ${activeClass}" id="mcp-card-${server.id}">
+          <div class="mcp-card-top">
+            <div class="mcp-identity">
+              <div class="mcp-icon">${server.icon || '🔌'}</div>
+              <div class="mcp-details">
+                <div class="mcp-name-row">
+                  <span class="mcp-name">${server.displayName || server.id}</span>
+                  <span class="mcp-tool-count">${server.toolCount || 0} tools</span>
+                </div>
+                <div class="mcp-desc">${server.description || ''}</div>
+              </div>
+            </div>
+            <div class="mcp-controls">
+              <span class="mcp-status-pill" id="mcp-state-${server.id}">${stateLabel}</span>
+              <label class="mcp-switch">
+                <input type="checkbox" data-server="${server.id}" ${isChecked} class="mcp-toggle-input">
+                <span class="mcp-slider"></span>
+              </label>
+            </div>
+          </div>
+          ${server.tools && server.tools.length > 0 ? `
+            <button class="mcp-expand-btn" data-target="mcp-drawer-${server.id}">
+              <span class="caret">▸</span> View Tools (${server.tools.length})
+            </button>
+            <div class="mcp-tools-drawer" id="mcp-drawer-${server.id}">
+              ${toolChips}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+
+    // Attach Toggle Checkbox Handlers
+    mcpSwitchboard.querySelectorAll('.mcp-toggle-input').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        const srvId = e.target.dataset.server;
+        const isEnabled = e.target.checked;
+        const card = document.getElementById(`mcp-card-${srvId}`);
+        const statePill = document.getElementById(`mcp-state-${srvId}`);
+
+        if (card) card.classList.toggle('active', isEnabled);
+        if (statePill) statePill.innerText = isEnabled ? 'ON' : 'OFF';
+
+        await window.assistantApi.toggleMcpServer(srvId, isEnabled);
+
+        const currentActive = mcpSwitchboard.querySelectorAll('.mcp-toggle-input:checked').length;
+        if (mcpActiveCountBadge) {
+          mcpActiveCountBadge.innerText = `${currentActive} / ${detailedMcpServers.length} ACTIVE`;
+        }
+
+        const serverObj = detailedMcpServers.find(s => s.id === srvId);
+        const name = serverObj?.displayName || srvId;
+        addLogEntry('System', `MCP Server "${name}" toggled ${isEnabled ? 'ON (Active in Gemini)' : 'OFF'}.`, 'system');
+      });
+    });
+
+    // Attach Drawer Expand/Collapse Handlers
+    mcpSwitchboard.querySelectorAll('.mcp-expand-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.target;
+        const drawer = document.getElementById(targetId);
+        const caret = btn.querySelector('.caret');
+        if (drawer) {
+          const isOpen = drawer.classList.toggle('open');
+          if (caret) caret.innerText = isOpen ? '▾' : '▸';
+        }
+      });
+    });
+  } catch (err) {
+    console.error('Failed to render MCP switchboard:', err);
+    mcpSwitchboard.innerHTML = '<div class="mcp-loading">Error loading MCP servers</div>';
+  }
+}
+
 // Load Config & System Status on Startup
 async function init() {
   const config = await window.assistantApi.loadConfig();
   if (config) {
     if (config.apiKey) inputApiKey.value = config.apiKey;
-    if (config.voiceName) selectVoice.value = config.voiceName;
+    if (config.githubToken && inputGhToken) inputGhToken.value = config.githubToken;
+    if (config.model && selectModel) selectModel.value = config.model;
+    if (config.standardVoice) {
+      selectVoice.value = config.standardVoice;
+    } else if (config.voiceName) {
+      selectVoice.value = config.voiceName;
+    }
+    if (config.gearsVoice && inputGearsVoice) {
+      inputGearsVoice.value = config.gearsVoice;
+    }
     if (config.theme) setActiveTheme(config.theme);
+    if (config.skin) setActiveSkin(config.skin);
   }
 
-  // Telemetry & MCP Discovery
+  // Render Interactive MCP Switchboard
+  await renderMcpSwitchboard();
+
+  // Hardware Telemetry
   const sys = await window.assistantApi.getSystemStatus();
   if (sys) {
     telCpu.innerText = `${sys.cpuCores} Cores`;
     telRam.innerText = `${sys.memory.usedGB} / ${sys.memory.totalGB} (${sys.memory.usagePercent})`;
-
-    if (sys.mcpServersDiscovered && sys.mcpServersDiscovered.length > 0) {
-      mcpServerList.innerHTML = sys.mcpServersDiscovered.map(name => `
-        <div class="mcp-item">
-          <span>${name}</span>
-          <span class="mcp-status">AVAILABLE</span>
-        </div>
-      `).join('');
-    } else {
-      mcpServerList.innerHTML = '<div class="mcp-item">No local MCP servers found</div>';
-    }
   }
 
   // Periodic Telemetry Refresh
