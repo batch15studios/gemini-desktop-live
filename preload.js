@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('assistantApi', {
   // System State & Native Tools
   getSystemStatus: () => ipcRenderer.invoke('tools:system-status'),
   executeCommand: (cmd) => ipcRenderer.invoke('tools:exec-cmd', cmd),
+  calibrateCursor: (calib) => ipcRenderer.invoke('cursor:calibrate', calib),
 
   // MCP Switchboard & Tool Execution
   getMcpServersDetailed: () => ipcRenderer.invoke('mcp:get-detailed'),

@@ -82,6 +82,11 @@ class AssistantApp {
         if (!loaded.enabledMcpServers || !Array.isArray(loaded.enabledMcpServers)) {
           loaded.enabledMcpServers = ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7'];
         }
+        if (loaded.cursorCalibration && typeof loaded.cursorCalibration === 'object') {
+          if (this.toolsManager) {
+            this.toolsManager.cursorCalibration = loaded.cursorCalibration;
+          }
+        }
         return loaded;
       }
     } catch (e) {
@@ -267,6 +272,12 @@ class AssistantApp {
           this.workspaceWindow.webContents.send('workspace:open-file', filePath);
         }
       }
+    });
+
+    // Cursor boundary calibration persistence
+    this.engineEmitter.on('cursor:calibrated', (calib) => {
+      this.config.cursorCalibration = calib;
+      this.saveConfig(this.config);
     });
   }
 
@@ -636,6 +647,9 @@ class AssistantApp {
     // Config Persistence & Theme
     ipcMain.handle('config:save', (e, cfg) => this.saveConfig(cfg));
     ipcMain.handle('config:load', () => this.config);
+    ipcMain.handle('cursor:calibrate', (e, calib) => {
+      return this.toolsManager.calibrateCursorBounds(calib?.insetRight, calib?.insetBottom, calib?.originX, calib?.originY);
+    });
     ipcMain.on('theme:set', (e, themeId) => {
       this.config.theme = themeId;
       this.saveConfig({ theme: themeId });

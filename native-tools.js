@@ -174,6 +174,19 @@ const TOOL_DEFINITIONS = [
     }
   },
   {
+    name: 'calibrate_cursor_bounds',
+    description: 'Calibrate and remap desktop cursor boundaries. Insets the right and bottom boundaries by a pixel margin so cursor movements to extreme edges stay cleanly within Ryan\'s visible screen area.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        insetRight: { type: 'NUMBER', description: 'Pixels to inset from the right screen boundary (default: 28).' },
+        insetBottom: { type: 'NUMBER', description: 'Pixels to inset from the bottom screen boundary (default: 28).' },
+        originX: { type: 'NUMBER', description: 'Horizontal origin offset from left (default: 0).' },
+        originY: { type: 'NUMBER', description: 'Vertical origin offset from top (default: 0).' }
+      }
+    }
+  },
+  {
     name: 'mcp_list_tools',
     description: 'List available tools and schemas from local Model Context Protocol (MCP) servers (chrome-devtools-mcp, context7, filesystem, firebase, gcloud, github, memory, tauri, etc.). Specify serverName or leave empty to view all discovered servers.',
     parameters: {
@@ -528,9 +541,47 @@ class ToolsManager {
     };
     this.initHardwareTelemetryPoller();
 
-    // Physical Display Calibration for Pixel-Perfect Cursor Alignment
+    // Physical Display Calibration & Safe Viewable Insets
+    // (Top/Left origin at 0 is spot on; Right and Bottom insets prevent cursor from falling outside view)
+    this.cursorCalibration = {
+      originX: 0,
+      originY: 0,
+      insetRight: 28,
+      insetBottom: 28
+    };
     this.physicalDisplayBounds = { width: 1920, height: 1080 };
     this.calibrateDisplayBounds();
+  }
+
+  calibrateCursorBounds(insetRight = 28, insetBottom = 28, originX = 0, originY = 0) {
+    const ir = typeof insetRight === 'number' ? Math.max(0, Math.min(200, Math.round(insetRight))) : 28;
+    const ib = typeof insetBottom === 'number' ? Math.max(0, Math.min(200, Math.round(insetBottom))) : 28;
+    const ox = typeof originX === 'number' ? Math.max(0, Math.min(100, Math.round(originX))) : 0;
+    const oy = typeof originY === 'number' ? Math.max(0, Math.min(100, Math.round(originY))) : 0;
+
+    this.cursorCalibration = {
+      originX: ox,
+      originY: oy,
+      insetRight: ir,
+      insetBottom: ib
+    };
+
+    const bounds = this.getDisplayBounds();
+    const effectiveW = bounds.width - ox - ir;
+    const effectiveH = bounds.height - oy - ib;
+
+    if (this.emitter) {
+      this.emitter.emit('cursor:calibrated', this.cursorCalibration);
+    }
+
+    console.log(`[ToolsManager] Cursor remapped: Origin(${ox}, ${oy}), Inset(Right: ${ir}px, Bottom: ${ib}px), Effective Viewable Grid: ${effectiveW}x${effectiveH}`);
+
+    return {
+      success: true,
+      physicalBounds: bounds,
+      calibration: this.cursorCalibration,
+      effectiveViewableGrid: { width: effectiveW, height: effectiveH }
+    };
   }
 
   async calibrateDisplayBounds() {
@@ -807,6 +858,9 @@ class ToolsManager {
           break;
         case 'get_cursor_position':
           result = await this.getCursorPosition();
+          break;
+        case 'calibrate_cursor_bounds':
+          result = this.calibrateCursorBounds(args?.insetRight, args?.insetBottom, args?.originX, args?.originY);
           break;
         case 'mcp_list_tools':
           result = this.listMcpTools(args?.serverName);
@@ -1548,8 +1602,18 @@ class ToolsManager {
 
   resolveCoordinates(x, y, isNormalized = true) {
     const bounds = this.getDisplayBounds();
-    const screenW = bounds.width;   // Physical resolution (1920)
-    const screenH = bounds.height;  // Physical resolution (1080)
+    const rawScreenW = bounds.width;   // Physical resolution (1920)
+    const rawScreenH = bounds.height;  // Physical resolution (1080)
+
+    // User-verified calibration: Origin (0,0) at top-left is 100% spot-on.
+    // Right and Bottom edges are safely mapped with viewable insets so the cursor icon remains completely visible inside Ryan's screen view.
+    const originX = this.cursorCalibration?.originX || 0;
+    const originY = this.cursorCalibration?.originY || 0;
+    const insetRight = this.cursorCalibration?.insetRight !== undefined ? this.cursorCalibration.insetRight : 28;
+    const insetBottom = this.cursorCalibration?.insetBottom !== undefined ? this.cursorCalibration.insetBottom : 28;
+
+    const viewableW = Math.max(100, rawScreenW - originX - insetRight);
+    const viewableH = Math.max(100, rawScreenH - originY - insetBottom);
 
     let numX = parseFloat(x) || 0;
     let numY = parseFloat(y) || 0;
@@ -1561,15 +1625,20 @@ class ToolsManager {
       targetX = numX;
       targetY = numY;
     } else {
-      // Standard normalized coordinates: handles 0.0-1.0 float ratios or 0-1000 integer grid
+      // Standard normalized coordinates: 0.0-1.0 float ratios or 0-1000 integer grid
       const isRatio = (numX <= 1.0 && numY <= 1.0 && (numX > 0 || numY > 0));
-      targetX = isRatio ? (numX * screenW) : ((numX / 1000) * screenW);
-      targetY = isRatio ? (numY * screenH) : ((numY / 1000) * screenH);
+      const ratioX = isRatio ? numX : (numX / 1000);
+      const ratioY = isRatio ? numY : (numY / 1000);
+
+      targetX = originX + (ratioX * viewableW);
+      targetY = originY + (ratioY * viewableH);
     }
 
-    // Clamp strictly within screen boundaries to guarantee validity
-    targetX = Math.max(0, Math.min(Math.round(targetX), screenW - 1));
-    targetY = Math.max(0, Math.min(Math.round(targetY), screenH - 1));
+    // Clamp strictly within viewable boundaries so cursor never travels outside user view
+    const maxX = rawScreenW - 1 - insetRight;
+    const maxY = rawScreenH - 1 - insetBottom;
+    targetX = Math.max(originX, Math.min(Math.round(targetX), maxX));
+    targetY = Math.max(originY, Math.min(Math.round(targetY), maxY));
 
     return { x: targetX, y: targetY };
   }
