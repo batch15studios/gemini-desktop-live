@@ -6,6 +6,7 @@
 const { ipcMain, screen, app } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 const { exec } = require('child_process');
 
 function formatFileSize(bytes) {
@@ -78,8 +79,105 @@ function getFileType(fileName, isDir) {
   }
 }
 
+let devServer = null;
+let devServerPort = 4242;
+
+function startDevServer(rootDir) {
+  if (devServer) return;
+  const mimeTypes = {
+    '.html': 'text/html; charset=utf-8',
+    '.htm': 'text/html; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.mjs': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+    '.woff2': 'font/woff2',
+    '.woff': 'font/woff',
+    '.ttf': 'font/ttf',
+    '.mp3': 'audio/mpeg',
+    '.wav': 'audio/wav',
+    '.wasm': 'application/wasm'
+  };
+
+  devServer = http.createServer((req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    try {
+      let reqPath = decodeURI((req.url || '').split('?')[0]);
+      if (reqPath === '/' || reqPath === '') reqPath = '/preview.html';
+      const safePath = path.normalize(reqPath).replace(/^(\.\.[\/\\])+/, '');
+      const filePath = path.join(rootDir, safePath);
+
+      if (!filePath.startsWith(rootDir) || !fs.existsSync(filePath)) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('404 Not Found');
+        return;
+      }
+
+      const stat = fs.statSync(filePath);
+      if (stat.isDirectory()) {
+        const indexHtml = path.join(filePath, 'index.html');
+        if (fs.existsSync(indexHtml)) {
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+          fs.createReadStream(indexHtml).pipe(res);
+        } else {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          res.end('404 Directory Index Not Found');
+        }
+        return;
+      }
+
+      const ext = path.extname(filePath).toLowerCase();
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
+      res.writeHead(200, {
+        'Content-Type': contentType,
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      });
+      fs.createReadStream(filePath).pipe(res);
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end(`500 Server Error: ${err.message}`);
+    }
+  });
+
+  const tryListen = (port) => {
+    devServerPort = port;
+    devServer.listen(port, '127.0.0.1', () => {
+      console.log(`[Workspace DevServer] Live reload server listening at http://127.0.0.1:${port}`);
+    }).on('error', (err) => {
+      if (err.code === 'EADDRINUSE' && port < 4260) {
+        tryListen(port + 1);
+      } else {
+        console.warn('[Workspace DevServer] Error:', err.message);
+      }
+    });
+  };
+
+  tryListen(devServerPort);
+}
+
 function registerWorkspaceIpc(assistantApp) {
   const rootDir = path.resolve(__dirname);
+  startDevServer(rootDir);
+
+  if (!ipcMain) {
+    console.log('[Workspace IPC] Running in non-electron environment; skipping IPC listener registration.');
+    return;
+  }
 
   // 1. Window Controls (HUD Style)
   ipcMain.on('workspace:minimize-restore', () => {
@@ -212,11 +310,22 @@ function registerWorkspaceIpc(assistantApp) {
       if (!filePath) return { success: false, error: 'No file path provided' };
       const resolved = path.resolve(filePath);
       await fs.promises.writeFile(resolved, content, 'utf-8');
+      if (assistantApp.workspaceWindow && !assistantApp.workspaceWindow.isDestroyed()) {
+        assistantApp.workspaceWindow.webContents.send('workspace:file-updated', {
+          path: resolved,
+          name: path.basename(resolved),
+          timestamp: Date.now()
+        });
+      }
       return { success: true, path: resolved, name: path.basename(resolved) };
     } catch (err) {
       console.error('[Workspace IPC] Error writing file:', err);
       return { success: false, error: err.message };
     }
+  });
+
+  ipcMain.handle('workspace:get-server-url', () => {
+    return `http://127.0.0.1:${devServerPort}`;
   });
 
   // 4. Shell Execution

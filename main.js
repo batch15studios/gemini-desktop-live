@@ -4,7 +4,7 @@
  * Windows System Tray, Native Tool dispatch, and Gemini Live streaming.
  */
 
-const { app, BrowserWindow, ipcMain, Tray, Menu, screen, desktopCapturer, nativeImage, session, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, screen, desktopCapturer, nativeImage, session, globalShortcut, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -20,6 +20,7 @@ app.commandLine.appendSwitch('enable-features', 'WebRtcApmInAudioService,AudioSe
 app.commandLine.appendSwitch('enable-webrtc-apm-in-audio-service');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('high-dpi-support', '1');
 
 class AssistantApp {
   constructor() {
@@ -202,6 +203,17 @@ class AssistantApp {
     this.engineEmitter.on('sentry_fired', (sentry) => {
       console.log('[Main] Sentry condition triggered:', sentry.alertMessage);
       this.broadcast('sentry:fired', sentry);
+      if (Notification && Notification.isSupported()) {
+        try {
+          new Notification({
+            title: 'Gemini Autonomous Sentry',
+            body: sentry.alertMessage,
+            icon: path.join(__dirname, 'assets', 'icon.png')
+          }).show();
+        } catch (e) {
+          console.warn('[Main] Notification error:', e.message);
+        }
+      }
       if (this.liveEngine && this.liveEngine.isConnected) {
         this.liveEngine.sendTextMessage(`[SENTRY ALERT - PROACTIVELY SPEAK TO RYAN NOW]: ${sentry.alertMessage}`);
       }
@@ -211,6 +223,13 @@ class AssistantApp {
     this.engineEmitter.on('safety_blocked', (data) => {
       console.warn('[Main] Windows System Integrity Guard intercepted unsafe action:', data.reason);
       this.broadcast('safety:blocked', data);
+    });
+
+    // Workspace Deck Hot-Reload: broadcast file modifications
+    this.engineEmitter.on('file_written', (data) => {
+      if (this.workspaceWindow && !this.workspaceWindow.isDestroyed()) {
+        this.workspaceWindow.webContents.send('workspace:file-updated', data);
+      }
     });
 
     // Workspace Deck AI Automation Controller
@@ -814,10 +833,14 @@ app.whenReady().then(() => {
     globalShortcut.register('CommandOrControl+Shift+G', () => {
       assistant.toggleVisibility();
     });
+    globalShortcut.register('CommandOrControl+Alt+Space', () => {
+      const isMuted = assistant.liveEngine.toggleMute();
+      console.log('[Main] Global Hotkey (Ctrl+Alt+Space) toggled microphone mute:', isMuted);
+    });
     globalShortcut.register('CommandOrControl+Shift+W', () => {
       assistant.toggleWorkspaceDeck();
     });
-    console.log('[Main] Global shortcuts registered: Ctrl+Shift+Space / Ctrl+Shift+G (Wake/Standby) | Ctrl+Shift+W (Workspace Deck)');
+    console.log('[Main] Global shortcuts registered: Ctrl+Shift+Space / Ctrl+Shift+G (Wake/Standby) | Ctrl+Alt+Space (Mute Toggle) | Ctrl+Shift+W (Workspace Deck)');
   } catch (err) {
     console.warn('[Main] Global shortcut registration error:', err);
   }

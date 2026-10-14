@@ -10,14 +10,18 @@ const path = require('path');
 const os = require('os');
 
 let electronShell = null;
+let electronClipboard = null;
 try {
-  electronShell = require('electron').shell;
+  const electron = require('electron');
+  electronShell = electron.shell;
+  electronClipboard = electron.clipboard;
 } catch (e) {
   // Standalone environment
 }
 
 const { MemoryManager } = require('./memory-manager');
 const { safetyGuard } = require('./safety-guard.js');
+const { WindowTools } = require('./window-tools.js');
 
 // Standard Tool Declarations for Gemini Live / Function Calling
 const TOOL_DEFINITIONS = [
@@ -312,6 +316,126 @@ const TOOL_DEFINITIONS = [
         }
       }
     }
+  },
+  {
+    name: 'clipboard_get',
+    description: 'Read the current text content from the Windows clipboard. Use when Ryan asks "what is on my clipboard?", "read what I copied", or to inspect copied text, URLs, or code.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {}
+    }
+  },
+  {
+    name: 'clipboard_set',
+    description: 'Set or copy text directly onto the Windows clipboard. Use when Ryan asks to copy code, text, links, or generated data to his clipboard so he can paste it anywhere.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        text: { type: 'STRING', description: 'The text content to place onto the Windows clipboard.' }
+      },
+      required: ['text']
+    }
+  },
+  {
+    name: 'list_windows',
+    description: 'List all currently open, active desktop application windows on Windows (titles, process names, and process IDs). Use to see what apps Ryan has open or to find target windows to focus, snap, or inspect.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {}
+    }
+  },
+  {
+    name: 'focus_window',
+    description: 'Bring an open application window to the foreground and focus it by matching its title or process name (e.g. "chrome", "obsidian", "code", "settings", "antigravity").',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        title: { type: 'STRING', description: 'Application window title or process name to bring to the front.' }
+      },
+      required: ['title']
+    }
+  },
+  {
+    name: 'snap_window',
+    description: 'Snap or reposition an application window on screen (positions: "left", "right", "top", "bottom", "maximize", "minimize", "restore", "center").',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        title: { type: 'STRING', description: 'Window title or process name to snap.' },
+        position: { type: 'STRING', description: 'Snap position: "left", "right", "top", "bottom", "maximize", "minimize", "restore", or "center".' }
+      },
+      required: ['title', 'position']
+    }
+  },
+  {
+    name: 'close_window',
+    description: 'Gracefully close an application window by title or process name.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        title: { type: 'STRING', description: 'Window title or process name to close.' }
+      },
+      required: ['title']
+    }
+  },
+  {
+    name: 'media_control',
+    description: 'Control system audio volume and media playback on Windows (action: "mute", "volume_up", "volume_down", "play_pause", "next_track", "prev_track").',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        action: { type: 'STRING', description: 'Action: "mute", "volume_up", "volume_down", "play_pause", "next_track", "prev_track".' },
+        times: { type: 'NUMBER', description: 'Number of step increments (e.g. 5 for 5 volume clicks). Default is 1.' }
+      },
+      required: ['action']
+    }
+  },
+  {
+    name: 'system_notify',
+    description: 'Post a native Windows Action Center toast banner notification on Ryan\'s desktop screen. Use for important alerts, reminders, finished background builds, or task completions.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        title: { type: 'STRING', description: 'Title of the notification banner (e.g. "Gemini Assistant", "Build Completed").' },
+        message: { type: 'STRING', description: 'The body text of the notification.' }
+      },
+      required: ['message']
+    }
+  },
+  {
+    name: 'find_ui_element',
+    description: 'Search desktop windows and controls for native UI elements (buttons, inputs, tabs, checkboxes) matching a name or query using Windows UIAutomation. Returns element names, control types, automation IDs, and screen bounding rectangles.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        query: { type: 'STRING', description: 'Name, label, or automation ID of the control to find (e.g. "Save", "Submit", "Settings", "Cancel").' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'click_ui_element',
+    description: 'Click or invoke a native Windows UI element by name using Windows UIAutomation (InvokePattern or target center click). More reliable and precise than coordinate-based clicks for native desktop controls and dialog buttons.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        name: { type: 'STRING', description: 'Name or label of the control to click (e.g. "Save", "Submit", "Close", "OK", "Cancel").' }
+      },
+      required: ['name']
+    }
+  },
+  {
+    name: 'ocr_screen_region',
+    description: 'Read and extract text from any region of Ryan\'s screen or active window using native offline Windows OCR (Windows.Media.Ocr). Highly accurate for reading error messages, dialog text, logs, status bars, and UI labels directly from screen pixels without guessing.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        x: { type: 'NUMBER', description: 'Normalized horizontal coordinate of top-left corner (0-1000). Defaults to 0 (full width).' },
+        y: { type: 'NUMBER', description: 'Normalized vertical coordinate of top-left corner (0-1000). Defaults to 0 (full height).' },
+        width: { type: 'NUMBER', description: 'Normalized width of region (1-1000). Defaults to 1000 (full width).' },
+        height: { type: 'NUMBER', description: 'Normalized height of region (1-1000). Defaults to 1000 (full height).' }
+      }
+    }
   }
 ];
 
@@ -578,6 +702,39 @@ class ToolsManager {
         case 'workspace_deck':
           result = await this.controlWorkspaceDeck(args);
           break;
+        case 'clipboard_get':
+          result = await this.clipboardGet();
+          break;
+        case 'clipboard_set':
+          result = await this.clipboardSet(args?.text);
+          break;
+        case 'list_windows':
+          result = await WindowTools.listWindows();
+          break;
+        case 'focus_window':
+          result = await WindowTools.focusWindow(args?.title);
+          break;
+        case 'snap_window':
+          result = await WindowTools.snapWindow(args?.title, args?.position);
+          break;
+        case 'close_window':
+          result = await WindowTools.closeWindow(args?.title);
+          break;
+        case 'media_control':
+          result = await WindowTools.mediaControl(args?.action, args?.times);
+          break;
+        case 'system_notify':
+          result = await this.systemNotify(args?.title, args?.message);
+          break;
+        case 'find_ui_element':
+          result = await this.findUiElement(args?.query);
+          break;
+        case 'click_ui_element':
+          result = await this.clickUiElement(args?.name);
+          break;
+        case 'ocr_screen_region':
+          result = await this.ocrScreenRegion(args?.x, args?.y, args?.width, args?.height);
+          break;
         default:
           result = { error: `Tool '${name}' not implemented.` };
       }
@@ -589,6 +746,66 @@ class ToolsManager {
       this.emitter?.emit('tool_failed', { name, error: errRes.error, time: new Date().toLocaleTimeString() });
       return errRes;
     }
+  }
+
+  async clipboardGet() {
+    try {
+      if (electronClipboard && typeof electronClipboard.readText === 'function') {
+        const text = electronClipboard.readText() || '';
+        return { success: true, text, length: text.length };
+      }
+      const res = await this.runPowerShell('Get-Clipboard -Raw');
+      const text = res.stdout || '';
+      return { success: true, text, length: text.length, fallback: true };
+    } catch (e) {
+      return { error: `Failed to read clipboard: ${e.message}` };
+    }
+  }
+
+  async clipboardSet(text) {
+    if (typeof text !== 'string') text = String(text ?? '');
+    try {
+      if (electronClipboard && typeof electronClipboard.writeText === 'function') {
+        electronClipboard.writeText(text);
+        return { success: true, length: text.length, message: 'Text copied to Windows clipboard successfully.' };
+      }
+      const escaped = text.replace(/'/g, "''");
+      await this.runPowerShell(`Set-Clipboard -Value '${escaped}'`);
+      return { success: true, length: text.length, message: 'Text copied to Windows clipboard via PowerShell fallback.' };
+    } catch (e) {
+      return { error: `Failed to write clipboard: ${e.message}` };
+    }
+  }
+
+  async systemNotify(title = 'Gemini Assistant', message = '') {
+    const cleanTitle = title || 'Gemini Assistant';
+    const cleanMsg = message || '';
+
+    try {
+      const electron = require('electron');
+      if (electron.Notification && electron.Notification.isSupported()) {
+        const notif = new electron.Notification({
+          title: cleanTitle,
+          body: cleanMsg,
+          icon: path.join(__dirname, 'assets', 'icon.png')
+        });
+        notif.show();
+        return { success: true, delivered: true, method: 'electron_notification', title: cleanTitle, message: cleanMsg };
+      }
+    } catch (e) {}
+
+    const ps = `
+      [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+      $template = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)
+      $texts = $template.GetElementsByTagName('text')
+      $texts[0].AppendChild($template.CreateTextNode('${cleanTitle.replace(/'/g, "''")}')) | Out-Null
+      $texts[1].AppendChild($template.CreateTextNode('${cleanMsg.replace(/'/g, "''")}')) | Out-Null
+      $notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('Gemini Desktop Assistant')
+      $notifier.Show([Windows.UI.Notifications.ToastNotification]::new($template))
+    `.replace(/\r?\n\s*/g, ' ');
+
+    await this.runPowerShell(ps);
+    return { success: true, delivered: true, method: 'powershell_winrt', title: cleanTitle, message: cleanMsg };
   }
 
   async controlWorkspaceDeck(args = {}) {
@@ -651,6 +868,7 @@ class ToolsManager {
       const resolved = path.resolve(filePath);
       fs.mkdirSync(path.dirname(resolved), { recursive: true });
       fs.writeFileSync(resolved, content, 'utf-8');
+      this.emitter?.emit('file_written', { path: resolved, name: path.basename(resolved) });
       await this.triggerVisualFeedbackHook('write_file');
       return { success: true, path: resolved, bytesWritten: Buffer.byteLength(content) };
     } catch (err) {
@@ -1258,6 +1476,111 @@ class ToolsManager {
 
   async getCursorPosition() {
     return await this.runCursorDriver('getpos');
+  }
+
+  runUiaDriver(driverArgs) {
+    return new Promise((resolve) => {
+      const driverPath = path.join(__dirname, 'assets', 'bin', 'UIADriver.exe');
+      const cmd = `"${driverPath}" ${driverArgs}`;
+      exec(cmd, { windowsHide: true }, (err, stdout, stderr) => {
+        if (err && !stdout) {
+          return resolve({ error: err.message, stderr: stderr?.trim() });
+        }
+        try {
+          const parsed = JSON.parse(stdout.trim());
+          resolve(parsed);
+        } catch (e) {
+          resolve({ success: true, raw: stdout?.trim() || '' });
+        }
+      });
+    });
+  }
+
+  async findUiElement(query) {
+    const cleanQuery = (query || '').replace(/"/g, '""');
+    return await this.runUiaDriver(`find "${cleanQuery}"`);
+  }
+
+  async clickUiElement(name) {
+    const cleanName = (name || '').replace(/"/g, '""');
+    const res = await this.runUiaDriver(`click "${cleanName}"`);
+    await this.triggerVisualFeedbackHook('click_ui_element');
+    return res;
+  }
+
+  async ocrScreenRegion(x, y, width, height) {
+    const tmpFile = path.join(os.tmpdir(), `gemini_ocr_${Date.now()}.png`);
+    try {
+      const bounds = this.getDisplayBounds();
+      const screenW = bounds.width;
+      const screenH = bounds.height;
+
+      // Default to full screen if not specified
+      const normX = x !== undefined ? Math.max(0, Math.min(1000, parseFloat(x) || 0)) : 0;
+      const normY = y !== undefined ? Math.max(0, Math.min(1000, parseFloat(y) || 0)) : 0;
+      const normW = width !== undefined ? Math.max(10, Math.min(1000, parseFloat(width) || 1000)) : 1000;
+      const normH = height !== undefined ? Math.max(10, Math.min(1000, parseFloat(height) || 1000)) : 1000;
+
+      const pxX = Math.round((normX / 1000) * screenW);
+      const pxY = Math.round((normY / 1000) * screenH);
+      const pxW = Math.min(screenW - pxX, Math.round((normW / 1000) * screenW));
+      const pxH = Math.min(screenH - pxY, Math.round((normH / 1000) * screenH));
+
+      let imageBuffer = null;
+      try {
+        const electron = require('electron');
+        if (electron.desktopCapturer && electron.nativeImage) {
+          const sources = await electron.desktopCapturer.getSources({
+            types: ['screen'],
+            thumbnailSize: { width: screenW, height: screenH }
+          });
+          if (sources && sources.length > 0) {
+            const fullImage = sources[0].thumbnail;
+            const cropped = fullImage.crop({ x: pxX, y: pxY, width: pxW, height: pxH });
+            imageBuffer = cropped.toPNG();
+          }
+        }
+      } catch (e) {
+        // Fallback handled below
+      }
+
+      if (!imageBuffer) {
+        // Fallback: capture region via PowerShell GDI
+        const psScript = `Add-Type -AssemblyName System.Drawing; $bmp = New-Object System.Drawing.Bitmap(${pxW}, ${pxH}); $g = [System.Drawing.Graphics]::FromImage($bmp); $g.CopyFromScreen(${pxX}, ${pxY}, 0, 0, (New-Object System.Drawing.Size(${pxW}, ${pxH}))); $g.Dispose(); $bmp.Save('${tmpFile.replace(/\\/g, '\\\\')}', [System.Drawing.Imaging.ImageFormat]::Png); $bmp.Dispose();`;
+        await this.runPowerShell(psScript);
+      } else {
+        fs.writeFileSync(tmpFile, imageBuffer);
+      }
+
+      if (!fs.existsSync(tmpFile)) {
+        return { error: 'Failed to capture screen region for OCR' };
+      }
+
+      const scriptPath = path.join(__dirname, 'assets', 'bin', 'ocr_image.ps1');
+      const psRes = await this.runPowerShell(`powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}" -ImagePath "${tmpFile}"`);
+
+      try {
+        if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+      } catch (err) {}
+
+      if (psRes.stdout) {
+        try {
+          const parsed = JSON.parse(psRes.stdout.trim());
+          return {
+            ...parsed,
+            region: { x: normX, y: normY, width: normW, height: normH, pixelRect: { x: pxX, y: pxY, width: pxW, height: pxH } }
+          };
+        } catch (e) {
+          return { success: true, text: psRes.stdout.trim(), raw: psRes.stdout };
+        }
+      }
+      return { error: psRes.stderr || 'OCR process returned no output' };
+    } catch (err) {
+      try {
+        if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+      } catch (e) {}
+      return { error: `OCR error: ${err.message}` };
+    }
   }
 
   // --- Visual Feedback & Perception Synchronization ---

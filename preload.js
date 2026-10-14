@@ -162,6 +162,12 @@ contextBridge.exposeInMainWorld('workspaceApi', {
     const handler = (e, filePath) => callback(filePath);
     ipcRenderer.on('workspace:open-file', handler);
     return () => ipcRenderer.removeListener('workspace:open-file', handler);
+  },
+  getServerUrl: () => ipcRenderer.invoke('workspace:get-server-url'),
+  onFileUpdated: (callback) => {
+    const handler = (e, fileInfo) => callback(fileInfo);
+    ipcRenderer.on('workspace:file-updated', handler);
+    return () => ipcRenderer.removeListener('workspace:file-updated', handler);
   }
 });
 

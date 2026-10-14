@@ -34,6 +34,10 @@ class GeminiLiveEngine {
     // Buffer for tool responses and turn tracking
     this.currentOutputText = '';
     this.isModelSpeaking = false;
+
+    // Connection health & watchdog
+    this.watchdogTimer = null;
+    this.lastActivityTime = Date.now();
   }
 
   setApiKey(key) {
@@ -131,12 +135,22 @@ You have direct, unconstrained access to native PC tools and MCP servers. You MU
    - mouse_scroll(deltaY): Scroll windows or web pages.
    - keyboard_type(text, pressEnter): Type into any active field.
    - keyboard_hotkey(combo): Press hotkeys (e.g. "ctrl+c", "ctrl+v", "win+d", "alt+tab").
+   - find_ui_element(query): Search desktop controls and buttons by name using Windows UIAutomation.
+   - click_ui_element(name): Directly invoke or click a native Windows UI control by name without guessing coordinates.
+   - ocr_screen_region(x, y, width, height): Extract text, error dialogs, logs, or UI text from any screen region using Windows offline OCR.
    - chain_actions(actions, goalDescription): Execute a rapid atomic sequence of actions (e.g. click -> type -> press enter).
    - verify_screen(focusArea): Refresh your visual perception frame to inspect the outcome of GUI operations.
 2. System & Application Control:
    - open_application(target): Open any desktop app, shortcut, folder, URL, or program (e.g. "antigravity", "obsidian", "chrome", "notepad").
+   - list_windows(): List all currently open desktop application windows and processes.
+   - focus_window(title): Bring any open window to the front (e.g. "chrome", "code", "obsidian", "antigravity").
+   - snap_window(title, position): Snap or reposition a window ("left", "right", "top", "bottom", "maximize", "minimize", "restore", "center").
+   - close_window(title): Gracefully close an open application window.
+   - media_control(action, times): Control master volume or media playback ("mute", "volume_up", "volume_down", "play_pause", "next_track", "prev_track").
    - execute_command(command): Run real PowerShell commands on Windows.
    - read_file(path) & write_file(path, content) & list_directory(path): Direct filesystem access.
+   - clipboard_get() & clipboard_set(text): Direct access to read or copy text to the Windows clipboard.
+   - system_notify(title, message): Post a native Windows Action Center desktop notification banner.
    - get_system_status(): Real-time CPU, RAM, OS status.
 3. Integrated Workspace Deck (4th Window - Web Browser, Monaco IDE & File Explorer):
    - workspace_deck(action, mode, url, filePath): Direct programmatic control over your built-in 4th desktop window (Workspace Deck).
@@ -229,11 +243,14 @@ When Ryan asks you to click, look at, or interact with an element on his screen:
           if (this.activeSessionId !== sessionId) return;
           this.isConnected = true;
           this.isReconnecting = false;
+          this.lastActivityTime = Date.now();
+          this.startWatchdog();
           console.log(`[GeminiLiveEngine] WebSocket Connected to Gemini Live (${this.model}) [Session #${sessionId}]`);
           this.emitter?.emit('status', { status: 'connected', message: 'Gemini Live Active (Ready)' });
         },
         onmessage: async (response) => {
           if (this.activeSessionId !== sessionId) return;
+          this.lastActivityTime = Date.now();
           await this.handleServerMessage(response);
         },
         onerror: (err) => {
@@ -243,6 +260,7 @@ When Ryan asks you to click, look at, or interact with an element on his screen:
           this.emitter?.emit('status', { status: 'error', message: `Live error: ${err?.message || err}` });
         },
         onclose: (e) => {
+          this.stopWatchdog();
           if (this.activeSessionId !== sessionId) {
             console.log(`[GeminiLiveEngine] Discarding stale onclose callback from dead Session #${sessionId}`);
             return;
@@ -474,7 +492,28 @@ When Ryan asks you to click, look at, or interact with an element on his screen:
     return this.screenShareEnabled;
   }
 
+  startWatchdog() {
+    this.stopWatchdog();
+    this.watchdogTimer = setInterval(() => {
+      if (!this.isConnected || !this.session) return;
+      const idleTime = Date.now() - this.lastActivityTime;
+      // If connected but completely silent for over 45s without active tool execution
+      if (idleTime > 45000 && !this.isExecutingTool) {
+        console.warn(`[GeminiLiveEngine] Watchdog: No server traffic for ${Math.round(idleTime / 1000)}s. Resynchronizing session...`);
+        this.scheduleReconnect(1000);
+      }
+    }, 15000);
+  }
+
+  stopWatchdog() {
+    if (this.watchdogTimer) {
+      clearInterval(this.watchdogTimer);
+      this.watchdogTimer = null;
+    }
+  }
+
   disconnect() {
+    this.stopWatchdog();
     this.activeSessionId++; // Invalidate all pending or closing session callbacks
     this.shouldAutoReconnect = false;
     this.resumptionHandle = null; // Clear resumption token on deliberate disconnect so next connect is fresh

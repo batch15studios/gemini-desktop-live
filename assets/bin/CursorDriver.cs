@@ -25,6 +25,51 @@ namespace DesktopController
         [DllImport("user32.dll")]
         public static extern bool SetProcessDPIAware();
 
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+        public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern int GetWindowTextLength(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        private const uint WM_CLOSE = 0x0010;
+        private const int SW_RESTORE = 9;
+        private const int SW_MAXIMIZE = 3;
+        private const int SW_MINIMIZE = 6;
+
+        private const byte VK_VOLUME_MUTE = 0xAD;
+        private const byte VK_VOLUME_DOWN = 0xAE;
+        private const byte VK_VOLUME_UP = 0xAF;
+        private const byte VK_MEDIA_NEXT_TRACK = 0xB0;
+        private const byte VK_MEDIA_PREV_TRACK = 0xB1;
+        private const byte VK_MEDIA_STOP = 0xB2;
+        private const byte VK_MEDIA_PLAY_PAUSE = 0xB3;
+
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
         {
@@ -192,6 +237,115 @@ namespace DesktopController
                         Console.WriteLine(string.Format("{{\"success\": true, \"action\": \"hotkey\", \"combo\": \"{0}\"}}", combo));
                         return 0;
 
+                    case "listwindows":
+                        var windows = GetOpenWindows();
+                        var sbJson = new System.Text.StringBuilder();
+                        sbJson.Append("{\"success\":true,\"windows\":[");
+                        for (int i = 0; i < windows.Count; i++)
+                        {
+                            var w = windows[i];
+                            if (i > 0) sbJson.Append(",");
+                            sbJson.Append(string.Format("{{\"hwnd\":\"{0}\",\"pid\":{1},\"title\":\"{2}\",\"process\":\"{3}\"}}",
+                                w.Hwnd.ToInt64(), w.Pid, EscapeJson(w.Title), EscapeJson(w.ProcessName)));
+                        }
+                        sbJson.Append("]}");
+                        Console.WriteLine(sbJson.ToString());
+                        return 0;
+
+                    case "focuswindow":
+                        if (args.Length < 2) return Error("Focus requires title or process query");
+                        string fQuery = args[1].ToLower();
+                        var fTarget = FindWindowMatch(fQuery);
+                        if (fTarget == null) return Error("Window not found matching: " + args[1]);
+                        ShowWindowAsync(fTarget.Hwnd, SW_RESTORE);
+                        SetForegroundWindow(fTarget.Hwnd);
+                        Console.WriteLine(string.Format("{{\"success\":true,\"action\":\"focus\",\"title\":\"{0}\",\"pid\":{1}}}",
+                            EscapeJson(fTarget.Title), fTarget.Pid));
+                        return 0;
+
+                    case "snapwindow":
+                        if (args.Length < 3) return Error("Snap requires <query> <position: left, right, top, bottom, maximize, minimize, restore, center>");
+                        string sQuery = args[1].ToLower();
+                        string pos = args[2].ToLower();
+                        var sTarget = FindWindowMatch(sQuery);
+                        if (sTarget == null) return Error("Window not found matching: " + args[1]);
+
+                        var area = Screen.PrimaryScreen.WorkingArea;
+                        if (pos == "maximize" || pos == "max")
+                        {
+                            ShowWindowAsync(sTarget.Hwnd, SW_MAXIMIZE);
+                        }
+                        else if (pos == "minimize" || pos == "min")
+                        {
+                            ShowWindowAsync(sTarget.Hwnd, SW_MINIMIZE);
+                        }
+                        else if (pos == "left")
+                        {
+                            ShowWindowAsync(sTarget.Hwnd, SW_RESTORE);
+                            MoveWindow(sTarget.Hwnd, area.Left, area.Top, area.Width / 2, area.Height, true);
+                        }
+                        else if (pos == "right")
+                        {
+                            ShowWindowAsync(sTarget.Hwnd, SW_RESTORE);
+                            MoveWindow(sTarget.Hwnd, area.Left + area.Width / 2, area.Top, area.Width / 2, area.Height, true);
+                        }
+                        else if (pos == "top")
+                        {
+                            ShowWindowAsync(sTarget.Hwnd, SW_RESTORE);
+                            MoveWindow(sTarget.Hwnd, area.Left, area.Top, area.Width, area.Height / 2, true);
+                        }
+                        else if (pos == "bottom")
+                        {
+                            ShowWindowAsync(sTarget.Hwnd, SW_RESTORE);
+                            MoveWindow(sTarget.Hwnd, area.Left, area.Top + area.Height / 2, area.Width, area.Height / 2, true);
+                        }
+                        else if (pos == "center" || pos == "restore")
+                        {
+                            ShowWindowAsync(sTarget.Hwnd, SW_RESTORE);
+                            int cw = (int)(area.Width * 0.8);
+                            int ch = (int)(area.Height * 0.8);
+                            int snapX = area.Left + (area.Width - cw) / 2;
+                            int snapY = area.Top + (area.Height - ch) / 2;
+                            MoveWindow(sTarget.Hwnd, snapX, snapY, cw, ch, true);
+                        }
+                        SetForegroundWindow(sTarget.Hwnd);
+                        Console.WriteLine(string.Format("{{\"success\":true,\"action\":\"snap\",\"position\":\"{0}\",\"title\":\"{1}\"}}",
+                            pos, EscapeJson(sTarget.Title)));
+                        return 0;
+
+                    case "closewindow":
+                        if (args.Length < 2) return Error("Close requires title or process query");
+                        string cQuery = args[1].ToLower();
+                        var cTarget = FindWindowMatch(cQuery);
+                        if (cTarget == null) return Error("Window not found matching: " + args[1]);
+                        PostMessage(cTarget.Hwnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                        Console.WriteLine(string.Format("{{\"success\":true,\"action\":\"close\",\"title\":\"{0}\"}}",
+                            EscapeJson(cTarget.Title)));
+                        return 0;
+
+                    case "media":
+                        if (args.Length < 2) return Error("Media requires action: mute, volup, voldown, playpause, next, prev");
+                        string mAction = args[1].ToLower();
+                        byte mVk = 0;
+                        if (mAction == "mute") mVk = VK_VOLUME_MUTE;
+                        else if (mAction == "volup" || mAction == "volume_up") mVk = VK_VOLUME_UP;
+                        else if (mAction == "voldown" || mAction == "volume_down") mVk = VK_VOLUME_DOWN;
+                        else if (mAction == "playpause" || mAction == "play_pause" || mAction == "play" || mAction == "pause") mVk = VK_MEDIA_PLAY_PAUSE;
+                        else if (mAction == "next" || mAction == "next_track") mVk = VK_MEDIA_NEXT_TRACK;
+                        else if (mAction == "prev" || mAction == "prev_track") mVk = VK_MEDIA_PREV_TRACK;
+                        else return Error("Unknown media action: " + mAction);
+
+                        int mTimes = args.Length > 2 ? int.Parse(args[2]) : 1;
+                        for (int i = 0; i < mTimes; i++)
+                        {
+                            keybd_event(mVk, 0, 0, UIntPtr.Zero);
+                            Thread.Sleep(15);
+                            keybd_event(mVk, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                            Thread.Sleep(15);
+                        }
+                        Console.WriteLine(string.Format("{{\"success\":true,\"action\":\"media\",\"command\":\"{0}\",\"times\":{1}}}", mAction, mTimes));
+                        return 0;
+
                     default:
                         return Error("Unknown command: " + cmd);
                 }
@@ -294,6 +448,63 @@ namespace DesktopController
             if (alt) keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
             if (ctrl) keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
             if (win) keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
+
+        public class WindowInfo
+        {
+            public IntPtr Hwnd;
+            public uint Pid;
+            public string Title;
+            public string ProcessName;
+        }
+
+        static System.Collections.Generic.List<WindowInfo> GetOpenWindows()
+        {
+            var list = new System.Collections.Generic.List<WindowInfo>();
+            EnumWindows((hWnd, lParam) =>
+            {
+                if (!IsWindowVisible(hWnd)) return true;
+                var sb = new System.Text.StringBuilder(512);
+                int count = GetWindowText(hWnd, sb, 512);
+                if (count <= 0) return true;
+
+                string title = sb.ToString().Trim();
+                if (string.IsNullOrEmpty(title) || title == "Program Manager") return true;
+
+                uint pid;
+                GetWindowThreadProcessId(hWnd, out pid);
+                string procName = "";
+                try
+                {
+                    var proc = System.Diagnostics.Process.GetProcessById((int)pid);
+                    procName = proc.ProcessName;
+                }
+                catch { }
+
+                list.Add(new WindowInfo { Hwnd = hWnd, Pid = pid, Title = title, ProcessName = procName });
+                return true;
+            }, IntPtr.Zero);
+            return list;
+        }
+
+        static WindowInfo FindWindowMatch(string query)
+        {
+            var windows = GetOpenWindows();
+            string q = query.ToLower();
+            foreach (var w in windows)
+            {
+                if (w.Title.ToLower().Contains(q) || w.ProcessName.ToLower().Contains(q))
+                {
+                    return w;
+                }
+            }
+            return null;
+        }
+
+        static string EscapeJson(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ");
         }
 
         static int Error(string msg)

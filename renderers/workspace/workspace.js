@@ -654,10 +654,13 @@
   // =========================================================================
   // 6. WEB BROWSER VIEW
   // =========================================================================
+  let devServerBaseUrl = 'http://127.0.0.1:4242';
+
   function initBrowser() {
     if (!deckWebview.src || deckWebview.src === 'about:blank') {
-      deckWebview.src = '../../preview.html';
-      browserUrlInput.value = 'preview.html';
+      const initialUrl = `${devServerBaseUrl}/preview.html`;
+      deckWebview.src = initialUrl;
+      browserUrlInput.value = initialUrl;
     }
   }
 
@@ -679,7 +682,7 @@
 
     if (url === 'preview.html' || url.endsWith('.html')) {
       if (!url.startsWith('http') && !url.startsWith('file://')) {
-        url = `../../${url}`;
+        url = `${devServerBaseUrl}/${url.replace(/^(\.\.[\/\\])+/, '').replace(/^\/+/, '')}`;
       }
     } else if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('file://')) {
       url = 'https://' + url;
@@ -711,6 +714,29 @@
     if (window.workspaceApi) {
       currentProjectDir = await window.workspaceApi.getDefaultPath();
       explorerPathInput.value = currentProjectDir;
+
+      try {
+        const srvUrl = await window.workspaceApi.getServerUrl();
+        if (srvUrl) devServerBaseUrl = srvUrl;
+      } catch (e) {}
+
+      if (window.workspaceApi.onFileUpdated) {
+        window.workspaceApi.onFileUpdated((fileInfo) => {
+          console.log('[Workspace Hot-Reload] File updated:', fileInfo.name);
+          if (deckWebview && deckWebview.src) {
+            try {
+              deckWebview.reload();
+            } catch (err) {}
+          }
+          if (ideLogsStream) {
+            const logMsg = document.createElement('div');
+            logMsg.className = 'chat-msg system';
+            logMsg.innerText = `[Live DevServer] Hot-reloaded: ${fileInfo.name}`;
+            ideLogsStream.appendChild(logMsg);
+            ideLogsStream.scrollTop = ideLogsStream.scrollHeight;
+          }
+        });
+      }
     }
     initIde();
   }
