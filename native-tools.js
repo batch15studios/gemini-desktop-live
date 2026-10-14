@@ -507,6 +507,126 @@ class ToolsManager {
     this.enabledMcpServers = initialEnabledServers || ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7'];
     this.activeSentries = [];
     this.screenCaptureProvider = null;
+
+    // Hardware Telemetry & CPU Core Sampler
+    this.lastCpuSample = this.sampleCpu();
+    this.lastCpuUsage = {
+      load: 0,
+      clockGhz: '2.10',
+      clockMhz: 2096,
+      coreCount: os.cpus().length,
+      model: os.cpus()[0]?.model || 'AMD Ryzen Processor'
+    };
+    this.hardwareTelemetry = {
+      tempC: null,
+      tempF: null,
+      tempStatus: 'NOMINAL',
+      batteryPercent: null,
+      batteryCharging: false,
+      batteryStatusText: 'AC ONLINE',
+      lastUpdated: 0
+    };
+    this.initHardwareTelemetryPoller();
+  }
+
+  sampleCpu() {
+    const cpus = os.cpus() || [];
+    let idle = 0;
+    let total = 0;
+    const speeds = [];
+    for (const cpu of cpus) {
+      if (cpu.times) {
+        for (const type in cpu.times) {
+          total += cpu.times[type];
+        }
+        idle += cpu.times.idle;
+      }
+      if (cpu.speed) speeds.push(cpu.speed);
+    }
+    return { idle, total, count: cpus.length, speeds, timestamp: Date.now() };
+  }
+
+  getCpuTelemetry() {
+    const current = this.sampleCpu();
+    if (!this.lastCpuSample) {
+      this.lastCpuSample = current;
+      return this.lastCpuUsage;
+    }
+    const idleDelta = current.idle - this.lastCpuSample.idle;
+    const totalDelta = current.total - this.lastCpuSample.total;
+    let load = 0;
+    if (totalDelta > 0) {
+      load = Math.max(0, Math.min(100, Math.round((1 - idleDelta / totalDelta) * 100)));
+    }
+    const avgSpeedMhz = current.speeds.length > 0
+      ? Math.round(current.speeds.reduce((a, b) => a + b, 0) / current.speeds.length)
+      : 2096;
+    const avgSpeedGhz = (avgSpeedMhz / 1000).toFixed(2);
+
+    this.lastCpuSample = current;
+    this.lastCpuUsage = {
+      load,
+      clockGhz: avgSpeedGhz,
+      clockMhz: avgSpeedMhz,
+      coreCount: current.count,
+      model: os.cpus()[0]?.model || 'Processor'
+    };
+    return this.lastCpuUsage;
+  }
+
+  initHardwareTelemetryPoller() {
+    this.refreshHardwareTelemetry();
+    this.hardwarePollerInterval = setInterval(() => {
+      this.refreshHardwareTelemetry();
+    }, 4500);
+    if (this.hardwarePollerInterval && this.hardwarePollerInterval.unref) {
+      this.hardwarePollerInterval.unref();
+    }
+  }
+
+  refreshHardwareTelemetry() {
+    const cmd = `powershell -NoProfile -NonInteractive -Command "$tz=(Get-CimInstance Win32_PerfFormattedData_Counters_ThermalZoneInformation -ErrorAction SilentlyContinue|Select -First 1);$bat=(Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue|Select -First 1);$tz.HighPrecisionTemperature,$tz.Temperature,$bat.EstimatedChargeRemaining,$bat.BatteryStatus -join ','"`;
+    exec(cmd, { windowsHide: true, timeout: 4500 }, (err, stdout) => {
+      if (err || !stdout) return;
+      try {
+        const parts = stdout.trim().split(',');
+        if (parts.length >= 4) {
+          const tzHigh = parseInt(parts[0], 10);
+          const tzTemp = parseInt(parts[1], 10);
+          const batPct = parseInt(parts[2], 10);
+          const batStat = parseInt(parts[3], 10);
+
+          let tempK = null;
+          if (!isNaN(tzHigh) && tzHigh > 1000) {
+            tempK = tzHigh / 10;
+          } else if (!isNaN(tzTemp) && tzTemp > 200) {
+            tempK = tzTemp;
+          }
+
+          if (tempK !== null) {
+            const c = Math.round(tempK - 273.15);
+            this.hardwareTelemetry.tempC = c;
+            this.hardwareTelemetry.tempF = Math.round(c * 1.8 + 32);
+            if (c < 55) this.hardwareTelemetry.tempStatus = 'OPTIMAL';
+            else if (c < 75) this.hardwareTelemetry.tempStatus = 'NOMINAL';
+            else if (c < 90) this.hardwareTelemetry.tempStatus = 'WARM';
+            else this.hardwareTelemetry.tempStatus = 'HIGH';
+          }
+
+          if (!isNaN(batPct) && batPct >= 0) {
+            this.hardwareTelemetry.batteryPercent = batPct;
+            this.hardwareTelemetry.batteryCharging = (batStat === 2 || batStat === 6 || batStat === 7 || batStat === 8);
+            if (batStat === 2) this.hardwareTelemetry.batteryStatusText = 'CHARGING (AC)';
+            else if (batStat === 3) this.hardwareTelemetry.batteryStatusText = 'FULLY CHARGED';
+            else if (batStat === 1) this.hardwareTelemetry.batteryStatusText = 'ON BATTERY';
+            else this.hardwareTelemetry.batteryStatusText = 'AC CONNECTED';
+          }
+          this.hardwareTelemetry.lastUpdated = Date.now();
+        }
+      } catch (parseErr) {
+        // Silent fail on parse
+      }
+    });
   }
 
   loadMcpConfig() {
@@ -906,20 +1026,39 @@ class ToolsManager {
   }
 
   getSystemStatus() {
-    const cpus = os.cpus();
-    const totalMemGB = (os.totalmem() / (1024 ** 3)).toFixed(2);
-    const freeMemGB = (os.freemem() / (1024 ** 3)).toFixed(2);
-    const usedMemGB = (totalMemGB - freeMemGB).toFixed(2);
+    const cpu = this.getCpuTelemetry();
+    const totalMemBytes = os.totalmem();
+    const freeMemBytes = os.freemem();
+    const usedMemBytes = totalMemBytes - freeMemBytes;
+    const totalMemGB = (totalMemBytes / (1024 ** 3)).toFixed(2);
+    const freeMemGB = (freeMemBytes / (1024 ** 3)).toFixed(2);
+    const usedMemGB = (usedMemBytes / (1024 ** 3)).toFixed(2);
+    const ramPercent = Math.round((usedMemBytes / totalMemBytes) * 100);
     const uptimeHours = (os.uptime() / 3600).toFixed(1);
 
     return {
-      cpuModel: cpus[0]?.model || 'Unknown',
-      cpuCores: cpus.length,
+      cpuModel: cpu.model,
+      cpuCores: cpu.coreCount,
+      cpuLoad: cpu.load,
+      clockGhz: cpu.clockGhz,
+      clockMhz: cpu.clockMhz,
       memory: {
         totalGB: `${totalMemGB} GB`,
         freeGB: `${freeMemGB} GB`,
         usedGB: `${usedMemGB} GB`,
-        usagePercent: `${Math.round(((os.totalmem() - os.freemem()) / os.totalmem()) * 100)}%`
+        totalRawGB: parseFloat(totalMemGB),
+        usedRawGB: parseFloat(usedMemGB),
+        usagePercent: `${ramPercent}%`,
+        usagePercentNum: ramPercent
+      },
+      telemetry: {
+        tempC: this.hardwareTelemetry.tempC,
+        tempF: this.hardwareTelemetry.tempF,
+        tempStatus: this.hardwareTelemetry.tempStatus,
+        batteryPercent: this.hardwareTelemetry.batteryPercent,
+        batteryCharging: this.hardwareTelemetry.batteryCharging,
+        batteryStatusText: this.hardwareTelemetry.batteryStatusText,
+        lastUpdated: this.hardwareTelemetry.lastUpdated
       },
       os: `${os.type()} ${os.release()} (${os.arch()})`,
       hostname: os.hostname(),

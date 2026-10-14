@@ -77,21 +77,97 @@
         </div>
       </div>
 
-      <!-- Section 3: Spatial Awareness & Transmission Stats -->
-      <div class="stats-panel">
-        <div class="stat-row">
-          <span>Vision Transmission Rate:</span>
-          <span class="stat-highlight" id="fpsDisplay">1.0 FPS (Optimal)</span>
+      <!-- Section 3: Live Hardware & System Telemetry Deck -->
+      <div class="telemetry-deck">
+        <div class="telemetry-header">
+          <div class="telemetry-title">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5V17h-2v-2h2v1.5zm0-4.5h-2V7h2v5z"/>
+            </svg>
+            <span>HARDWARE TELEMETRY DECK</span>
+          </div>
+          <span class="telem-chip" id="telemPulse">ONLINE</span>
         </div>
-        <div class="stat-row">
-          <span>Frames Streamed to Gemini:</span>
-          <span class="stat-highlight" id="frameCounter">0</span>
+
+        <div class="telemetry-grid">
+          <!-- CPU Frequency & Load Metric -->
+          <div class="telem-box">
+            <div class="telem-label-row">
+              <span class="telem-label">CPU LOAD & CLOCK</span>
+              <span class="telem-val" id="telemCpuClock">-- GHz</span>
+            </div>
+            <div class="telem-bar-track">
+              <div class="telem-bar-fill" id="telemCpuBar" style="width: 0%;"></div>
+            </div>
+            <div class="telem-sub-row">
+              <span id="telemCpuLoad">0% Load</span>
+              <span id="telemCpuCores">12 Threads</span>
+            </div>
+          </div>
+
+          <!-- Thermal Zone Metric -->
+          <div class="telem-box">
+            <div class="telem-label-row">
+              <span class="telem-label">THERMAL ZONE</span>
+              <span class="telem-val" id="telemTemp">--°C / --°F</span>
+            </div>
+            <div class="telem-bar-track">
+              <div class="telem-bar-fill telem-bar-temp" id="telemTempBar" style="width: 0%;"></div>
+            </div>
+            <div class="telem-sub-row">
+              <span id="telemTempState">NOMINAL</span>
+              <span>ACPI Sensor</span>
+            </div>
+          </div>
+
+          <!-- Memory Pressure Metric -->
+          <div class="telem-box">
+            <div class="telem-label-row">
+              <span class="telem-label">MEMORY USAGE</span>
+              <span class="telem-val" id="telemRamVal">-- / -- GB</span>
+            </div>
+            <div class="telem-bar-track">
+              <div class="telem-bar-fill" id="telemRamBar" style="width: 0%;"></div>
+            </div>
+            <div class="telem-sub-row">
+              <span id="telemRamPct">0%</span>
+              <span>DDR Memory</span>
+            </div>
+          </div>
+
+          <!-- Power & Battery Metric -->
+          <div class="telem-box">
+            <div class="telem-label-row">
+              <span class="telem-label">SYSTEM POWER</span>
+              <span class="telem-val" id="telemPowerVal">--%</span>
+            </div>
+            <div class="telem-bar-track">
+              <div class="telem-bar-fill telem-bar-power" id="telemPowerBar" style="width: 0%;"></div>
+            </div>
+            <div class="telem-sub-row">
+              <span id="telemPowerState">AC ONLINE</span>
+              <span id="telemUptime">Up: --h</span>
+            </div>
+          </div>
         </div>
-        <div class="stat-row">
-          <span>Spatial Context Status:</span>
-          <span class="stat-highlight" id="spatialStatus">Audible + Visual Enabled</span>
+
+        <!-- Vision Pipeline Stream Status Footer -->
+        <div class="vision-stream-footer">
+          <div class="stream-stat-item">
+            <span class="stat-lbl">STREAM:</span>
+            <span class="stat-data" id="fpsDisplay">1.0 FPS</span>
+          </div>
+          <div class="stream-stat-separator">•</div>
+          <div class="stream-stat-item">
+            <span class="stat-lbl">FRAMES SENT:</span>
+            <span class="stat-data" id="frameCounter">0</span>
+          </div>
+          <div class="stream-stat-separator">•</div>
+          <div class="stream-stat-item">
+            <span class="stat-lbl">SPATIAL HUD:</span>
+            <span class="stat-data" id="spatialStatus">ACTIVE</span>
+          </div>
         </div>
-        <button class="action-btn-snap" id="btnSnapNow">⚡ Capture & Send Instant Frame</button>
       </div>
     </div>
   </div>
