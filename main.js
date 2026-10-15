@@ -273,24 +273,32 @@ class AssistantApp {
         return;
       }
 
+      const sendDeckCommands = () => {
+        if (this.workspaceWindow && !this.workspaceWindow.isDestroyed()) {
+          const targetMode = mode || (filePath && !url ? 'ide' : 'browser');
+          this.workspaceWindow.webContents.send('workspace:set-mode', targetMode);
+          if (url) {
+            this.workspaceWindow.webContents.send('workspace:navigate', url);
+          }
+          if (filePath) {
+            this.workspaceWindow.webContents.send('workspace:open-file', filePath);
+          }
+        }
+      };
+
       // Default: ensure window is instantiated and shown
       if (!this.workspaceWindow || this.workspaceWindow.isDestroyed()) {
         this.createWorkspaceWindow();
+        this.workspaceWindow.webContents.once('did-finish-load', () => {
+          sendDeckCommands();
+        });
       } else {
+        if (this.workspaceWindow.isMinimized()) {
+          this.workspaceWindow.restore();
+        }
         this.workspaceWindow.show();
         this.workspaceWindow.focus();
-      }
-
-      if (this.workspaceWindow && !this.workspaceWindow.isDestroyed()) {
-        if (mode) {
-          this.workspaceWindow.webContents.send('workspace:set-mode', mode);
-        }
-        if (url) {
-          this.workspaceWindow.webContents.send('workspace:navigate', url);
-        }
-        if (filePath) {
-          this.workspaceWindow.webContents.send('workspace:open-file', filePath);
-        }
+        sendDeckCommands();
       }
     });
 

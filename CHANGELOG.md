@@ -4,6 +4,24 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.2.1] — 2026-10-15
+### Changed
+- **Default Viewport Mode to Web Browser**:
+  - The Workspace Deck now loads directly into the **Chromium Web Browser** view by default on every boot and open action, instead of loading into the Monaco IDE view.
+  - Initialized `initBrowser()` on boot in `workspace.js` and set `#viewBrowser` and `data-mode="browser"` as active in `workspace.html`.
+  - Updated `controlWorkspaceDeck()` in `native-tools.js` to automatically default to `mode: 'browser'` whenever opening or navigating, unless a specific file is explicitly requested for the IDE.
+
+### Fixed
+- **IPC Command Dropping on Window Instantiation**:
+  - In `main.js`, attached `webContents.once('did-finish-load')` when creating a new Workspace window before dispatching `workspace:set-mode` and `workspace:navigate`. Eliminates the race condition where Gemini thought the page was loaded into the browser but the window had dropped the command during creation.
+
+### Confirmed
+- **Google Workspace OAuth2 Authentication Active**:
+  - Verified active refresh tokens and OAuth credentials for `batch15studios@gmail.com`.
+  - Updated Gemini's boot situational awareness context and long-term memory graph to reflect active Google Workspace connectivity across Gmail, Calendar, Drive, Docs, Sheets, and Tasks.
+
+---
+
 ## [2.2.0] — 2026-10-15
 ### Fixed
 - **Workspace Deck Minimize Button**:

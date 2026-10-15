@@ -8,7 +8,7 @@
   'use strict';
 
   // State Management
-  let currentMode = 'ide'; // 'ide' | 'browser' | 'explorer'
+  let currentMode = 'browser'; // 'browser' | 'ide' | 'explorer'
   let currentProjectDir = '';
   let activeFilePath = 'preview.html';
   let openTabs = ['preview.html', 'main.js', 'safety-guard.js'];
@@ -782,7 +782,7 @@
         });
       }
     }
-    initIde();
+    initBrowser();
   }
 
   bootWorkspace();

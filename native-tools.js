@@ -1336,9 +1336,15 @@ class ToolsManager {
 
   async controlWorkspaceDeck(args = {}) {
     const action = args.action || 'open';
-    const mode = args.mode || null;
     const url = args.url || null;
     const filePath = args.filePath || null;
+    // Default mode is ALWAYS 'browser' unless explicitly opening a file in the IDE
+    let mode = args.mode || null;
+    if (!mode) {
+      mode = (filePath && !url) ? 'ide' : 'browser';
+    } else if (url && mode !== 'browser') {
+      mode = 'browser';
+    }
 
     console.log(`[ToolsManager] Controlling Workspace Deck: action=${action}, mode=${mode}, url=${url}, file=${filePath}`);
     this.emitter?.emit('workspace_control', { action, mode, url, filePath });
@@ -1346,10 +1352,10 @@ class ToolsManager {
     return {
       success: true,
       action,
-      mode: mode || 'active',
+      mode,
       url,
       filePath,
-      message: `Workspace Deck ${action} executed.${mode ? ` Switched view to "${mode}".` : ''}${url ? ` Navigated browser to "${url}".` : ''}${filePath ? ` Opened "${filePath}" in IDE.` : ''}`
+      message: `Workspace Deck ${action} executed. Switched view to "${mode}".${url ? ` Navigated browser to "${url}".` : ''}${filePath ? ` Opened "${filePath}" in IDE.` : ''}`
     };
   }
 

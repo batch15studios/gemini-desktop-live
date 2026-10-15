@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.2.0",
-  "description": "Full Desktop PC Assistant v2.2 with Google Workspace Full Suite, Native Window Minimize, Web Activity Verification Indicators, 4-Window Cyber HUD, and Persistent Long-Term Memory",
+  "version": "2.2.1",
+  "description": "Full Desktop PC Assistant v2.2.1 with Default Web Browser Deck View, Google Workspace OAuth Active, Native Window Minimize, and Activity Verification",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
