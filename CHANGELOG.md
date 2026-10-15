@@ -4,6 +4,27 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.2.0] — 2026-10-15
+### Fixed
+- **Workspace Deck Minimize Button**:
+  - Re-engineered the titlebar minimize button (`btnWinMinimize`) from a geometry restore/unmaximize action to a genuine native OS window minimize (`win.minimize()`).
+  - Minimized state now completely hides the workspace deck from view without unloading Monaco editor state, dev server threads, or webview instances.
+  - Enhanced `toggleWorkspaceDeck()` in `main.js` to detect `win.isMinimized()` and seamlessly restore and focus the window via `win.restore()`.
+  - Updated title attribute to `"Minimize Window"`.
+
+### Added
+- **Browser Activity Verification & Loading Indicators**:
+  - **Address Bar Cyber Spinner (`#browserActivitySpinner`)**: Added glowing animated cyan ring indicator next to the address input bar that spins actively whenever network requests or page renders are pending.
+  - **Top Shimmer Progress Bar (`#browserLoadBar`)**: Added a dynamic cyan-to-crimson gradient progress line along the top edge of the browser frame container that animates during page loads and smoothly completes on completion.
+  - **Spinning Reload Button**: Reload icon (`btnBrowserReload`) now gains a continuous rotation animation while pages are actively fetching.
+  - Wired to Electron `<webview>` lifecycle events: `did-start-loading`, `did-stop-loading`, `did-fail-load`, `did-navigate`, and `did-navigate-in-page`.
+
+### Changed
+- **Google Cloud Platform Workspace APIs Provisioning**:
+  - Automatically enabled all 9 core Google Workspace APIs on GCP project `batch-15-web-studios` (`gmail.googleapis.com`, `calendar-json.googleapis.com`, `drive.googleapis.com`, `docs.googleapis.com`, `sheets.googleapis.com`, `tasks.googleapis.com`, `people.googleapis.com`, `slides.googleapis.com`, `forms.googleapis.com`).
+
+---
+
 ## [2.1.0] — 2026-10-14
 ### Added
 - **Google Workspace Full Suite Engine (`google-workspace-manager.js`)**:

@@ -68,6 +68,8 @@
   const btnBrowserGo = document.getElementById('btnBrowserGo');
   const btnEditSource = document.getElementById('btnEditSource');
   const deckWebview = document.getElementById('deckWebview');
+  const browserActivitySpinner = document.getElementById('browserActivitySpinner');
+  const browserLoadBar = document.getElementById('browserLoadBar');
 
   // =========================================================================
   // 1. WINDOW CONTROLS & POPUP MENU
@@ -701,10 +703,52 @@
     switchMode('ide');
   });
 
+  // Browser Loading & Activity Verification Indicators
+  function setBrowserLoading(isLoading) {
+    if (isLoading) {
+      btnBrowserReload.classList.add('loading');
+      if (browserActivitySpinner) browserActivitySpinner.classList.add('active');
+      if (browserLoadBar) {
+        browserLoadBar.classList.add('active');
+        browserLoadBar.style.width = '75%';
+      }
+    } else {
+      btnBrowserReload.classList.remove('loading');
+      if (browserActivitySpinner) browserActivitySpinner.classList.remove('active');
+      if (browserLoadBar) {
+        browserLoadBar.style.width = '100%';
+        setTimeout(() => {
+          browserLoadBar.classList.remove('active');
+          browserLoadBar.style.width = '0%';
+        }, 300);
+      }
+    }
+  }
+
+  deckWebview.addEventListener('did-start-loading', () => {
+    setBrowserLoading(true);
+  });
+
+  deckWebview.addEventListener('did-stop-loading', () => {
+    setBrowserLoading(false);
+  });
+
+  deckWebview.addEventListener('did-fail-load', () => {
+    setBrowserLoading(false);
+  });
+
   deckWebview.addEventListener('did-navigate', (e) => {
     if (e.url) {
       browserUrlInput.value = e.url.replace(/^file:\/\/\/[A-Za-z]:\/.*?\//, '');
     }
+    setBrowserLoading(false);
+  });
+
+  deckWebview.addEventListener('did-navigate-in-page', (e) => {
+    if (e.url) {
+      browserUrlInput.value = e.url.replace(/^file:\/\/\/[A-Za-z]:\/.*?\//, '');
+    }
+    setBrowserLoading(false);
   });
 
   // =========================================================================

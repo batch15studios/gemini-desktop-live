@@ -183,19 +183,7 @@ function registerWorkspaceIpc(assistantApp) {
   ipcMain.on('workspace:minimize-restore', () => {
     const win = assistantApp.workspaceWindow;
     if (!win || win.isDestroyed()) return;
-
-    if (win.isMaximized()) {
-      win.unmaximize();
-    } else {
-      // Reset back to centered 92vw x 90vh geometry
-      const primaryDisplay = screen.getPrimaryDisplay();
-      const { width, height } = primaryDisplay.workAreaSize;
-      const targetW = Math.round(width * 0.92);
-      const targetH = Math.round(height * 0.90);
-      const targetX = Math.round((width - targetW) / 2);
-      const targetY = Math.round((height - targetH) / 2);
-      win.setBounds({ x: targetX, y: targetY, width: targetW, height: targetH }, true);
-    }
+    win.minimize();
   });
 
   ipcMain.on('workspace:maximize-toggle', () => {

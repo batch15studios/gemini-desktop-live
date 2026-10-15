@@ -482,6 +482,10 @@ class AssistantApp {
   toggleWorkspaceDeck() {
     if (!this.workspaceWindow || this.workspaceWindow.isDestroyed()) {
       this.createWorkspaceWindow();
+    } else if (this.workspaceWindow.isMinimized()) {
+      this.workspaceWindow.restore();
+      this.workspaceWindow.show();
+      this.workspaceWindow.focus();
     } else if (this.workspaceWindow.isVisible()) {
       this.workspaceWindow.hide();
       this.workspaceWindow.webContents.send('workspace:unloaded');

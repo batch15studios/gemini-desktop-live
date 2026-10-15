@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.1.0",
-  "description": "Full Desktop PC Assistant v2.1 with Google Workspace Full Suite, 4-Window Suite (Central Orb, Control Switchboard, Vision HUD, and Workspace Deck), Native Tools, and MCP Connectivity",
+  "version": "2.2.0",
+  "description": "Full Desktop PC Assistant v2.2 with Google Workspace Full Suite, Native Window Minimize, Web Activity Verification Indicators, 4-Window Cyber HUD, and Persistent Long-Term Memory",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

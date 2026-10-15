@@ -45,7 +45,7 @@
 
       <!-- Window Control Buttons (Native HUD Style) -->
       <div class="titlebar-controls">
-        <button class="win-btn win-minimize" id="btnWinMinimize" title="Restore Centered View">
+        <button class="win-btn win-minimize" id="btnWinMinimize" title="Minimize Window">
           <svg viewBox="0 0 10 1" width="10" height="1"><rect width="10" height="1" fill="currentColor"/></svg>
         </button>
         <button class="win-btn win-maximize" id="btnWinMaximize" title="Toggle Fullscreen">
@@ -240,6 +240,9 @@
           </div>
 
           <div class="browser-address-bar">
+            <div class="browser-activity-spinner" id="browserActivitySpinner" title="Loading...">
+              <div class="activity-ring"></div>
+            </div>
             <input type="text" id="browserUrlInput" value="preview.html" placeholder="Enter URL or file path (e.g. preview.html, http://localhost:3000)..." spellcheck="false" />
             <button class="btn-nav-go" id="btnBrowserGo">Go</button>
           </div>
@@ -257,6 +260,7 @@
 
         <!-- Embedded Webview Container -->
         <div class="browser-frame-container" id="browserFrameContainer">
+          <div class="browser-load-bar" id="browserLoadBar"></div>
           <webview id="deckWebview" src="../../preview.html" allowpopups></webview>
         </div>
       </section>

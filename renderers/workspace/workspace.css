@@ -876,6 +876,44 @@ body {
   gap: 6px;
 }
 
+/* Browser Activity Verification & Loading Spinner */
+.browser-activity-spinner {
+  width: 20px;
+  height: 20px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+.browser-activity-spinner.active {
+  display: flex;
+}
+
+.browser-activity-spinner .activity-ring {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 229, 255, 0.2);
+  border-top-color: var(--accent-cyan);
+  border-radius: 50%;
+  animation: browserSpin 0.75s linear infinite;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+/* Reload button spinning state */
+.btn-nav.loading {
+  color: var(--accent-cyan) !important;
+  animation: browserSpin 0.8s linear infinite !important;
+  border-color: var(--accent-cyan) !important;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+}
+
+@keyframes browserSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 #browserUrlInput {
   flex: 1;
   background: #060c13;
@@ -933,6 +971,32 @@ body {
   display: flex;
   overflow: hidden;
   position: relative;
+}
+
+/* Glowing Top Activity Load Bar */
+.browser-load-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-cyan), #ff3366, var(--accent-cyan));
+  background-size: 200% 100%;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: width 0.3s ease, opacity 0.25s ease;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
+}
+
+.browser-load-bar.active {
+  opacity: 1;
+  animation: shimmerBar 1.2s infinite linear;
+}
+
+@keyframes shimmerBar {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 #deckWebview {
