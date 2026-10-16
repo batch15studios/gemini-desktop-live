@@ -79,12 +79,12 @@ html, body {
 /* Body */
 .hud-body {
   flex: 1;
-  overflow-y: auto;
-  scrollbar-width: none;
-  padding: 10px 14px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px 14px 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .hud-body::-webkit-scrollbar {
@@ -96,16 +96,28 @@ html, body {
   background: var(--theme-bg-box, rgba(15, 28, 48, 0.7));
   border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.15));
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 9px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
+  min-height: 0;
+}
+
+.monitor-card.webcam-card {
+  flex: 2.15;
+  min-height: 220px;
+}
+
+.monitor-card.screen-card {
+  flex: 1;
+  min-height: 135px;
 }
 
 .monitor-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .monitor-title {
@@ -166,7 +178,8 @@ html, body {
 .video-container {
   position: relative;
   width: 100%;
-  height: 135px;
+  flex: 1;
+  min-height: 110px;
   background: #030712;
   border-radius: 8px;
   overflow: hidden;
@@ -177,7 +190,8 @@ html, body {
 }
 
 .video-container.screen-box {
-  height: 140px;
+  flex: 1;
+  min-height: 105px;
 }
 
 video {
@@ -239,6 +253,7 @@ video {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .telemetry-header {

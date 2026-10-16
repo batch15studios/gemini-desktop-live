@@ -58,7 +58,7 @@ async function toggleWebcam() {
   } else {
     try {
       webcamStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 } }
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } }
       });
       webcamVideo.srcObject = webcamStream;
       await webcamVideo.play().catch(e => console.warn('Webcam play error:', e));

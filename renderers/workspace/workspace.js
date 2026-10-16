@@ -561,6 +561,9 @@
     explorerPathInput.value = res.currentDir;
     explorerTableBody.innerHTML = '';
 
+    const folderSvg = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+    const fileSvg = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+
     res.items.forEach(item => {
       const tr = document.createElement('tr');
       tr.dataset.path = item.path;
@@ -568,7 +571,7 @@
       tr.dataset.isDir = item.isDirectory;
 
       tr.innerHTML = `
-        <td class="file-name-cell">${item.isDirectory ? '📁 ' : '📄 '}${item.name}</td>
+        <td class="file-name-cell"><span class="explorer-item-icon">${item.isDirectory ? folderSvg : fileSvg}</span><span>${item.name}</span></td>
         <td>${item.dateModified}</td>
         <td>${item.type}</td>
         <td>${item.size}</td>
@@ -603,7 +606,7 @@
     selectedExplorerItem = item;
 
     previewFileName.innerText = item.name;
-    previewCodeText.innerText = 'Loading preview...';
+    previewCodeText.innerText = 'Loading file contents...';
 
     if (item.isDirectory) {
       previewCodeText.innerText = `[Directory: ${item.name}]\nContains files and folders in workspace. Double-click to browse.`;
@@ -613,9 +616,9 @@
     if (window.workspaceApi) {
       window.workspaceApi.readFile(item.path).then(res => {
         if (res.success) {
-          previewCodeText.innerText = res.content.substring(0, 1500) + (res.content.length > 1500 ? '\n\n... [Content Truncated in Preview]' : '');
+          previewCodeText.innerText = res.content.substring(0, 1500) + (res.content.length > 1500 ? '\n\n... [Content Truncated in Inspector]' : '');
         } else {
-          previewCodeText.innerText = `Error loading preview: ${res.error}`;
+          previewCodeText.innerText = `Error reading file: ${res.error}`;
         }
       });
     }

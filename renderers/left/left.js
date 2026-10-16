@@ -252,30 +252,31 @@ window.assistantApi.onTranscript((data) => {
 // Tool Activity
 window.assistantApi.onToolActivity((activity) => {
   if (activity.type === 'executing') {
-    addLogEntry('Gemini', `⚡ Executing: ${activity.name}(${JSON.stringify(activity.args || {})})`, 'tool');
+    addLogEntry('Gemini', `[EXEC] ${activity.name}(${JSON.stringify(activity.args || {})})`, 'tool');
   } else if (activity.type === 'completed') {
-    addLogEntry('Gemini', `✓ Completed: ${activity.name}`, 'tool');
+    addLogEntry('Gemini', `[DONE] ${activity.name}`, 'tool');
   } else if (activity.type === 'failed') {
-    addLogEntry('Gemini', `✗ Failed: ${activity.name} - ${activity.error}`, 'tool');
+    addLogEntry('Gemini', `[FAIL] ${activity.name} - ${activity.error}`, 'tool');
   }
 });
 
 // Autonomous Sentry Trigger Log
 if (window.assistantApi.onSentryFired) {
   window.assistantApi.onSentryFired((sentry) => {
-    addLogEntry('Sentry', `🚨 ALERT: ${sentry.alertMessage} (Condition: ${sentry.condition} on ${sentry.target || 'target'})`, 'system');
+    addLogEntry('Sentry', `[ALERT] ${sentry.alertMessage} (Condition: ${sentry.condition} on ${sentry.target || 'target'})`, 'system');
   });
 }
 
 // Windows System Integrity Shield Interceptions
 if (window.assistantApi.onSafetyBlocked) {
   window.assistantApi.onSafetyBlocked((data) => {
-    addLogEntry('🛡️ SHIELD', `BLOCKED CRITICAL SYSTEM ACTION: ${data.reason}`, 'user');
+    addLogEntry('SHIELD', `BLOCKED CRITICAL SYSTEM ACTION: ${data.reason}`, 'user');
   });
 }
 
 // MCP Switchboard Renderer & Interactive Toggles
 let detailedMcpServers = [];
+const defaultMcpSvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg>`;
 
 async function renderMcpSwitchboard() {
   if (!mcpSwitchboard) return;
@@ -305,7 +306,7 @@ async function renderMcpSwitchboard() {
         <div class="mcp-card ${activeClass}" id="mcp-card-${server.id}">
           <div class="mcp-card-top">
             <div class="mcp-identity">
-              <div class="mcp-icon">${server.icon || '🔌'}</div>
+              <div class="mcp-icon">${server.icon || defaultMcpSvg}</div>
               <div class="mcp-details">
                 <div class="mcp-name-row">
                   <span class="mcp-name">${server.displayName || server.id}</span>

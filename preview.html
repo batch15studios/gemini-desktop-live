@@ -2,88 +2,351 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Localhost Live Preview</title>
+  <title>GEMINI // WORKSPACE COMMAND DECK</title>
   <style>
-    body {
+    :root {
+      --bg-deep: #060c14;
+      --bg-panel: rgba(11, 22, 34, 0.90);
+      --bg-sub: rgba(15, 30, 46, 0.75);
+      --accent: #00e5ff;
+      --accent-dim: rgba(0, 229, 255, 0.14);
+      --border: rgba(0, 229, 255, 0.28);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --text-bright: #e6f4ff;
+      --text-muted: #8aa6bf;
+    }
+
+    * {
+      box-sizing: border-box;
       margin: 0;
+      padding: 0;
+    }
+
+    body {
       padding: 36px;
       font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-      background: linear-gradient(135deg, #07111a, #0d2235);
-      color: #e2f1ff;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(0, 229, 255, 0.09), transparent 55%),
+        linear-gradient(145deg, #050a11 0%, #0a1726 100%);
+      color: var(--text-bright);
       min-height: 100vh;
-      box-sizing: border-box;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .hero {
-      max-width: 680px;
+
+    .deck-hub {
+      max-width: 820px;
       width: 100%;
-      background: rgba(13, 25, 38, 0.85);
-      border: 1px solid #00e5ff;
-      box-shadow: 0 10px 30px rgba(0, 229, 255, 0.15);
-      border-radius: 14px;
-      padding: 32px;
-      backdrop-filter: blur(8px);
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65), 0 0 28px rgba(0, 229, 255, 0.1);
+      border-radius: 12px;
+      padding: 34px 36px;
+      backdrop-filter: blur(12px);
     }
-    h1 {
-      color: #00e5ff;
-      margin-top: 0;
-      font-size: 26px;
-      font-weight: 600;
-      letter-spacing: -0.5px;
+
+    .hub-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
     }
-    p {
-      color: #9cb5c9;
-      font-size: 15px;
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
+
     .badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 11px;
+      background: var(--accent-dim);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      font-family: Consolas, "JetBrains Mono", monospace;
+    }
+
+    .status-tag {
+      font-size: 11px;
+      font-family: Consolas, monospace;
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
       padding: 4px 10px;
-      background: rgba(0, 229, 255, 0.12);
-      border: 1px solid rgba(0, 229, 255, 0.3);
-      border-radius: 6px;
-      color: #00e5ff;
-      font-size: 12px;
-      font-family: monospace;
-      margin-bottom: 12px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
     }
-    .features {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .feature-item {
-      font-size: 13px;
-      color: #cfdbe6;
-    }
-    .feature-item strong {
+
+    h1 {
       color: #ffffff;
-      display: block;
-      margin-bottom: 4px;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      margin-bottom: 8px;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.55;
+      margin-bottom: 22px;
+    }
+
+    /* Quick Web Navigation Form */
+    .quick-nav {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 26px;
+    }
+
+    .quick-nav input {
+      flex: 1;
+      background: rgba(6, 13, 21, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 11px 14px;
+      color: var(--text-bright);
+      font-size: 13.5px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .quick-nav input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+    }
+
+    .quick-nav button {
+      background: var(--accent);
+      color: #041019;
+      border: none;
+      border-radius: 7px;
+      padding: 0 20px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+
+    .quick-nav button:hover {
+      background: #5cefff;
+      box-shadow: 0 0 14px rgba(0, 229, 255, 0.45);
+    }
+
+    /* 3-Module Architecture Grid */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      padding-top: 22px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .module-card {
+      background: var(--bg-sub);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.2s;
+    }
+
+    .module-card:hover {
+      border-color: var(--border);
+    }
+
+    .module-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .module-icon-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .shortcut-pill {
+      font-family: Consolas, monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .module-desc {
+      font-size: 12.5px;
+      color: #b8cde0;
+      line-height: 1.45;
+    }
+
+    /* Quick Links Bar */
+    .quick-links {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+      flex-wrap: wrap;
+    }
+
+    .quick-links-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+
+    .link-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(0, 229, 255, 0.08);
+      border: 1px solid rgba(0, 229, 255, 0.24);
+      border-radius: 6px;
+      color: var(--text-bright);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .link-chip:hover {
+      background: rgba(0, 229, 255, 0.2);
+      border-color: var(--accent);
+      color: #ffffff;
     }
   </style>
 </head>
 <body>
-  <div class="hero">
-    <div class="badge">CHROMIUM LIVE PREVIEW</div>
-    <h1>Localhost Live Preview</h1>
-    <p>This page runs inside the integrated Web Browser. Use the top-left title dropdown to switch modes anytime.</p>
-    <div class="features">
-      <div class="feature-item">
-        <strong>IDE Integration</strong>
-        Click "Edit Source in IDE" above to instantly modify this template.
+  <div class="deck-hub">
+    <div class="hub-header">
+      <div class="badge">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M3 9h18M9 21V9"/>
+        </svg>
+        <span>GEMINI // WORKSPACE DECK</span>
       </div>
-      <div class="feature-item">
-        <strong>Live Web Navigation</strong>
-        Enter any URL or localhost port in the address bar to test external web apps.
+      <span class="status-tag">SYSTEMS ONLINE</span>
+    </div>
+
+    <h1>Workspace <span>Command Center</span></h1>
+    <p class="subtitle">
+      Integrated Chromium Web Browser, Monaco Code IDE, and Native File Explorer operating in unified real-time sync. Use the top-left deck selector or keyboard shortcuts to switch active workspaces anytime.
+    </p>
+
+    <form class="quick-nav" id="quickNavForm">
+      <input type="text" id="quickNavInput" placeholder="Enter a URL (e.g. https://github.com/batch15studios) or search query..." autocomplete="off" />
+      <button type="submit">Navigate</button>
+    </form>
+
+    <div class="modules-grid">
+      <div class="module-card">
+        <div class="module-head">
+          <div class="module-icon-title">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            <span>Web Browser</span>
+          </div>
+          <span class="shortcut-pill">Alt+1</span>
+        </div>
+        <div class="module-desc">
+          Full Chromium web engine with live DOM extraction, web scraping, and local development server hosting.
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div class="module-head">
+          <div class="module-icon-title">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+            <span>Code IDE</span>
+          </div>
+          <span class="shortcut-pill">Alt+2</span>
+        </div>
+        <div class="module-desc">
+          3-pane Monaco code editor with multi-tab editing, direct filesystem persistence, and live assistant terminal logs.
+        </div>
+      </div>
+
+      <div class="module-card">
+        <div class="module-head">
+          <div class="module-icon-title">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span>File Explorer</span>
+          </div>
+          <span class="shortcut-pill">Alt+3</span>
+        </div>
+        <div class="module-desc">
+          Native workspace directory browser with instant source code inspection and one-click IDE tab launching.
+        </div>
       </div>
     </div>
+
+    <div class="quick-links">
+      <span class="quick-links-label">QUICK LAUNCH:</span>
+      <a class="link-chip" href="/leads-report.html">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <span>Batch15Studios Lead Report</span>
+      </a>
+      <a class="link-chip" href="https://github.com/batch15studios">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+        </svg>
+        <span>GitHub // batch15studios</span>
+      </a>
+      <a class="link-chip" href="https://mail.google.com">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+        <span>Google Workspace Mail</span>
+      </a>
+    </div>
   </div>
+
+  <script>
+    document.getElementById('quickNavForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var val = document.getElementById('quickNavInput').value.trim();
+      if (!val) return;
+      if (val.startsWith('http://') || val.startsWith('https://') || val.startsWith('/')) {
+        window.location.href = val;
+      } else if (val.includes('.') && !val.includes(' ')) {
+        window.location.href = 'https://' + val;
+      } else {
+        window.location.href = 'https://duckduckgo.com/?q=' + encodeURIComponent(val);
+      }
+    });
+  </script>
 </body>
 </html>

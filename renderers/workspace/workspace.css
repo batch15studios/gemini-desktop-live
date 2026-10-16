@@ -158,7 +158,10 @@ body {
 
 .menu-icon {
   margin-right: 10px;
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-accent, var(--accent-cyan));
 }
 
 .menu-label {
@@ -752,6 +755,16 @@ body {
 
 .file-name-cell {
   font-family: var(--font-mono) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.explorer-item-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--theme-accent, var(--accent-cyan));
+  flex-shrink: 0;
 }
 
 /* Explorer Preview Pane (Right) */

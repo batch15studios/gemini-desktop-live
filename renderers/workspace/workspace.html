@@ -25,17 +25,32 @@
           <!-- Native Windows Style Popout Dropdown Menu -->
           <div class="deck-popout-menu" id="deckPopoutMenu">
             <div class="menu-item active" data-mode="browser">
-              <span class="menu-icon">🌐</span>
+              <span class="menu-icon">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="2" y1="12" x2="22" y2="12"/>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+              </span>
               <span class="menu-label">Web Browser</span>
               <span class="menu-shortcut">Alt+1</span>
             </div>
             <div class="menu-item" data-mode="ide">
-              <span class="menu-icon">⚡</span>
-              <span class="menu-label">IDE (10 / 70 / 10)</span>
+              <span class="menu-icon">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="16 18 22 12 16 6"/>
+                  <polyline points="8 6 2 12 8 18"/>
+                </svg>
+              </span>
+              <span class="menu-label">Code IDE</span>
               <span class="menu-shortcut">Alt+2</span>
             </div>
             <div class="menu-item" data-mode="explorer">
-              <span class="menu-icon">📁</span>
+              <span class="menu-icon">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+              </span>
               <span class="menu-label">File Explorer</span>
               <span class="menu-shortcut">Alt+3</span>
             </div>
@@ -206,22 +221,22 @@
             </table>
           </div>
 
-          <!-- Right: Live Preview Pane -->
+          <!-- Right: Source Inspector Pane -->
           <aside class="explorer-preview-pane" id="explorerPreviewPane">
             <div class="preview-header">
-              <span class="preview-title">PREVIEW PANE</span>
+              <span class="preview-title">SOURCE INSPECTOR</span>
               <span class="preview-filename" id="previewFileName">preview.html</span>
             </div>
 
             <div class="preview-actions">
               <button class="btn-open-preview" id="btnOpenInIde">
-                <span>Click Preview to Open</span>
+                <span>Open in Code IDE</span>
                 <span class="open-icon">Open ↗</span>
               </button>
             </div>
 
             <div class="preview-content-box">
-              <pre class="preview-code" id="previewCodeText">Loading preview...</pre>
+              <pre class="preview-code" id="previewCodeText">Loading file contents...</pre>
             </div>
           </aside>
         </div>

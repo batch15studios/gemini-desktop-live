@@ -4,6 +4,20 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.3.1] — 2026-10-16
+### Changed
+- **Right-Side Vision & Spatial HUD (`renderers/right/index.html`, `renderers/right/right.css`, `renderers/right/right.js`)**:
+  - Eliminated all unused vertical space at the bottom of the Right HUD by converting `.hud-body` and `.monitor-card` to a dynamic flex-fill architecture.
+  - Expanded **Webcam Perception (`.webcam-card`)** to `flex: 2.15` (with `flex: 1` on `.video-container`), more than doubling the live camera feed viewport height and upgrading capture resolution to `1280x720` ideal while pinning the **Hardware Telemetry Deck** flush against the bottom edge.
+- **Workspace Command Center Start Page (`preview.html`, `renderers/workspace/workspace.html`, `renderers/workspace/workspace.js`)**:
+  - Replaced the placeholder `"Localhost Live Preview"` heading and template in `preview.html` with the **GEMINI // WORKSPACE COMMAND DECK** start hub featuring an interactive URL/search navigation bar, architectural cards for the **Web Browser (`Alt+1`)**, **Code IDE (`Alt+2`)**, and **File Explorer (`Alt+3`)**, and quick-launch links.
+  - Renamed the File Explorer right-hand pane from `"PREVIEW PANE"` to `"SOURCE INSPECTOR"` (`"Open in Code IDE"`).
+- **Zero-Emoji Structured Vector SVG Iconography (`renderers/workspace/workspace.html`, `renderers/workspace/workspace.js`, `renderers/left/left.js`, `renderers/left/left.css`, `native-tools.js`, `web-scraper-lead-engine.js`)**:
+  - Removed all emojis across every dropdown menu, file explorer table, MCP server switchboard card, activity log stream, and HTML report button.
+  - Replaced them with structured, theme-reactive inline SVG vector icons (`stroke="currentColor"`) that automatically inherit `--theme-accent` across all color palettes and the COG Warfare skin.
+
+---
+
 ## [2.3.0] — 2026-10-15
 ### Added
 - **Web Search, Deep Web Scraper & Batch15Studios Local Lead Generation Engine (`web-scraper-lead-engine.js`)**:
