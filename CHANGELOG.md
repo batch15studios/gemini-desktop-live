@@ -4,6 +4,27 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.3.0] — 2026-10-15
+### Added
+- **Web Search, Deep Web Scraper & Batch15Studios Local Lead Generation Engine (`web-scraper-lead-engine.js`)**:
+  - **`web_search`**: Live search engine query parser (DuckDuckGo HTML + Bing fallback) returning real titles, URLs, and snippets.
+  - **`web_scrape_page`**: Deep webpage scraper that strips scripts/boilerplate, extracts clean text, harvests emails and phone numbers, automatically crawls `/contact` and `/about` subpages, and runs `auditTechStack()` to detect CMS/builders (WordPress, Wix, Squarespace, GoDaddy, Next.js, Shopify) and whether the site has AI/chat automation widgets (GoHighLevel, Intercom, Tawk.to, HubSpot, Drift, Podium).
+  - **`browser_extract_dom`**: Live Chromium `<webview>` DOM extractor wired via `main.js` (`extractWorkspaceWebviewDom`) and `call_mcp_tool` (`chrome-devtools-mcp`) so Gemini can extract rendered text, links, emails, and phones from any JS-rendered webpage open in the Workspace Deck Browser.
+  - **`find_local_business_leads`**: End-to-end automated pipeline for **Batch15Studios**:
+    1. Geocodes target zip code via Nominatim (`nominatim.openstreetmap.org`).
+    2. Queries OpenStreetMap Overpass API (`overpass-api.de`) + local directory SERPs to discover local service businesses and identify which ones have **NO website**, a **broken website**, or an **outdated website lacking AI automations**.
+    3. Enriches missing contact info via targeted search snippets and `/contact` subpage crawling.
+    4. Generates personalized **Batch15Studios** outreach pitches (modern web stack + 24/7 AI receptionists, missed-call text-back, and automated lead booking) and saves them directly to **Gmail Drafts**.
+    5. Compiles all leads into a **Multi-Column Interactive HTML Dashboard (`leads-report.html`)** with a Print/Save PDF button and opens it automatically in the Workspace Deck Browser (`http://127.0.0.1:4242/leads-report.html`).
+    6. Exports all leads in structured columns to a new **Google Sheet** and a new **Google Doc** (complete with full email copy) so Gemini never has to read 20 leads aloud one-by-one.
+  - **`send_approved_lead_emails`**: Approval-gated email dispatcher that sends drafted outreach emails via Gmail (`batch15studios@gmail.com`) **only after** explicit user confirmation (supports `"all"` or specific lead numbers like `"1, 3, 5"`).
+
+### Changed
+- **System Prompt & Long-Term Memory (`gemini-live-engine.js`, `memory-manager.js`)**:
+  - Added Section 6 & Rule 6 instructing Vega never to claim an inability to scrape the web, never to read 20 leads aloud one-by-one, to always present the visual multi-column report/Sheet/Doc, and to wait for explicit approval before calling `send_approved_lead_emails`.
+
+---
+
 ## [2.2.1] — 2026-10-15
 ### Changed
 - **Default Viewport Mode to Web Browser**:

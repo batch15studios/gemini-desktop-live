@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.2.1",
-  "description": "Full Desktop PC Assistant v2.2.1 with Default Web Browser Deck View, Google Workspace OAuth Active, Native Window Minimize, and Activity Verification",
+  "version": "2.3.0",
+  "description": "Full Desktop PC Assistant v2.3.0 with Web Search, Deep Web Scraping, Browser DOM Extraction, and Batch15Studios Local Lead Generation Engine",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

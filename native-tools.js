@@ -23,6 +23,7 @@ const { MemoryManager } = require('./memory-manager');
 const { safetyGuard } = require('./safety-guard.js');
 const { WindowTools } = require('./window-tools.js');
 const { GoogleWorkspaceManager } = require('./google-workspace-manager.js');
+const { WebScraperLeadEngine } = require('./web-scraper-lead-engine.js');
 
 // Standard Tool Declarations for Gemini Live / Function Calling
 const TOOL_DEFINITIONS = [
@@ -715,6 +716,69 @@ const TOOL_DEFINITIONS = [
       },
       required: ['sourcePath']
     }
+  },
+  {
+    name: 'web_search',
+    description: 'Search the live web for any query, topic, or local business information and return structured results (titles, URLs, and snippets).',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        query: { type: 'STRING', description: 'Search query string.' },
+        maxResults: { type: 'NUMBER', description: 'Maximum number of results to return (default 15).' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'web_scrape_page',
+    description: 'Fetch and scrape any public webpage URL to extract readable text, contact emails (including crawling /contact subpages), phone numbers, social media links, and a full Tech Stack & AI Automation audit (detecting WordPress, Wix, Squarespace, GoDaddy, and whether AI chat widgets are missing).',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        url: { type: 'STRING', description: 'Target webpage URL to scrape.' },
+        extractContacts: { type: 'BOOLEAN', description: 'Extract emails, phones, and social links (default true).' },
+        analyzeTechStack: { type: 'BOOLEAN', description: 'Analyze website CMS/stack and check for AI chat/automation widgets (default true).' }
+      },
+      required: ['url']
+    }
+  },
+  {
+    name: 'browser_extract_dom',
+    description: 'Extract live rendered DOM text, links, and content directly from the webpage currently open inside your Workspace Deck Browser.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        selector: { type: 'STRING', description: 'Optional CSS selector to target (default "body").' }
+      }
+    }
+  },
+  {
+    name: 'find_local_business_leads',
+    description: 'Batch15Studios Local Lead Generation Engine: Discover local service businesses by zip code and category/trade (e.g. find 20 businesses without a website or needing modern web dev + AI automations). Automatically compiles all leads into a Multi-Column Visual Report opened in the Workspace Deck Browser, creates a Google Sheet in columns, creates a formatted Google Doc in columns, and saves customized Batch15Studios outreach emails into Gmail Drafts awaiting Ryan\'s approval.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        zipCode: { type: 'STRING', description: 'Target US zip code (e.g. "75001", "90210").' },
+        category: { type: 'STRING', description: 'Business trade or category (e.g. "plumbing", "HVAC", "roofing", "landscaping", "service businesses").' },
+        limit: { type: 'NUMBER', description: 'Number of leads to compile (default 20).' },
+        onlyWithoutWebsite: { type: 'BOOLEAN', description: 'If true, prioritize businesses that do not have a standalone website.' },
+        autoCreateDrafts: { type: 'BOOLEAN', description: 'Automatically save tailored outreach emails into Gmail Drafts for discovered emails (default true).' },
+        exportToWorkspace: { type: 'BOOLEAN', description: 'Export multi-column table to Google Sheets and Google Docs (default true).' }
+      },
+      required: ['zipCode', 'category']
+    }
+  },
+  {
+    name: 'send_approved_lead_emails',
+    description: 'Send the compiled Batch15Studios outreach emails ONLY after Ryan explicitly approves them. Can send all leads with emails ("all") or specific lead numbers (e.g. [1, 3, 5]).',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        selection: { type: 'STRING', description: '"all" to send to all leads from the latest batch, or comma-separated lead numbers (e.g. "1, 2, 5").' },
+        emailOverrides: { type: 'OBJECT', description: 'Optional map of leadNumber -> custom email address if Ryan provides an email for a specific lead.' }
+      },
+      required: ['selection']
+    }
   }
 ];
 
@@ -780,6 +844,11 @@ class ToolsManager {
     this.emitter = eventEmitter;
     this.memoryManager = new MemoryManager();
     this.workspaceManager = new GoogleWorkspaceManager({ emitter: this.emitter });
+    this.leadEngine = new WebScraperLeadEngine({
+      workspaceManager: this.workspaceManager,
+      emitter: this.emitter,
+      rootDir: __dirname
+    });
     this.mcpServersPath = path.join(os.homedir(), '.gemini', 'antigravity', 'mcp');
     this.mcpConfigPath = path.join(os.homedir(), '.gemini', 'config', 'mcp_config.json');
     this.mcpConfig = this.loadMcpConfig();
@@ -787,6 +856,7 @@ class ToolsManager {
     this.enabledMcpServers = initialEnabledServers || ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7'];
     this.activeSentries = [];
     this.screenCaptureProvider = null;
+    this.webviewDomExtractor = null;
 
     // Hardware Telemetry & CPU Core Sampler
     this.lastCpuSample = this.sampleCpu();
@@ -1260,6 +1330,34 @@ class ToolsManager {
           break;
         case 'import_gemini_takeout':
           result = this.workspaceManager.importTakeoutConversations(args?.sourcePath, this.memoryManager);
+          break;
+        case 'web_search':
+          result = await this.leadEngine.webSearch(args?.query, args?.maxResults);
+          break;
+        case 'web_scrape_page':
+          result = await this.leadEngine.webScrapePage(args?.url, {
+            extractContacts: args?.extractContacts,
+            analyzeTechStack: args?.analyzeTechStack
+          });
+          break;
+        case 'browser_extract_dom':
+          result = await this.extractBrowserDom(args?.selector);
+          break;
+        case 'find_local_business_leads':
+          result = await this.leadEngine.findLocalBusinessLeads({
+            zipCode: args?.zipCode,
+            category: args?.category,
+            limit: args?.limit,
+            onlyWithoutWebsite: args?.onlyWithoutWebsite,
+            autoCreateDrafts: args?.autoCreateDrafts,
+            exportToWorkspace: args?.exportToWorkspace
+          });
+          break;
+        case 'send_approved_lead_emails':
+          result = await this.leadEngine.sendApprovedLeadEmails({
+            selection: args?.selection,
+            emailOverrides: args?.emailOverrides
+          });
           break;
         default:
           result = { error: `Tool '${name}' not implemented.` };
@@ -1905,7 +2003,20 @@ class ToolsManager {
       }
     }
 
-    // 5. Schema Read & Standard Execution Confirmation
+    // 5. Chrome DevTools MCP Server (Connected directly to Workspace Deck Webview)
+    if (serverName === 'chrome-devtools-mcp') {
+      if (toolName === 'navigate_page' || toolName === 'new_page') {
+        const targetUrl = parameters.url || 'https://google.com';
+        await this.controlWorkspaceDeck({ action: 'navigate_browser', mode: 'browser', url: targetUrl });
+        await new Promise(r => setTimeout(r, 2000));
+        return await this.extractBrowserDom('body');
+      }
+      if (toolName === 'take_snapshot' || toolName === 'evaluate_script') {
+        return await this.extractBrowserDom(parameters.selector || 'body');
+      }
+    }
+
+    // 6. Schema Read & Standard Execution Confirmation
     let schema = {};
     try {
       schema = JSON.parse(fs.readFileSync(schemaFile, 'utf-8'));
@@ -1918,6 +2029,20 @@ class ToolsManager {
       parameters,
       schemaDescription: schema.description || 'MCP Tool execution complete.'
     };
+  }
+
+  setWebviewDomExtractor(extractor) {
+    this.webviewDomExtractor = extractor;
+    if (this.leadEngine) {
+      this.leadEngine.webviewExtractor = extractor;
+    }
+  }
+
+  async extractBrowserDom(selector = 'body') {
+    if (typeof this.webviewDomExtractor === 'function') {
+      return await this.webviewDomExtractor(selector);
+    }
+    return { error: 'Workspace Deck browser DOM extractor is not initialized.' };
   }
 
   // --- Native Windows Cursor & Keyboard Control Engine ---

@@ -38,6 +38,7 @@ class AssistantApp {
     this.config = this.loadConfig();
     this.toolsManager = new ToolsManager(this.engineEmitter, this.config.enabledMcpServers);
     this.toolsManager.setScreenCaptureProvider(() => this.captureDesktopSnapshotJpeg());
+    this.toolsManager.setWebviewDomExtractor((selector) => this.extractWorkspaceWebviewDom(selector));
 
     const activeVoice = (this.config.skin === 'gears' && this.config.gearsVoice && this.config.gearsVoice.trim() !== '')
       ? this.config.gearsVoice.trim()
@@ -335,6 +336,44 @@ class AssistantApp {
       console.error('[Main] Desktop snapshot capture error:', err);
     }
     return null;
+  }
+
+  async extractWorkspaceWebviewDom(selector = 'body') {
+    try {
+      if (!this.workspaceWindow || this.workspaceWindow.isDestroyed()) {
+        return { error: 'Workspace Deck window is not currently open. Open or navigate the browser first.' };
+      }
+      const safeSel = JSON.stringify(selector || 'body');
+      return await this.workspaceWindow.webContents.executeJavaScript(`
+        (async () => {
+          const wv = document.getElementById('deckWebview');
+          if (!wv) return { error: 'Browser webview element not found.' };
+          try {
+            return await wv.executeJavaScript(\`
+              (() => {
+                const el = document.querySelector(${safeSel}) || document.body;
+                const text = el ? el.innerText.substring(0, 15000) : '';
+                const links = Array.from(document.querySelectorAll('a[href]'))
+                  .slice(0, 80)
+                  .map(a => ({ text: (a.innerText || '').trim().substring(0, 80), href: a.href }))
+                  .filter(l => l.href && l.href.startsWith('http'));
+                return {
+                  success: true,
+                  title: document.title,
+                  url: window.location.href,
+                  textContent: text,
+                  links
+                };
+              })()
+            \`);
+          } catch (innerErr) {
+            return { error: innerErr.message };
+          }
+        })()
+      `);
+    } catch (e) {
+      return { error: `Failed to extract DOM from Workspace browser: ${e.message}` };
+    }
   }
 
   broadcast(channel, data) {

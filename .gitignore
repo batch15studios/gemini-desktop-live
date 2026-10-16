@@ -4,6 +4,9 @@
 .env.*.local
 *.key
 assistant_config.json
+google_workspace_tokens.json
+leads_campaign_cache.json
+leads-report.html
 
 # Dependencies
 node_modules/
