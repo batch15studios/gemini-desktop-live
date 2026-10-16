@@ -843,11 +843,11 @@ class AssistantApp {
       if (this.leftWindow && !this.leftWindow.isDestroyed()) this.leftWindow.hide();
       if (this.rightWindow && !this.rightWindow.isDestroyed()) this.rightWindow.hide();
 
-      // 2. Morph Orb window into sleek top-of-screen floating toolbar
-      const miniW = 420;
-      const miniH = 46;
+      // 2. Morph Orb window into sleek top-of-screen floating toolbar (with 14px padding clearance so rounded pill glow never clips)
+      const miniW = 448;
+      const miniH = 70;
       const miniX = Math.round((width - miniW) / 2);
-      const miniY = 10;
+      const miniY = 4;
 
       if (this.orbWindow && !this.orbWindow.isDestroyed()) {
         this.orbWindow.setBounds({ x: miniX, y: miniY, width: miniW, height: miniH });

@@ -115,7 +115,6 @@ async function toggleScreenShare() {
       screenOverlay.style.display = 'block';
     }
   }
-  setTimeout(autoFitWindow, 150);
 }
 btnToggleScreen.addEventListener('click', toggleScreenShare);
 
@@ -250,37 +249,12 @@ async function pollHardwareTelemetry() {
   }
 }
 
-let hasAutoFittedTelem = false;
-
 // Start Telemetry Polling (every 1.5 seconds)
 setInterval(pollHardwareTelemetry, 1500);
-pollHardwareTelemetry().then(() => {
-  if (!hasAutoFittedTelem) {
-    hasAutoFittedTelem = true;
-    setTimeout(autoFitWindow, 120);
-  }
-});
-
-// 6. Dynamic Auto-Fit Window Sizing (Zero Scrollbar HUD)
-function autoFitWindow() {
-  const header = document.querySelector('.card-header');
-  const body = document.querySelector('.hud-body');
-  if (body && window.assistantApi?.adjustWindowSize) {
-    const headerH = header ? header.offsetHeight : 45;
-    const bodyContentH = body.scrollHeight;
-    // 28px clearance for window padding (10px top/bottom) and card border shadow
-    const neededHeight = headerH + bodyContentH + 28;
-    window.assistantApi.adjustWindowSize('right', 430, neededHeight);
-  }
-}
-
-window.addEventListener('DOMContentLoaded', () => setTimeout(autoFitWindow, 100));
-window.addEventListener('load', () => setTimeout(autoFitWindow, 250));
+pollHardwareTelemetry();
 
 // Auto-boot camera on load if available
-toggleWebcam().then(() => {
-  setTimeout(autoFitWindow, 300);
-});
+toggleWebcam();
 
 // Theme & Skin Management
 function applyTheme(themeId) {

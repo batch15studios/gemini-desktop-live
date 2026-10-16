@@ -4,6 +4,27 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.4.0] — 2026-10-16
+### Added
+- **Dedicated Local Structured Research & Lead Database (`research-database.js`, `native-tools.js`, `web-scraper-lead-engine.js`, `gemini-live-engine.js`)**:
+  - Built `ResearchDatabase` (`%APPDATA%\gemini-desktop-live\research_database.json`) to store high-volume structured records separately from Ryan's Obsidian Second Brain so bulk business leads, large website directories, and lengthy multi-step research datasets do not clutter the Obsidian markdown vault or Graph View.
+  - Supports 3 dedicated collections with automatic deduplication and indexed filtering:
+    - `business_leads`: Stores local business leads across zip codes and categories, including phone, email, website status, CMS/tech stack, AI widget detection, tailored Batch15Studios pitch angle, and outreach lifecycle status (`discovered` -> `draft_created` -> `email_sent`).
+    - `websites_directory`: Stores large lists of websites, domains, tech stack audits, and extracted contact info.
+    - `task_datasets`: Stores named structured datasets from lengthy research tasks for instant precision recall later.
+  - Added 4 native Gemini tools: `db_save_records`, `db_query_records`, `db_get_summary`, and `db_export_csv`.
+  - Automatically wired `find_local_business_leads` and `send_approved_lead_emails` to persist and update lead statuses in `ResearchDatabase`.
+
+### Fixed
+- **Floating Minimized Pill (`.mini-toolbar`) & Orb Control Bar Drop Shadow (`main.js`, `renderers/orb/orb.css`, `assets/themes.css`)**:
+  - Updated `setMiniMode()` window bounds in `main.js` from `420x46` (`padding: 0`) to `448x70` with `14px` transparent padding around `.mini-toolbar`, and replaced the wide `box-shadow` + `backdrop-filter` bounding box with a smooth `0 2px 8px` + `0 0 8px` pill-contoured rim glow that never clips at the rectangular window border.
+
+### Removed
+- **Full Codebase Audit & Tidy-Up**:
+  - Removed unused leftover media/icon test assets (`assets/PXL_20261001_073001610.mp4`, `assets/original-reference-icon.jpg`, `assets/app-icon-generated.jpg`), temporary root artifacts, and redundant `autoFitWindow()` dead code in `renderers/right/right.js`.
+
+---
+
 ## [2.3.2] — 2026-10-16
 ### Fixed
 - **Window Drop Shadows & Sharp Rectangular Corner Artifacts (`main.js`, `renderers/left/left.css`, `renderers/right/right.css`, `renderers/workspace/workspace.css`, `assets/themes.css`)**:

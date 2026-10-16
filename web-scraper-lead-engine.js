@@ -39,6 +39,7 @@ const IGNORED_EMAIL_PATTERNS = [
 class WebScraperLeadEngine {
   constructor(options = {}) {
     this.workspaceManager = options.workspaceManager || null;
+    this.researchDb = options.researchDb || null;
     this.emitter = options.emitter || null;
     this.webviewExtractor = options.webviewExtractor || null; // Function to execute JS in Workspace Deck webview
     this.rootDir = options.rootDir || __dirname;
@@ -480,7 +481,7 @@ class WebScraperLeadEngine {
       }
     }
 
-    // Save leads to local JSON for approval-gated sending
+    // Save leads to local JSON for approval-gated sending + upsert into permanent ResearchDatabase
     this.saveLeadsToDisk({
       generatedAt: new Date().toISOString(),
       zipCode,
@@ -489,6 +490,16 @@ class WebScraperLeadEngine {
       category,
       leads: enrichedLeads
     });
+
+    let dbSyncResult = null;
+    if (this.researchDb) {
+      dbSyncResult = this.researchDb.upsertBusinessLeads(enrichedLeads, {
+        zipCode,
+        category,
+        city: geo.city,
+        state: geo.state
+      });
+    }
 
     // Step 5: Generate Multi-Column Visual Outputs (Local HTML Dashboard + Google Sheet + Google Doc)
     const reportPath = this.generateHtmlLeadReport(enrichedLeads, { zipCode, city: geo.city, state: geo.state, category });
@@ -560,6 +571,7 @@ class WebScraperLeadEngine {
       leadsWithoutWebsite: noWebsiteCount,
       leadsWithEmail: withEmailCount,
       gmailDraftsCreated: draftsCreatedCount,
+      savedToResearchDatabase: dbSyncResult,
       visualReportOpenedInBrowser: reportUrl,
       localReportFile: reportPath,
       googleSheetUrl,
@@ -623,6 +635,10 @@ class WebScraperLeadEngine {
       if (res && res.success) {
         lead.emailSent = true;
         lead.sentAt = new Date().toISOString();
+        if (this.researchDb) {
+          this.researchDb.markLeadEmailSent(recipientEmail, saved.zipCode);
+          this.researchDb.markLeadEmailSent(lead.name, saved.zipCode);
+        }
         sentResults.push({
           leadNumber: lead.leadNumber,
           name: lead.name,

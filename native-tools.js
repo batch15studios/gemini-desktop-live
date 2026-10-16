@@ -24,6 +24,7 @@ const { safetyGuard } = require('./safety-guard.js');
 const { WindowTools } = require('./window-tools.js');
 const { GoogleWorkspaceManager } = require('./google-workspace-manager.js');
 const { WebScraperLeadEngine } = require('./web-scraper-lead-engine.js');
+const { ResearchDatabase } = require('./research-database.js');
 
 // Standard Tool Declarations for Gemini Live / Function Calling
 const TOOL_DEFINITIONS = [
@@ -779,6 +780,63 @@ const TOOL_DEFINITIONS = [
       },
       required: ['selection']
     }
+  },
+  {
+    name: 'db_save_records',
+    description: 'Save or update structured records in the dedicated local Research Database (separate from Obsidian so high-volume business leads, large website lists, and lengthy task datasets do not clutter the Obsidian vault). Supports collections: "business_leads", "websites_directory", and "task_datasets".',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        collection: { type: 'STRING', description: 'Collection name: "business_leads", "websites_directory", or "task_datasets".' },
+        records: { type: 'ARRAY', items: { type: 'OBJECT' }, description: 'Array of structured record objects to insert or upsert.' },
+        datasetName: { type: 'STRING', description: 'Required when collection="task_datasets": unique name for the research dataset.' },
+        category: { type: 'STRING', description: 'Optional category or trade tag.' },
+        zipCode: { type: 'STRING', description: 'Optional zip code tag for business leads.' }
+      },
+      required: ['collection', 'records']
+    }
+  },
+  {
+    name: 'db_query_records',
+    description: 'Query, filter, and retrieve structured records from the dedicated local Research Database ("business_leads", "websites_directory", or "task_datasets") with precision filtering by keyword, zipCode, category, outreachStatus, hasWebsite, or datasetName.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        collection: { type: 'STRING', description: 'Collection to query: "business_leads", "websites_directory", or "task_datasets".' },
+        query: { type: 'STRING', description: 'Optional keyword search across business name, domain, category, pitch angle, or notes.' },
+        zipCode: { type: 'STRING', description: 'Filter business_leads by zip code.' },
+        category: { type: 'STRING', description: 'Filter by category or trade.' },
+        outreachStatus: { type: 'STRING', description: 'Filter business_leads by status ("discovered", "draft_created", "email_sent").' },
+        hasWebsite: { type: 'BOOLEAN', description: 'Filter business_leads by whether they have a website (true/false).' },
+        hasEmail: { type: 'BOOLEAN', description: 'Filter business_leads by whether an email address was found (true/false).' },
+        datasetName: { type: 'STRING', description: 'When collection="task_datasets", filter by dataset name.' },
+        limit: { type: 'NUMBER', description: 'Maximum records to return (default 50).' }
+      },
+      required: ['collection']
+    }
+  },
+  {
+    name: 'db_get_summary',
+    description: 'Get an instant overview and statistics of all structured data stored in the local Research Database (total business leads, leads without websites, leads with emails, outreach sent count, zip codes covered, websites directory count, and saved task datasets).',
+    parameters: {
+      type: 'OBJECT',
+      properties: {}
+    }
+  },
+  {
+    name: 'db_export_csv',
+    description: 'Export any collection or filtered query from the local Research Database ("business_leads", "websites_directory", or "task_datasets") to a clean CSV spreadsheet file on disk.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        collection: { type: 'STRING', description: 'Collection to export: "business_leads", "websites_directory", or "task_datasets".' },
+        zipCode: { type: 'STRING', description: 'Optional zip code filter.' },
+        category: { type: 'STRING', description: 'Optional category filter.' },
+        datasetName: { type: 'STRING', description: 'Optional dataset name if exporting task_datasets.' },
+        outputPath: { type: 'STRING', description: 'Optional custom output file path for the CSV.' }
+      },
+      required: ['collection']
+    }
   }
 ];
 
@@ -844,8 +902,10 @@ class ToolsManager {
     this.emitter = eventEmitter;
     this.memoryManager = new MemoryManager();
     this.workspaceManager = new GoogleWorkspaceManager({ emitter: this.emitter });
+    this.researchDb = new ResearchDatabase({ rootDir: __dirname });
     this.leadEngine = new WebScraperLeadEngine({
       workspaceManager: this.workspaceManager,
+      researchDb: this.researchDb,
       emitter: this.emitter,
       rootDir: __dirname
     });
@@ -1357,6 +1417,40 @@ class ToolsManager {
           result = await this.leadEngine.sendApprovedLeadEmails({
             selection: args?.selection,
             emailOverrides: args?.emailOverrides
+          });
+          break;
+        case 'db_save_records':
+          result = this.researchDb.saveRecords({
+            collection: args?.collection,
+            records: args?.records,
+            datasetName: args?.datasetName,
+            category: args?.category,
+            zipCode: args?.zipCode
+          });
+          break;
+        case 'db_query_records':
+          result = this.researchDb.queryRecords({
+            collection: args?.collection,
+            query: args?.query,
+            zipCode: args?.zipCode,
+            category: args?.category,
+            outreachStatus: args?.outreachStatus,
+            hasWebsite: args?.hasWebsite,
+            hasEmail: args?.hasEmail,
+            datasetName: args?.datasetName,
+            limit: args?.limit
+          });
+          break;
+        case 'db_get_summary':
+          result = this.researchDb.getSummary();
+          break;
+        case 'db_export_csv':
+          result = this.researchDb.exportToCsv({
+            collection: args?.collection,
+            zipCode: args?.zipCode,
+            category: args?.category,
+            datasetName: args?.datasetName,
+            outputPath: args?.outputPath
           });
           break;
         default:
