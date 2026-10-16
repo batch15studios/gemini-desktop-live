@@ -23,5 +23,26 @@
   },
   "devDependencies": {
     "electron": "^33.2.0"
+  },
+  "build": {
+    "appId": "com.batch15studios.geminidesktoplive",
+    "productName": "Gemini Desktop Live",
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/installer-icon.ico",
+      "uninstallerIcon": "assets/installer-icon.ico",
+      "installerHeaderIcon": "assets/installer-icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Gemini Desktop Live"
+    }
   }
 }

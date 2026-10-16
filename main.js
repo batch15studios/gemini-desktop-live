@@ -386,7 +386,7 @@ class AssistantApp {
   createWindows() {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
-    const appIcon = path.join(__dirname, 'assets', 'icon.png');
+    const appIcon = path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
 
     const commonWebPreferences = {
       preload: path.join(__dirname, 'preload.js'),
@@ -482,7 +482,7 @@ class AssistantApp {
 
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
-    const appIcon = path.join(__dirname, 'assets', 'icon.png');
+    const appIcon = path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
 
     // Centered in workspace gap between HUDs (92vw x 90vh)
     const deckW = Math.round(width * 0.92);
