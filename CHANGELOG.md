@@ -4,6 +4,21 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.4.1] — 2026-10-16
+### Added
+- **Visual Research & Leads Database Dashboard (4th Tab in Workspace Deck)**:
+  - Added direct **Mode Navigation Tab Bar (`.deck-mode-tabs`)** in the Workspace Deck titlebar with 4 dedicated tabs: **Web Browser (`Alt+1`)**, **Code IDE (`Alt+2`)**, **File Explorer (`Alt+3`)**, and **Research Database (`Alt+4`)** featuring real-time lead count badges.
+  - Built **View 4: Research & Leads Database (`#viewDatabase`)**:
+    - **Live Metric Counter Deck**: Instant visual metrics for Total Leads, No Website (Target Prospects), Emails Discovered, Emails Sent, and Active Zip Codes.
+    - **Collection Switcher Pills**: One-click switching between `Business Leads` (`business_leads`), `Websites Directory` (`websites_directory`), and `Task Datasets` (`task_datasets`).
+    - **Real-Time Search & Precision Filters**: Instant keyword filtering across business names/trades, Zip Code selector, Outreach Status dropdown (`Discovered`, `Draft Created`, `Email Sent`), and Website Status filter (`No Website Only`, `Has Website`).
+    - **Interactive Multi-Column Data Grid**: Sticky header, custom status badges, click-to-copy buttons for phone and email, and full row selection.
+    - **Lead Pitch & Diagnostic Slide-Over Drawer (`#dbDetailDrawer`)**: Inspect the full generated outreach email draft, subject, tech stack breakdown, and diagnostic pitch angle with a 1-click "Copy Email" button.
+    - **CSV Export & Hot Refresh Buttons**: Direct UI buttons to export filtered results to CSV spreadsheet or trigger a live disk refresh.
+  - Added backend IPC channels (`workspace:db-summary`, `workspace:db-query`, `workspace:db-export-csv`, `workspace:db-updated`) and wired `workspace_deck(mode: 'database')` so Gemini can open the visual database dashboard on voice/chat command.
+
+---
+
 ## [2.4.0] — 2026-10-16
 ### Added
 - **Dedicated Local Structured Research & Lead Database (`research-database.js`, `native-tools.js`, `web-scraper-lead-engine.js`, `gemini-live-engine.js`)**:

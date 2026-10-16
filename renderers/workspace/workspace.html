@@ -54,8 +54,48 @@
               <span class="menu-label">File Explorer</span>
               <span class="menu-shortcut">Alt+3</span>
             </div>
+            <div class="menu-item" data-mode="database">
+              <span class="menu-icon">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                  <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                  <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                </svg>
+              </span>
+              <span class="menu-label">Research Database</span>
+              <span class="menu-shortcut">Alt+4</span>
+            </div>
           </div>
         </div>
+
+        <!-- Mode Navigation Tab Bar (Direct Clickable Tabs in Titlebar) -->
+        <nav class="deck-mode-tabs" id="deckModeTabs">
+          <button class="mode-tab-btn active" data-mode="browser" title="Switch to Web Browser (Alt+1)">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            <span>Browser</span>
+          </button>
+          <button class="mode-tab-btn" data-mode="ide" title="Switch to Code IDE (Alt+2)">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+            </svg>
+            <span>Code IDE</span>
+          </button>
+          <button class="mode-tab-btn" data-mode="explorer" title="Switch to File Explorer (Alt+3)">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span>Explorer</span>
+          </button>
+          <button class="mode-tab-btn" data-mode="database" title="Switch to Research Database & Leads (Alt+4)">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            </svg>
+            <span>Database</span>
+            <span class="tab-badge" id="dbTabBadge">5</span>
+          </button>
+        </nav>
       </div>
 
       <!-- Window Control Buttons (Native HUD Style) -->
@@ -277,6 +317,189 @@
         <div class="browser-frame-container" id="browserFrameContainer">
           <div class="browser-load-bar" id="browserLoadBar"></div>
           <webview id="deckWebview" src="../../preview.html" allowpopups></webview>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 4: RESEARCH & LEADS DATABASE VIEW         -->
+      <!-- ============================================== -->
+      <section class="deck-view" id="viewDatabase">
+        <!-- 1. Database Subbar with Collection Pills, Search & Filters -->
+        <div class="db-subbar">
+          <div class="db-subbar-left">
+            <!-- Collection Selector Pills -->
+            <div class="db-collection-pills" id="dbCollectionPills">
+              <button class="db-pill-btn active" data-col="business_leads">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/>
+                  <polyline points="17 11 19 13 23 9"/>
+                </svg>
+                <span>Business Leads</span>
+                <span class="pill-count" id="countBusinessLeads">5</span>
+              </button>
+              <button class="db-pill-btn" data-col="websites_directory">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+                <span>Websites Directory</span>
+                <span class="pill-count" id="countWebsites">0</span>
+              </button>
+              <button class="db-pill-btn" data-col="task_datasets">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/>
+                </svg>
+                <span>Task Datasets</span>
+                <span class="pill-count" id="countDatasets">0</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="db-subbar-right">
+            <!-- Search Input -->
+            <div class="db-search-box">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" id="dbSearchInput" placeholder="Filter records or trades..." spellcheck="false" />
+              <button class="db-clear-search" id="dbClearSearch" title="Clear filter">×</button>
+            </div>
+
+            <!-- Zip Code Filter -->
+            <select class="db-select-filter" id="dbFilterZip">
+              <option value="">All Zip Codes</option>
+            </select>
+
+            <!-- Status Filter -->
+            <select class="db-select-filter" id="dbFilterStatus">
+              <option value="">All Statuses</option>
+              <option value="discovered">Discovered</option>
+              <option value="draft_created">Draft Created</option>
+              <option value="email_sent">Email Sent</option>
+            </select>
+
+            <!-- Website Filter -->
+            <select class="db-select-filter" id="dbFilterWebsite">
+              <option value="">All Websites</option>
+              <option value="no_website">No Website Only</option>
+              <option value="has_website">Has Website</option>
+            </select>
+
+            <!-- Export CSV Action Button -->
+            <button class="db-action-btn" id="btnDbExportCsv" title="Export current records to CSV spreadsheet">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Export CSV</span>
+            </button>
+
+            <!-- Refresh Button -->
+            <button class="db-action-btn" id="btnDbRefresh" title="Refresh database from disk">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Metrics Deck Header -->
+        <div class="db-metrics-deck" id="dbMetricsDeck">
+          <div class="db-metric-card">
+            <div class="metric-val" id="metricTotalLeads">0</div>
+            <div class="metric-lbl">TOTAL LEADS</div>
+          </div>
+          <div class="db-metric-card highlight-target">
+            <div class="metric-val" id="metricNoWebsite">0</div>
+            <div class="metric-lbl">NO WEBSITE (TARGETS)</div>
+          </div>
+          <div class="db-metric-card">
+            <div class="metric-val" id="metricWithEmail">0</div>
+            <div class="metric-lbl">EMAILS FOUND</div>
+          </div>
+          <div class="db-metric-card highlight-sent">
+            <div class="metric-val" id="metricEmailsSent">0</div>
+            <div class="metric-lbl">EMAILS SENT</div>
+          </div>
+          <div class="db-metric-card">
+            <div class="metric-val" id="metricZipCodes">0</div>
+            <div class="metric-lbl">ACTIVE ZIP CODES</div>
+          </div>
+          <div class="db-metric-info">
+            <div class="db-path-tag" id="dbPathTag" title="Database file location on Windows PC">research_database.json</div>
+            <div class="db-time-tag" id="dbTimeTag">Synced</div>
+          </div>
+        </div>
+
+        <!-- 3. Main Multi-Column Table Viewport -->
+        <div class="db-table-viewport">
+          <table class="db-table" id="dbMainTable">
+            <thead id="dbTableHead">
+              <!-- Dynamically populated per collection -->
+            </thead>
+            <tbody id="dbTableBody">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+
+          <div class="db-empty-state hidden" id="dbEmptyState">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            </svg>
+            <div class="empty-title">No matching records found</div>
+            <div class="empty-sub">Ask Gemini to scrape local businesses or adjust your search filter above.</div>
+          </div>
+        </div>
+
+        <!-- 4. Lead Pitch & Details Slide-Over Drawer -->
+        <div class="db-detail-drawer hidden" id="dbDetailDrawer">
+          <div class="drawer-header">
+            <div class="drawer-title-group">
+              <span class="drawer-badge" id="drawerStatusBadge">DISCOVERED</span>
+              <h3 class="drawer-business-name" id="drawerBusinessName">Business Name</h3>
+            </div>
+            <button class="drawer-close-btn" id="btnDrawerClose">×</button>
+          </div>
+          <div class="drawer-body">
+            <div class="drawer-meta-grid">
+              <div class="drawer-meta-item">
+                <span class="meta-label">TRADE / CATEGORY</span>
+                <span class="meta-value" id="drawerCategory">-</span>
+              </div>
+              <div class="drawer-meta-item">
+                <span class="meta-label">LOCATION</span>
+                <span class="meta-value" id="drawerLocation">-</span>
+              </div>
+              <div class="drawer-meta-item">
+                <span class="meta-label">PHONE</span>
+                <span class="meta-value copyable" id="drawerPhone">-</span>
+              </div>
+              <div class="drawer-meta-item">
+                <span class="meta-label">EMAIL</span>
+                <span class="meta-value copyable" id="drawerEmail">-</span>
+              </div>
+              <div class="drawer-meta-item full-width">
+                <span class="meta-label">WEBSITE STATUS</span>
+                <span class="meta-value" id="drawerWebsite">-</span>
+              </div>
+            </div>
+
+            <div class="drawer-section">
+              <div class="section-title">PITCH ANGLE & DIAGNOSTIC</div>
+              <div class="drawer-box" id="drawerPitchAngle">-</div>
+            </div>
+
+            <div class="drawer-section" id="drawerEmailSection">
+              <div class="section-header-flex">
+                <div class="section-title">TAILORED OUTREACH EMAIL DRAFT</div>
+                <button class="btn-copy-pitch" id="btnCopyPitch">Copy Email</button>
+              </div>
+              <div class="drawer-email-subject">
+                <strong>Subject:</strong> <span id="drawerEmailSubject">-</span>
+              </div>
+              <pre class="drawer-email-body" id="drawerEmailBody">-</pre>
+            </div>
+          </div>
         </div>
       </section>
 

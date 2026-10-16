@@ -178,6 +178,14 @@ contextBridge.exposeInMainWorld('workspaceApi', {
     const handler = (e, fileInfo) => callback(fileInfo);
     ipcRenderer.on('workspace:file-updated', handler);
     return () => ipcRenderer.removeListener('workspace:file-updated', handler);
+  },
+  dbGetSummary: () => ipcRenderer.invoke('workspace:db-summary'),
+  dbQuery: (options) => ipcRenderer.invoke('workspace:db-query', options),
+  dbExportCsv: (options) => ipcRenderer.invoke('workspace:db-export-csv', options),
+  onDbUpdated: (callback) => {
+    const handler = (e, data) => callback(data);
+    ipcRenderer.on('workspace:db-updated', handler);
+    return () => ipcRenderer.removeListener('workspace:db-updated', handler);
   }
 });
 

@@ -310,7 +310,7 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: 'workspace_deck',
-    description: 'Control your integrated GEMINI WORKSPACE DECK (the 4th window). Allows you to open, close, toggle, or switch between your built-in Web Browser, Code IDE (Monaco Editor), and File Explorer. Also allows loading specific URLs into the browser or opening specific files in the IDE.',
+    description: 'Control your integrated GEMINI WORKSPACE DECK (the 4th window). Allows you to open, close, toggle, or switch between your built-in Web Browser (Alt+1), Code IDE (Alt+2), File Explorer (Alt+3), and Research Database & Leads Dashboard (Alt+4). Also allows loading specific URLs into the browser or opening specific files in the IDE.',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -320,7 +320,7 @@ const TOOL_DEFINITIONS = [
         },
         mode: {
           type: 'STRING',
-          description: 'The mode to switch the deck to: "browser" (Chromium Web Browser), "ide" (Monaco Code Editor), or "explorer" (Native File Explorer).'
+          description: 'The mode to switch the deck to: "browser" (Chromium Web Browser), "ide" (Monaco Code Editor), "explorer" (Native File Explorer), or "database" (Visual Research & Leads Database dashboard).'
         },
         url: {
           type: 'STRING',

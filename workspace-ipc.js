@@ -354,6 +354,31 @@ function registerWorkspaceIpc(assistantApp) {
 
     return { response: `[Gemini Workspace Hub]: Received "${query}". Live Voice session is in standby mode. Start Gemini in the Control Hub to chat in real-time.` };
   });
+
+  // 6. Research Database & Business Leads Integration
+  ipcMain.handle('workspace:db-summary', async () => {
+    try {
+      return assistantApp.toolsManager?.researchDb?.getSummary() || { success: false, error: 'Database not initialized' };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('workspace:db-query', async (e, options) => {
+    try {
+      return assistantApp.toolsManager?.researchDb?.queryRecords(options) || { success: false, error: 'Database not initialized' };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('workspace:db-export-csv', async (e, options) => {
+    try {
+      return assistantApp.toolsManager?.researchDb?.exportToCsv(options) || { success: false, error: 'Database not initialized' };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
 }
 
 module.exports = { registerWorkspaceIpc };

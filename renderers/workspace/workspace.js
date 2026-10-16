@@ -23,6 +23,7 @@
   const deckContainer = document.getElementById('deckContainer');
   const btnTitleDropdown = document.getElementById('btnTitleDropdown');
   const deckPopoutMenu = document.getElementById('deckPopoutMenu');
+  const deckModeTabs = document.getElementById('deckModeTabs');
   const btnWinMinimize = document.getElementById('btnWinMinimize');
   const btnWinMaximize = document.getElementById('btnWinMaximize');
   const btnWinClose = document.getElementById('btnWinClose');
@@ -31,6 +32,41 @@
   const viewIde = document.getElementById('viewIde');
   const viewExplorer = document.getElementById('viewExplorer');
   const viewBrowser = document.getElementById('viewBrowser');
+  const viewDatabase = document.getElementById('viewDatabase');
+
+  // Database Elements
+  const dbTabBadge = document.getElementById('dbTabBadge');
+  const dbCollectionPills = document.getElementById('dbCollectionPills');
+  const dbSearchInput = document.getElementById('dbSearchInput');
+  const dbClearSearch = document.getElementById('dbClearSearch');
+  const dbFilterZip = document.getElementById('dbFilterZip');
+  const dbFilterStatus = document.getElementById('dbFilterStatus');
+  const dbFilterWebsite = document.getElementById('dbFilterWebsite');
+  const btnDbExportCsv = document.getElementById('btnDbExportCsv');
+  const btnDbRefresh = document.getElementById('btnDbRefresh');
+  const metricTotalLeads = document.getElementById('metricTotalLeads');
+  const metricNoWebsite = document.getElementById('metricNoWebsite');
+  const metricWithEmail = document.getElementById('metricWithEmail');
+  const metricEmailsSent = document.getElementById('metricEmailsSent');
+  const metricZipCodes = document.getElementById('metricZipCodes');
+  const dbPathTag = document.getElementById('dbPathTag');
+  const dbTimeTag = document.getElementById('dbTimeTag');
+  const dbTableHead = document.getElementById('dbTableHead');
+  const dbTableBody = document.getElementById('dbTableBody');
+  const dbEmptyState = document.getElementById('dbEmptyState');
+  const dbDetailDrawer = document.getElementById('dbDetailDrawer');
+  const btnDrawerClose = document.getElementById('btnDrawerClose');
+  const drawerBusinessName = document.getElementById('drawerBusinessName');
+  const drawerStatusBadge = document.getElementById('drawerStatusBadge');
+  const drawerCategory = document.getElementById('drawerCategory');
+  const drawerLocation = document.getElementById('drawerLocation');
+  const drawerPhone = document.getElementById('drawerPhone');
+  const drawerEmail = document.getElementById('drawerEmail');
+  const drawerWebsite = document.getElementById('drawerWebsite');
+  const drawerPitchAngle = document.getElementById('drawerPitchAngle');
+  const drawerEmailSubject = document.getElementById('drawerEmailSubject');
+  const drawerEmailBody = document.getElementById('drawerEmailBody');
+  const btnCopyPitch = document.getElementById('btnCopyPitch');
 
   // IDE Elements
   const ideTabsContainer = document.getElementById('ideTabsContainer');
@@ -108,7 +144,17 @@
     });
   });
 
-  // Keyboard Shortcuts (Alt+1, Alt+2, Alt+3)
+  // Mode Navigation Tabs in Titlebar (Direct Clickable Tabs)
+  if (deckModeTabs) {
+    deckModeTabs.querySelectorAll('.mode-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode;
+        if (mode) switchMode(mode);
+      });
+    });
+  }
+
+  // Keyboard Shortcuts (Alt+1: Browser, Alt+2: IDE, Alt+3: Explorer, Alt+4: Database)
   window.addEventListener('keydown', (e) => {
     if (e.altKey && e.key === '1') {
       e.preventDefault();
@@ -119,6 +165,9 @@
     } else if (e.altKey && e.key === '3') {
       e.preventDefault();
       switchMode('explorer');
+    } else if (e.altKey && e.key === '4') {
+      e.preventDefault();
+      switchMode('database');
     } else if (e.ctrlKey && e.key === 's') {
       e.preventDefault();
       saveCurrentFile();
@@ -156,6 +205,14 @@
         }
       });
     }
+    if (window.workspaceApi.onDbUpdated) {
+      window.workspaceApi.onDbUpdated(() => {
+        updateDbBadge();
+        if (currentMode === 'database') {
+          loadDatabaseView();
+        }
+      });
+    }
   }
 
   // =========================================================================
@@ -176,10 +233,18 @@
       item.classList.toggle('active', item.dataset.mode === newMode);
     });
 
+    // Update Titlebar Mode Tabs
+    if (deckModeTabs) {
+      deckModeTabs.querySelectorAll('.mode-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === newMode);
+      });
+    }
+
     // Update Views
     viewIde.classList.toggle('active', newMode === 'ide');
     viewExplorer.classList.toggle('active', newMode === 'explorer');
     viewBrowser.classList.toggle('active', newMode === 'browser');
+    if (viewDatabase) viewDatabase.classList.toggle('active', newMode === 'database');
 
     if (newMode === 'ide') {
       initIde();
@@ -187,6 +252,8 @@
       loadExplorerDirectory(currentProjectDir);
     } else if (newMode === 'browser') {
       initBrowser();
+    } else if (newMode === 'database') {
+      loadDatabaseView();
     }
   }
 
@@ -755,6 +822,403 @@
   });
 
   // =========================================================================
+  // 6. RESEARCH DATABASE & LEADS MANAGER VIEW
+  // =========================================================================
+  let currentDbCollection = 'business_leads';
+  let cachedDbRecords = [];
+  let cachedDbSummary = null;
+  let activeLeadItem = null;
+
+  async function updateDbBadge() {
+    if (!window.workspaceApi || !window.workspaceApi.dbGetSummary) return;
+    try {
+      const summary = await window.workspaceApi.dbGetSummary();
+      if (summary && summary.success && summary.tables) {
+        cachedDbSummary = summary;
+        const leadCount = summary.tables.business_leads?.totalRecords || 0;
+        if (dbTabBadge) dbTabBadge.textContent = leadCount;
+        const countBusinessLeads = document.getElementById('countBusinessLeads');
+        if (countBusinessLeads) countBusinessLeads.textContent = leadCount;
+        const countWebsites = document.getElementById('countWebsites');
+        if (countWebsites) countWebsites.textContent = summary.tables.websites_directory?.totalRecords || 0;
+        const countDatasets = document.getElementById('countDatasets');
+        if (countDatasets) countDatasets.textContent = summary.tables.task_datasets?.totalDatasets || 0;
+      }
+    } catch (e) {
+      console.warn('[Workspace DB] Error updating badge:', e);
+    }
+  }
+
+  async function loadDatabaseView() {
+    await updateDbBadge();
+    await fetchAndRenderDbRecords();
+    renderDbMetrics();
+  }
+
+  function renderDbMetrics() {
+    if (!cachedDbSummary || !cachedDbSummary.tables) return;
+    const leadsMeta = cachedDbSummary.tables.business_leads || {};
+    if (metricTotalLeads) metricTotalLeads.textContent = leadsMeta.totalRecords || 0;
+    if (metricNoWebsite) metricNoWebsite.textContent = leadsMeta.withoutWebsite || 0;
+    if (metricWithEmail) metricWithEmail.textContent = leadsMeta.withEmail || 0;
+    if (metricEmailsSent) metricEmailsSent.textContent = leadsMeta.emailsSent || 0;
+    const zipCount = Object.keys(leadsMeta.byZipCode || {}).length;
+    if (metricZipCodes) metricZipCodes.textContent = zipCount;
+    if (dbPathTag && cachedDbSummary.databasePath) {
+      dbPathTag.textContent = cachedDbSummary.databasePath.split('\\').pop() || 'research_database.json';
+      dbPathTag.title = cachedDbSummary.databasePath;
+    }
+    if (dbTimeTag && cachedDbSummary.lastUpdated) {
+      dbTimeTag.textContent = 'Synced ' + new Date(cachedDbSummary.lastUpdated).toLocaleTimeString();
+    }
+
+    // Populate Zip Code Filter
+    if (dbFilterZip && leadsMeta.byZipCode) {
+      const currentVal = dbFilterZip.value;
+      dbFilterZip.innerHTML = '<option value="">All Zip Codes</option>';
+      Object.keys(leadsMeta.byZipCode).sort().forEach(zip => {
+        const count = leadsMeta.byZipCode[zip];
+        const opt = document.createElement('option');
+        opt.value = zip;
+        opt.textContent = `${zip} (${count})`;
+        if (zip === currentVal) opt.selected = true;
+        dbFilterZip.appendChild(opt);
+      });
+    }
+  }
+
+  async function fetchAndRenderDbRecords() {
+    if (!window.workspaceApi || !window.workspaceApi.dbQuery) return;
+    try {
+      const res = await window.workspaceApi.dbQuery({
+        collection: currentDbCollection,
+        limit: 250
+      });
+      if (res && res.success) {
+        cachedDbRecords = res.records || [];
+        applyDbFiltersAndRender();
+      }
+    } catch (err) {
+      console.error('[Workspace DB] Failed to query database:', err);
+    }
+  }
+
+  function applyDbFiltersAndRender() {
+    const query = (dbSearchInput?.value || '').trim().toLowerCase();
+    const zip = dbFilterZip?.value || '';
+    const status = dbFilterStatus?.value || '';
+    const webFilter = dbFilterWebsite?.value || '';
+
+    let filtered = cachedDbRecords.filter(item => {
+      if (query) {
+        const textBlob = `${item.name || ''} ${item.category || ''} ${item.email || ''} ${item.phone || ''} ${item.domain || ''} ${item.pitchAngle || ''} ${item.address || ''} ${item.datasetName || ''}`.toLowerCase();
+        if (!textBlob.includes(query)) return false;
+      }
+
+      if (currentDbCollection === 'business_leads') {
+        if (zip && String(item.zipCode || '') !== zip && !(item.address || '').includes(zip)) return false;
+        if (status && item.outreachStatus !== status) return false;
+        if (webFilter === 'no_website' && item.hasWebsite !== false) return false;
+        if (webFilter === 'has_website' && item.hasWebsite !== true) return false;
+      }
+
+      return true;
+    });
+
+    renderDbTable(filtered);
+  }
+
+  function renderDbTable(records) {
+    if (!dbTableHead || !dbTableBody) return;
+
+    if (!records || records.length === 0) {
+      dbTableHead.innerHTML = '';
+      dbTableBody.innerHTML = '';
+      if (dbEmptyState) dbEmptyState.classList.remove('hidden');
+      return;
+    }
+
+    if (dbEmptyState) dbEmptyState.classList.add('hidden');
+
+    if (currentDbCollection === 'business_leads') {
+      renderBusinessLeadsTable(records);
+    } else if (currentDbCollection === 'websites_directory') {
+      renderWebsitesTable(records);
+    } else if (currentDbCollection === 'task_datasets') {
+      renderDatasetsTable(records);
+    }
+  }
+
+  function renderBusinessLeadsTable(records) {
+    dbTableHead.innerHTML = `
+      <tr>
+        <th style="width: 4%;">#</th>
+        <th style="width: 22%;">Business Name</th>
+        <th style="width: 14%;">Trade / Category</th>
+        <th style="width: 11%;">Zip / Location</th>
+        <th style="width: 13%;">Phone</th>
+        <th style="width: 15%;">Email Address</th>
+        <th style="width: 12%;">Website Status</th>
+        <th style="width: 9%;">Outreach</th>
+      </tr>
+    `;
+
+    dbTableBody.innerHTML = '';
+    records.forEach((lead, idx) => {
+      const tr = document.createElement('tr');
+      const hasEmail = !!(lead.email && lead.email.trim());
+      const hasPhone = !!(lead.phone && lead.phone.trim());
+
+      let statusBadgeClass = 'badge-discovered';
+      let statusLabel = 'DISCOVERED';
+      if (lead.outreachStatus === 'email_sent') {
+        statusBadgeClass = 'badge-sent';
+        statusLabel = 'EMAIL SENT';
+      } else if (lead.outreachStatus === 'draft_created' || lead.draftCreated) {
+        statusBadgeClass = 'badge-draft';
+        statusLabel = 'DRAFT READY';
+      }
+
+      let webBadgeClass = lead.hasWebsite ? 'badge-hasweb' : 'badge-noweb';
+      let webLabel = lead.hasWebsite ? (lead.techAudit?.cms || 'Has Website') : 'NO WEBSITE';
+
+      tr.innerHTML = `
+        <td style="color: var(--text-dim); font-family: var(--font-mono);">${idx + 1}</td>
+        <td>
+          <div style="font-weight: 700; color: var(--text-main); font-size: 12.5px;">${escapeHtml(lead.name || 'Unknown Business')}</div>
+          ${lead.address ? `<div style="font-size: 10.5px; color: var(--text-muted);">${escapeHtml(lead.address)}</div>` : ''}
+        </td>
+        <td>
+          <span class="trade-tag">${escapeHtml(lead.category || 'Service')}</span>
+        </td>
+        <td>
+          <span style="font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted);">${escapeHtml(lead.zipCode || (lead.address?.match(/\\d{5}/)?.[0] || '-'))}</span>
+        </td>
+        <td>
+          <div class="contact-cell">
+            <span style="font-family: var(--font-mono); font-size: 11.5px;">${escapeHtml(lead.phone || '-')}</span>
+            ${hasPhone ? `<button class="btn-mini-copy" data-copy="${escapeHtml(lead.phone)}" title="Copy phone number"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>` : ''}
+          </div>
+        </td>
+        <td>
+          <div class="contact-cell">
+            <span style="font-family: var(--font-mono); font-size: 11.5px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(lead.email || '-')}</span>
+            ${hasEmail ? `<button class="btn-mini-copy" data-copy="${escapeHtml(lead.email)}" title="Copy email address"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>` : ''}
+          </div>
+        </td>
+        <td>
+          <span class="table-pill ${webBadgeClass}">${escapeHtml(webLabel)}</span>
+        </td>
+        <td>
+          <span class="table-pill ${statusBadgeClass}">${statusLabel}</span>
+        </td>
+      `;
+
+      tr.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-mini-copy')) return;
+        openLeadDrawer(lead);
+      });
+
+      dbTableBody.appendChild(tr);
+    });
+
+    // Wire mini-copy buttons
+    dbTableBody.querySelectorAll('.btn-mini-copy').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const text = btn.dataset.copy;
+        if (text) {
+          navigator.clipboard.writeText(text);
+          const origSvg = btn.innerHTML;
+          btn.innerHTML = '✓';
+          setTimeout(() => { btn.innerHTML = origSvg; }, 1200);
+        }
+      });
+    });
+  }
+
+  function renderWebsitesTable(records) {
+    dbTableHead.innerHTML = `
+      <tr>
+        <th style="width: 5%;">#</th>
+        <th style="width: 25%;">Domain / URL</th>
+        <th style="width: 20%;">Tech Stack / CMS</th>
+        <th style="width: 20%;">AI / Chat Widgets</th>
+        <th style="width: 20%;">Contacts Found</th>
+        <th style="width: 10%;">Scraped Date</th>
+      </tr>
+    `;
+
+    dbTableBody.innerHTML = '';
+    records.forEach((site, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="color: var(--text-dim); font-family: var(--font-mono);">${idx + 1}</td>
+        <td>
+          <div style="font-weight: 700; color: var(--accent-cyan); font-size: 12px;">${escapeHtml(site.domain || site.url || 'Unknown')}</div>
+          <div style="font-size: 10.5px; color: var(--text-muted); max-width: 240px; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(site.url || '')}</div>
+        </td>
+        <td>
+          <span class="trade-tag">${escapeHtml(site.cms || site.builder || 'Custom / HTML')}</span>
+        </td>
+        <td>
+          <span class="table-pill ${site.hasAiChat ? 'badge-hasweb' : 'badge-noweb'}">${site.hasAiChat ? 'Active Chat' : 'Missing AI Chat'}</span>
+        </td>
+        <td>
+          <div style="font-size: 11px; color: var(--text-muted);">
+            ${site.emails?.length ? `Email: ${site.emails.slice(0, 1).join(', ')}` : 'No emails'}
+          </div>
+        </td>
+        <td style="font-size: 10.5px; color: var(--text-dim);">
+          ${site.scrapedAt ? new Date(site.scrapedAt).toLocaleDateString() : '-'}
+        </td>
+      `;
+      dbTableBody.appendChild(tr);
+    });
+  }
+
+  function renderDatasetsTable(records) {
+    dbTableHead.innerHTML = `
+      <tr>
+        <th style="width: 5%;">#</th>
+        <th style="width: 30%;">Dataset Name</th>
+        <th style="width: 20%;">Category</th>
+        <th style="width: 15%;">Records</th>
+        <th style="width: 20%;">Saved Date</th>
+        <th style="width: 10%;">Actions</th>
+      </tr>
+    `;
+
+    dbTableBody.innerHTML = '';
+    records.forEach((ds, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="color: var(--text-dim); font-family: var(--font-mono);">${idx + 1}</td>
+        <td style="font-weight: 700; color: var(--accent-cyan);">${escapeHtml(ds.name || 'Dataset')}</td>
+        <td><span class="trade-tag">${escapeHtml(ds.category || 'Research')}</span></td>
+        <td style="font-family: var(--font-mono);">${ds.records?.length || 0} rows</td>
+        <td style="font-size: 11px; color: var(--text-muted);">${ds.savedAt ? new Date(ds.savedAt).toLocaleString() : '-'}</td>
+        <td>
+          <button class="btn-view-lead" data-export-ds="${escapeHtml(ds.name)}">Export CSV</button>
+        </td>
+      `;
+
+      tr.querySelector('[data-export-ds]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (window.workspaceApi?.dbExportCsv) {
+          window.workspaceApi.dbExportCsv({ collection: 'task_datasets', datasetName: ds.name });
+        }
+      });
+
+      dbTableBody.appendChild(tr);
+    });
+  }
+
+  function openLeadDrawer(lead) {
+    if (!dbDetailDrawer) return;
+    activeLeadItem = lead;
+
+    if (drawerBusinessName) drawerBusinessName.textContent = lead.name || 'Business Details';
+    if (drawerStatusBadge) {
+      drawerStatusBadge.textContent = (lead.outreachStatus || 'DISCOVERED').toUpperCase();
+      drawerStatusBadge.className = 'drawer-badge ' + (lead.outreachStatus === 'email_sent' ? 'badge-sent' : (lead.outreachStatus === 'draft_created' ? 'badge-draft' : 'badge-discovered'));
+    }
+    if (drawerCategory) drawerCategory.textContent = lead.category || '-';
+    if (drawerLocation) drawerLocation.textContent = lead.address || lead.zipCode || '-';
+    if (drawerPhone) drawerPhone.textContent = lead.phone || 'None found';
+    if (drawerEmail) drawerEmail.textContent = lead.email || 'None found';
+    if (drawerWebsite) {
+      drawerWebsite.textContent = lead.website ? `${lead.website} (${lead.techAudit?.cms || 'Detected'})` : 'No standalone website found (Directory listing only)';
+    }
+    if (drawerPitchAngle) drawerPitchAngle.textContent = lead.pitchAngle || 'Standard Batch15Studios web stack & AI receptionist pitch.';
+    if (drawerEmailSubject) drawerEmailSubject.textContent = lead.emailSubject || `Batch15Studios web & AI booking concept for ${lead.name || 'Business'}`;
+    if (drawerEmailBody) drawerEmailBody.textContent = lead.emailBody || 'No email copy drafted yet.';
+
+    dbDetailDrawer.classList.remove('hidden');
+  }
+
+  function closeLeadDrawer() {
+    if (dbDetailDrawer) dbDetailDrawer.classList.add('hidden');
+    activeLeadItem = null;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  // Search & Filter listeners
+  dbSearchInput?.addEventListener('input', () => {
+    if (dbClearSearch) dbClearSearch.style.display = dbSearchInput.value ? 'block' : 'none';
+    applyDbFiltersAndRender();
+  });
+
+  dbClearSearch?.addEventListener('click', () => {
+    if (dbSearchInput) {
+      dbSearchInput.value = '';
+      dbClearSearch.style.display = 'none';
+      applyDbFiltersAndRender();
+    }
+  });
+
+  dbFilterZip?.addEventListener('change', () => applyDbFiltersAndRender());
+  dbFilterStatus?.addEventListener('change', () => applyDbFiltersAndRender());
+  dbFilterWebsite?.addEventListener('change', () => applyDbFiltersAndRender());
+
+  // Collection Selector Pills
+  if (dbCollectionPills) {
+    dbCollectionPills.querySelectorAll('.db-pill-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        dbCollectionPills.querySelectorAll('.db-pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentDbCollection = btn.dataset.col || 'business_leads';
+        closeLeadDrawer();
+        fetchAndRenderDbRecords();
+      });
+    });
+  }
+
+  // Refresh Button
+  btnDbRefresh?.addEventListener('click', async () => {
+    btnDbRefresh.style.transform = 'rotate(180deg)';
+    setTimeout(() => { btnDbRefresh.style.transform = 'none'; }, 400);
+    await loadDatabaseView();
+  });
+
+  // Export CSV Button
+  btnDbExportCsv?.addEventListener('click', async () => {
+    if (!window.workspaceApi || !window.workspaceApi.dbExportCsv) return;
+    const res = await window.workspaceApi.dbExportCsv({
+      collection: currentDbCollection,
+      zipCode: dbFilterZip?.value || undefined
+    });
+    if (res && res.success) {
+      alert(`Exported CSV successfully to:\n${res.filePath}`);
+    } else {
+      alert('CSV export notice: ' + (res?.error || 'Failed'));
+    }
+  });
+
+  // Drawer Close Button
+  btnDrawerClose?.addEventListener('click', closeLeadDrawer);
+
+  // Copy Pitch Button in Drawer
+  btnCopyPitch?.addEventListener('click', () => {
+    if (drawerEmailBody && drawerEmailBody.textContent) {
+      const fullText = `Subject: ${drawerEmailSubject?.textContent || ''}\n\n${drawerEmailBody.textContent}`;
+      navigator.clipboard.writeText(fullText);
+      const origText = btnCopyPitch.textContent;
+      btnCopyPitch.textContent = 'Copied!';
+      setTimeout(() => { btnCopyPitch.textContent = origText; }, 1500);
+    }
+  });
+
+  // =========================================================================
   // 7. INITIAL BOOT
   // =========================================================================
   async function bootWorkspace() {
@@ -784,6 +1248,9 @@
           }
         });
       }
+
+      // Initial DB Badge Count Load
+      updateDbBadge();
     }
     initBrowser();
   }
