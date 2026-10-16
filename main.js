@@ -425,7 +425,7 @@ class AssistantApp {
       frame: false,
       resizable: true,
       alwaysOnTop: false,
-      hasShadow: true,
+      hasShadow: false,
       skipTaskbar: false,
       icon: appIcon,
       webPreferences: commonWebPreferences
@@ -444,7 +444,7 @@ class AssistantApp {
       frame: false,
       resizable: true,
       alwaysOnTop: false,
-      hasShadow: true,
+      hasShadow: false,
       skipTaskbar: false,
       icon: appIcon,
       webPreferences: commonWebPreferences
@@ -498,7 +498,7 @@ class AssistantApp {
       transparent: true,
       frame: false,
       resizable: true,
-      hasShadow: true,
+      hasShadow: false,
       backgroundColor: '#00000000',
       icon: appIcon,
       webPreferences: {

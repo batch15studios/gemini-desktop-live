@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.3.1",
-  "description": "Full Desktop PC Assistant v2.3.1 with Expanded Webcam Perception HUD, Workspace Command Deck Start Hub, Theme-Reactive SVG Iconography, and Batch15Studios Lead Engine",
+  "version": "2.3.2",
+  "description": "Full Desktop PC Assistant v2.3.2 with Smooth Rounded Window Edges, Expanded Webcam Perception HUD, Workspace Command Deck, and Batch15Studios Lead Engine",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

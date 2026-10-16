@@ -4,6 +4,14 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.3.2] — 2026-10-16
+### Fixed
+- **Window Drop Shadows & Sharp Rectangular Corner Artifacts (`main.js`, `renderers/left/left.css`, `renderers/right/right.css`, `renderers/workspace/workspace.css`, `assets/themes.css`)**:
+  - Disabled Windows DWM native rectangular frame shadow (`hasShadow: false`) on `leftWindow`, `rightWindow`, and `workspaceWindow` in `main.js` (matching `orbWindow`), preventing the OS compositor from drawing a sharp 90-degree rectangular shadow around the transparent `BrowserWindow` bounds.
+  - Replaced the oversized `0 16px 40px` outer `box-shadow` (which was getting guillotined at the `10px` window padding boundary into a stiff rectangular box) with a balanced `14px` outer padding and a tight, smooth `0 2px 8px` + `0 0 8px` rim glow that feathers completely to `0` alpha inside the rounded `16px` card corners.
+
+---
+
 ## [2.3.1] — 2026-10-16
 ### Changed
 - **Right-Side Vision & Spatial HUD (`renderers/right/index.html`, `renderers/right/right.css`, `renderers/right/right.js`)**:
