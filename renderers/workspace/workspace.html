@@ -286,6 +286,24 @@
       <!-- VIEW 3: WEB BROWSER VIEW                       -->
       <!-- ============================================== -->
       <section class="deck-view active" id="viewBrowser">
+        <!-- Browser Multi-Tab Bar (Max 3 Tabs) -->
+        <div class="browser-tab-bar" id="browserTabBar">
+          <div class="browser-tabs-list" id="browserTabsList">
+            <div class="browser-tab active" data-tab-id="tab_1">
+              <span class="tab-icon">🌐</span>
+              <span class="tab-title">preview.html</span>
+              <button class="btn-tab-close" title="Close Tab">×</button>
+            </div>
+          </div>
+          <button class="btn-new-tab" id="btnBrowserNewTab" title="New Tab (Max 3)">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+          <span class="browser-tab-limit-hint" id="browserTabLimitHint" style="display:none;">Max 3 Tabs — Navigating Active Tab</span>
+        </div>
+
         <!-- Browser Navigation Bar -->
         <div class="browser-nav-bar">
           <div class="nav-buttons">
@@ -316,7 +334,7 @@
         <!-- Embedded Webview Container -->
         <div class="browser-frame-container" id="browserFrameContainer">
           <div class="browser-load-bar" id="browserLoadBar"></div>
-          <webview id="deckWebview" src="../../preview.html" allowpopups></webview>
+          <webview class="deck-webview active" id="deckWebview" data-tab-id="tab_1" src="../../preview.html" allowpopups></webview>
         </div>
       </section>
 

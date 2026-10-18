@@ -438,7 +438,7 @@ class AssistantApp {
       const safeSel = JSON.stringify(selector || 'body');
       return await this.workspaceWindow.webContents.executeJavaScript(`
         (async () => {
-          const wv = document.getElementById('deckWebview');
+          const wv = document.querySelector('.deck-webview.active') || document.getElementById('deckWebview');
           if (!wv) return { error: 'Browser webview element not found.' };
           try {
             return await wv.executeJavaScript(\`
@@ -659,6 +659,24 @@ class AssistantApp {
         webviewTag: true,
         backgroundThrottling: false
       }
+    });
+
+    // Intercept link clicks (target="_blank" or window.open) to prevent generic electron popups
+    // Routes links directly into the Workdeck tab manager
+    this.workspaceWindow.webContents.setWindowOpenHandler((details) => {
+      if (this.workspaceWindow && !this.workspaceWindow.isDestroyed()) {
+        this.workspaceWindow.webContents.send('workspace:open-browser-tab', details.url);
+      }
+      return { action: 'deny' };
+    });
+
+    this.workspaceWindow.webContents.on('did-attach-webview', (event, webContents) => {
+      webContents.setWindowOpenHandler((details) => {
+        if (this.workspaceWindow && !this.workspaceWindow.isDestroyed()) {
+          this.workspaceWindow.webContents.send('workspace:open-browser-tab', details.url);
+        }
+        return { action: 'deny' };
+      });
     });
 
     this.workspaceWindow.loadFile(path.join(__dirname, 'renderers', 'workspace', 'workspace.html'));

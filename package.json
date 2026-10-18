@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.6.6",
-  "description": "Full Desktop PC Assistant v2.6.6 - Reconnect Mic & AudioContext Auto-Resumption, Standby Desync Fix, and Engine State Reset",
+  "version": "2.6.7",
+  "description": "Full Desktop PC Assistant v2.6.7 - Multi-Tab Workdeck Browser (Max 3 Tabs), Window Open Interception, and In-Deck Navigation",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

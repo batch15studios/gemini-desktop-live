@@ -97,6 +97,11 @@
   const btnOpenInIde = document.getElementById('btnOpenInIde');
 
   // Browser Elements
+  const browserTabBar = document.getElementById('browserTabBar');
+  const browserTabsList = document.getElementById('browserTabsList');
+  const btnBrowserNewTab = document.getElementById('btnBrowserNewTab');
+  const browserTabLimitHint = document.getElementById('browserTabLimitHint');
+  const browserFrameContainer = document.getElementById('browserFrameContainer');
   const btnBrowserBack = document.getElementById('btnBrowserBack');
   const btnBrowserForward = document.getElementById('btnBrowserForward');
   const btnBrowserReload = document.getElementById('btnBrowserReload');
@@ -192,8 +197,15 @@
       window.workspaceApi.onNavigate((url) => {
         if (url) {
           switchMode('browser');
-          browserUrlInput.value = url;
-          navigateBrowser();
+          openUrlInWorkdeck(url);
+        }
+      });
+    }
+    if (window.workspaceApi.onOpenBrowserTab) {
+      window.workspaceApi.onOpenBrowserTab((url) => {
+        if (url) {
+          switchMode('browser');
+          openUrlInWorkdeck(url);
         }
       });
     }
@@ -608,8 +620,7 @@
   btnLaunchBrowser.addEventListener('click', () => {
     switchMode('browser');
     if (activeFilePath.endsWith('.html') || activeFilePath === 'preview.html') {
-      deckWebview.src = `../../${activeFilePath}`;
-      browserUrlInput.value = activeFilePath;
+      openUrlInWorkdeck(`../../${activeFilePath}`);
     }
   });
 
@@ -724,29 +735,334 @@
   });
 
   // =========================================================================
-  // 6. WEB BROWSER VIEW
+  // 6. WEB BROWSER VIEW (MULTI-TAB UP TO 3 TABS)
   // =========================================================================
   let devServerBaseUrl = 'http://127.0.0.1:4242';
+  const MAX_BROWSER_TABS = 3;
+  let browserTabs = [];
+  let activeTabId = null;
+  let limitNotificationTimer = null;
+
+  function getActiveWebview() {
+    const activeTab = browserTabs.find(t => t.id === activeTabId);
+    if (activeTab && activeTab.webviewEl) return activeTab.webviewEl;
+    return document.querySelector('.deck-webview.active') || document.getElementById('deckWebview');
+  }
+
+  function formatUrlTitle(url) {
+    if (!url) return 'New Tab';
+    try {
+      if (url.includes('preview.html')) return 'preview.html';
+      const parsed = new URL(url);
+      const host = parsed.hostname.replace(/^www\./, '');
+      const pathname = parsed.pathname === '/' ? '' : parsed.pathname;
+      const combined = host + pathname;
+      return combined.length > 20 ? combined.substring(0, 18) + '...' : combined;
+    } catch (e) {
+      const clean = url.replace(/^https?:\/\//, '').replace(/^www\./, '');
+      return clean.length > 20 ? clean.substring(0, 18) + '...' : clean;
+    }
+  }
+
+  function showTabLimitNotification() {
+    if (!browserTabLimitHint) return;
+    browserTabLimitHint.style.display = 'inline-block';
+    browserTabLimitHint.innerText = 'Max 3 Tabs — Navigating Active Tab';
+    if (limitNotificationTimer) clearTimeout(limitNotificationTimer);
+    limitNotificationTimer = setTimeout(() => {
+      browserTabLimitHint.style.display = 'none';
+    }, 2500);
+  }
+
+  function setupWebviewEvents(wv, tabId) {
+    // Intercept target="_blank" or window.open so it stays inside Workdeck tabs
+    wv.addEventListener('new-window', (e) => {
+      e.preventDefault();
+      if (e.url) {
+        openUrlInWorkdeck(e.url);
+      }
+    });
+
+    wv.addEventListener('did-start-loading', () => {
+      if (activeTabId === tabId) setBrowserLoading(true);
+    });
+
+    wv.addEventListener('did-stop-loading', () => {
+      if (activeTabId === tabId) setBrowserLoading(false);
+    });
+
+    wv.addEventListener('did-fail-load', () => {
+      if (activeTabId === tabId) setBrowserLoading(false);
+    });
+
+    wv.addEventListener('did-navigate', (e) => {
+      if (e.url) {
+        const tab = browserTabs.find(t => t.id === tabId);
+        if (tab) {
+          tab.url = e.url;
+          if (!tab.title || tab.title === 'New Tab' || tab.title.includes('http')) {
+            tab.title = formatUrlTitle(e.url);
+          }
+        }
+        if (activeTabId === tabId) {
+          browserUrlInput.value = e.url.replace(/^file:\/\/\/[A-Za-z]:\/.*?\//, '');
+        }
+        renderBrowserTabs();
+      }
+      if (activeTabId === tabId) setBrowserLoading(false);
+    });
+
+    wv.addEventListener('did-navigate-in-page', (e) => {
+      if (e.url) {
+        const tab = browserTabs.find(t => t.id === tabId);
+        if (tab) tab.url = e.url;
+        if (activeTabId === tabId) {
+          browserUrlInput.value = e.url.replace(/^file:\/\/\/[A-Za-z]:\/.*?\//, '');
+        }
+      }
+      if (activeTabId === tabId) setBrowserLoading(false);
+    });
+
+    wv.addEventListener('page-title-updated', (e) => {
+      if (e.title) {
+        const tab = browserTabs.find(t => t.id === tabId);
+        if (tab) {
+          let cleanTitle = e.title.trim();
+          if (cleanTitle.length > 22) cleanTitle = cleanTitle.substring(0, 20) + '...';
+          tab.title = cleanTitle;
+          renderBrowserTabs();
+        }
+      }
+    });
+  }
 
   function initBrowser() {
-    if (!deckWebview.src || deckWebview.src === 'about:blank') {
-      const initialUrl = `${devServerBaseUrl}/preview.html`;
-      deckWebview.src = initialUrl;
-      browserUrlInput.value = initialUrl;
+    if (browserTabs.length === 0) {
+      const initialWv = document.getElementById('deckWebview');
+      const tabId = 'tab_1';
+      if (initialWv) {
+        initialWv.dataset.tabId = tabId;
+        initialWv.classList.add('active');
+
+        const initialUrl = (!initialWv.src || initialWv.src === 'about:blank')
+          ? `${devServerBaseUrl}/preview.html`
+          : initialWv.src;
+
+        initialWv.src = initialUrl;
+        browserUrlInput.value = initialUrl;
+
+        const firstTab = {
+          id: tabId,
+          title: 'preview.html',
+          url: initialUrl,
+          webviewEl: initialWv
+        };
+
+        browserTabs = [firstTab];
+        activeTabId = tabId;
+        setupWebviewEvents(initialWv, tabId);
+      }
+    }
+    renderBrowserTabs();
+  }
+
+  function renderBrowserTabs() {
+    if (!browserTabsList) return;
+    browserTabsList.innerHTML = '';
+
+    browserTabs.forEach((tab, index) => {
+      const tabEl = document.createElement('div');
+      tabEl.className = `browser-tab ${tab.id === activeTabId ? 'active' : ''}`;
+      tabEl.dataset.tabId = tab.id;
+      tabEl.title = tab.title || tab.url || `Tab ${index + 1}`;
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'tab-icon';
+      iconSpan.innerText = '🌐';
+
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'tab-title';
+      titleSpan.innerText = tab.title || `Tab ${index + 1}`;
+
+      const btnClose = document.createElement('button');
+      btnClose.className = 'btn-tab-close';
+      btnClose.title = 'Close tab';
+      btnClose.innerHTML = '&times;';
+      btnClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeBrowserTab(tab.id);
+      });
+
+      tabEl.appendChild(iconSpan);
+      tabEl.appendChild(titleSpan);
+      tabEl.appendChild(btnClose);
+
+      tabEl.addEventListener('click', () => {
+        if (tab.id !== activeTabId) {
+          switchBrowserTab(tab.id);
+        }
+      });
+
+      browserTabsList.appendChild(tabEl);
+    });
+
+    if (btnBrowserNewTab) {
+      if (browserTabs.length >= MAX_BROWSER_TABS) {
+        btnBrowserNewTab.disabled = true;
+        btnBrowserNewTab.title = 'Maximum 3 tabs open (links will navigate active tab)';
+      } else {
+        btnBrowserNewTab.disabled = false;
+        btnBrowserNewTab.title = `New Tab (${browserTabs.length}/${MAX_BROWSER_TABS})`;
+      }
+    }
+  }
+
+  function switchBrowserTab(tabId) {
+    const targetTab = browserTabs.find(t => t.id === tabId);
+    if (!targetTab) return;
+
+    activeTabId = tabId;
+
+    browserTabs.forEach(tab => {
+      if (tab.id === tabId) {
+        tab.webviewEl.classList.add('active');
+        tab.webviewEl.id = 'deckWebview'; // Guarantee that #deckWebview is ALWAYS the active webview
+        tab.webviewEl.style.display = 'flex';
+
+        const currentUrl = (tab.webviewEl.getURL && typeof tab.webviewEl.getURL === 'function')
+          ? tab.webviewEl.getURL()
+          : tab.webviewEl.src;
+        browserUrlInput.value = currentUrl ? currentUrl.replace(/^file:\/\/\/[A-Za-z]:\/.*?\//, '') : tab.url;
+
+        const isLoading = (tab.webviewEl.isLoading && typeof tab.webviewEl.isLoading === 'function')
+          ? tab.webviewEl.isLoading()
+          : false;
+        setBrowserLoading(isLoading);
+      } else {
+        tab.webviewEl.classList.remove('active');
+        tab.webviewEl.id = 'deckWebview_' + tab.id;
+        tab.webviewEl.style.display = 'none';
+      }
+    });
+
+    renderBrowserTabs();
+  }
+
+  function createBrowserTab(url = `${devServerBaseUrl}/preview.html`, activate = true) {
+    if (browserTabs.length >= MAX_BROWSER_TABS) {
+      // Exactly as requested:
+      // "after that it changes the window you are in and you have to navigate back to go to a previous url"
+      const activeTab = browserTabs.find(t => t.id === activeTabId);
+      if (activeTab && activeTab.webviewEl) {
+        activeTab.webviewEl.src = url;
+        browserUrlInput.value = url;
+        showTabLimitNotification();
+      }
+      return activeTab;
+    }
+
+    const tabId = 'tab_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+    const wv = document.createElement('webview');
+    wv.className = 'deck-webview';
+    wv.dataset.tabId = tabId;
+    wv.setAttribute('allowpopups', 'true');
+    wv.setAttribute('src', url);
+
+    if (browserFrameContainer) {
+      browserFrameContainer.appendChild(wv);
+    }
+
+    const newTab = {
+      id: tabId,
+      title: formatUrlTitle(url),
+      url: url,
+      webviewEl: wv
+    };
+
+    browserTabs.push(newTab);
+    setupWebviewEvents(wv, tabId);
+
+    if (activate) {
+      switchBrowserTab(tabId);
+    } else {
+      renderBrowserTabs();
+    }
+
+    return newTab;
+  }
+
+  function closeBrowserTab(tabId) {
+    if (browserTabs.length <= 1) {
+      const tab = browserTabs[0];
+      const defaultUrl = `${devServerBaseUrl}/preview.html`;
+      if (tab.webviewEl) tab.webviewEl.src = defaultUrl;
+      tab.title = 'preview.html';
+      tab.url = defaultUrl;
+      browserUrlInput.value = defaultUrl;
+      renderBrowserTabs();
+      return;
+    }
+
+    const tabIndex = browserTabs.findIndex(t => t.id === tabId);
+    if (tabIndex === -1) return;
+
+    const tabToClose = browserTabs[tabIndex];
+    if (tabToClose.webviewEl) {
+      tabToClose.webviewEl.remove();
+    }
+
+    browserTabs.splice(tabIndex, 1);
+
+    if (activeTabId === tabId) {
+      const nextTab = browserTabs[Math.min(tabIndex, browserTabs.length - 1)];
+      switchBrowserTab(nextTab.id);
+    } else {
+      renderBrowserTabs();
+    }
+  }
+
+  function openUrlInWorkdeck(url) {
+    if (!url) return;
+    if (browserTabs.length < MAX_BROWSER_TABS) {
+      createBrowserTab(url, true);
+    } else {
+      // Exactly as requested:
+      // "after that it changes the window you are in and you have to navigate back to go to a previous url"
+      const activeTab = browserTabs.find(t => t.id === activeTabId);
+      if (activeTab && activeTab.webviewEl) {
+        activeTab.webviewEl.src = url;
+        browserUrlInput.value = url;
+        showTabLimitNotification();
+      }
     }
   }
 
   btnBrowserBack.addEventListener('click', () => {
-    if (deckWebview.canGoBack()) deckWebview.goBack();
+    const wv = getActiveWebview();
+    if (wv && wv.canGoBack && wv.canGoBack()) wv.goBack();
   });
 
   btnBrowserForward.addEventListener('click', () => {
-    if (deckWebview.canGoForward()) deckWebview.goForward();
+    const wv = getActiveWebview();
+    if (wv && wv.canGoForward && wv.canGoForward()) wv.goForward();
   });
 
   btnBrowserReload.addEventListener('click', () => {
-    deckWebview.reload();
+    const wv = getActiveWebview();
+    if (wv && wv.reload) wv.reload();
   });
+
+  if (btnBrowserNewTab) {
+    btnBrowserNewTab.addEventListener('click', () => {
+      if (browserTabs.length < MAX_BROWSER_TABS) {
+        createBrowserTab(`${devServerBaseUrl}/preview.html`, true);
+        browserUrlInput.focus();
+        browserUrlInput.select();
+      } else {
+        showTabLimitNotification();
+      }
+    });
+  }
 
   function navigateBrowser() {
     let url = browserUrlInput.value.trim();
@@ -760,7 +1076,16 @@
       url = 'https://' + url;
     }
 
-    deckWebview.src = url;
+    const wv = getActiveWebview();
+    if (wv) {
+      wv.src = url;
+      const tab = browserTabs.find(t => t.id === activeTabId);
+      if (tab) {
+        tab.url = url;
+        tab.title = formatUrlTitle(url);
+        renderBrowserTabs();
+      }
+    }
   }
 
   btnBrowserGo.addEventListener('click', navigateBrowser);
@@ -794,32 +1119,6 @@
       }
     }
   }
-
-  deckWebview.addEventListener('did-start-loading', () => {
-    setBrowserLoading(true);
-  });
-
-  deckWebview.addEventListener('did-stop-loading', () => {
-    setBrowserLoading(false);
-  });
-
-  deckWebview.addEventListener('did-fail-load', () => {
-    setBrowserLoading(false);
-  });
-
-  deckWebview.addEventListener('did-navigate', (e) => {
-    if (e.url) {
-      browserUrlInput.value = e.url.replace(/^file:\/\/\/[A-Za-z]:\/.*?\//, '');
-    }
-    setBrowserLoading(false);
-  });
-
-  deckWebview.addEventListener('did-navigate-in-page', (e) => {
-    if (e.url) {
-      browserUrlInput.value = e.url.replace(/^file:\/\/\/[A-Za-z]:\/.*?\//, '');
-    }
-    setBrowserLoading(false);
-  });
 
   // =========================================================================
   // 6. RESEARCH DATABASE & LEADS MANAGER VIEW
@@ -1234,9 +1533,10 @@
       if (window.workspaceApi.onFileUpdated) {
         window.workspaceApi.onFileUpdated((fileInfo) => {
           console.log('[Workspace Hot-Reload] File updated:', fileInfo.name);
-          if (deckWebview && deckWebview.src) {
+          const activeWv = getActiveWebview();
+          if (activeWv && activeWv.src) {
             try {
-              deckWebview.reload();
+              activeWv.reload();
             } catch (err) {}
           }
           if (ideLogsStream) {

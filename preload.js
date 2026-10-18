@@ -168,6 +168,11 @@ contextBridge.exposeInMainWorld('workspaceApi', {
     ipcRenderer.on('workspace:navigate', handler);
     return () => ipcRenderer.removeListener('workspace:navigate', handler);
   },
+  onOpenBrowserTab: (callback) => {
+    const handler = (e, url) => callback(url);
+    ipcRenderer.on('workspace:open-browser-tab', handler);
+    return () => ipcRenderer.removeListener('workspace:open-browser-tab', handler);
+  },
   onOpenFile: (callback) => {
     const handler = (e, filePath) => callback(filePath);
     ipcRenderer.on('workspace:open-file', handler);

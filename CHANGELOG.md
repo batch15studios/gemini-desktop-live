@@ -2,6 +2,20 @@
 
 All notable changes, version milestones, and architectural revisions to `gemini-desktop-live` (`Assistant_Integrated_Advanced`) are documented in this file.
 
+## [2.6.7] — 2026-10-18
+### Added & Improved
+- **Multi-Tab Workdeck Browser (Max 3 Tabs)**:
+  - Added a dedicated cyberpunk-styled browser tab bar (`#browserTabBar`) to the Workspace Command Deck with tab pills, website favicons/emojis, dynamic page titles, close buttons (`×`), and a new tab (`+`) button.
+  - Supports up to a maximum of 3 concurrent browser tabs inside the Workdeck, each hosting its own isolated `<webview>` with independent navigation history and session state.
+- **Window Open & Popup Interception (`main.js` & `renderers/workspace/workspace.js`)**:
+  - Implemented `setWindowOpenHandler` on `workspaceWindow.webContents` and `did-attach-webview` in `main.js` returning `{ action: 'deny' }`, completely eliminating the issue where clicking external links (`target="_blank"` or `window.open`) popped open generic Electron browser windows outside the Workdeck.
+  - Automatically routes external link requests and IPC navigation calls directly into the Workdeck tab manager.
+- **3-Tab Overflow In-Deck Navigation**:
+  - When the 3-tab limit is reached, any clicked link or new URL automatically navigates the currently active tab instead of opening another window, preserving full backwards/forwards history so you can simply click the Back button (`←`) to return to your previous page.
+  - Added a visual telemetry toast badge ("Max 3 Tabs — Navigating Active Tab") when the limit is engaged.
+
+---
+
 ## [2.6.6] — 2026-10-18
 ### Fixed & Improved
 - **Microphone & AudioContext Auto-Resumption on Reconnect (`renderers/orb/orb.js`)**:
