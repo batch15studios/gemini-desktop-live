@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.6.4",
-  "description": "Full Desktop PC Assistant v2.6.4 - Comprehensive CodeRabbit Audit & Security Hardening: Anti-Injection, CORS Isolation, Path Traversal Defense, XSS Mitigation, and Loop Denial-of-Service Immunization",
+  "version": "2.6.5",
+  "description": "Full Desktop PC Assistant v2.6.5 - Gears COG Visual Restoration (Silent Crimson Omen), Render Loop Shielding, and Automatic Workspace Deck Top-Pill Docking",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

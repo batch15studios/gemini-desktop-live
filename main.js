@@ -323,6 +323,7 @@ class AssistantApp {
           sendDeckCommands();
         });
       } else {
+        this.autoTuckSideDocks();
         if (this.workspaceWindow.isMinimized()) {
           this.workspaceWindow.restore();
         }
@@ -567,6 +568,7 @@ class AssistantApp {
   autoTuckSideDocks() {
     this.wasLeftOpenBeforeDeck = !!(this.leftWindow && !this.leftWindow.isDestroyed() && this.leftWindow.isVisible());
     this.wasRightOpenBeforeDeck = !!(this.rightWindow && !this.rightWindow.isDestroyed() && this.rightWindow.isVisible());
+    this.wasOrbMiniBeforeDeck = !!this.isMiniMode;
 
     if (this.wasLeftOpenBeforeDeck) {
       this.leftWindow.hide();
@@ -574,10 +576,42 @@ class AssistantApp {
     if (this.wasRightOpenBeforeDeck) {
       this.rightWindow.hide();
     }
-    console.log(`[Main] Auto-tucked side docks (left=${this.wasLeftOpenBeforeDeck}, right=${this.wasRightOpenBeforeDeck})`);
+
+    // Automatically morph middle orb into the top floating pill toolbar
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width } = primaryDisplay.workAreaSize;
+    const miniW = 448;
+    const miniH = 70;
+    const miniX = Math.round((width - miniW) / 2);
+    const miniY = 4;
+
+    if (this.orbWindow && !this.orbWindow.isDestroyed()) {
+      this.orbWindow.setBounds({ x: miniX, y: miniY, width: miniW, height: miniH });
+      this.orbWindow.setAlwaysOnTop(true, 'screen-saver');
+      this.orbWindow.show();
+      this.orbWindow.webContents.send('window:mini-mode-changed', true);
+    }
+    this.isMiniMode = true;
+
+    console.log(`[Main] Auto-tucked side docks and docked middle orb to top floating pill for Workspace Deck.`);
   }
 
   restoreTuckedSideDocks() {
+    // If the orb was not already in mini-mode before opening the workspace deck, restore it to center circle
+    if (!this.wasOrbMiniBeforeDeck && this.orbWindow && !this.orbWindow.isDestroyed()) {
+      const primaryDisplay = screen.getPrimaryDisplay();
+      const { width, height } = primaryDisplay.workAreaSize;
+      const orbSize = 420;
+      const orbX = Math.round((width - orbSize) / 2);
+      const orbY = Math.round((height - orbSize) / 2) - 40;
+
+      this.orbWindow.setBounds({ x: orbX, y: orbY, width: orbSize, height: orbSize });
+      this.orbWindow.setAlwaysOnTop(this.isAlwaysOnTop);
+      this.orbWindow.show();
+      this.orbWindow.webContents.send('window:mini-mode-changed', false);
+      this.isMiniMode = false;
+    }
+
     if (this.wasLeftOpenBeforeDeck && this.leftWindow && !this.leftWindow.isDestroyed()) {
       this.leftWindow.show();
       this.wasLeftOpenBeforeDeck = false;
@@ -586,7 +620,7 @@ class AssistantApp {
       this.rightWindow.show();
       this.wasRightOpenBeforeDeck = false;
     }
-    console.log('[Main] Restored side docks after Workspace Deck minimized/hidden.');
+    console.log('[Main] Restored side docks and center orb after Workspace Deck closed/hidden.');
   }
 
   createWorkspaceWindow() {
@@ -955,6 +989,7 @@ class AssistantApp {
       if (!this.workspaceWindow || this.workspaceWindow.isDestroyed()) {
         this.createWorkspaceWindow();
       } else {
+        this.autoTuckSideDocks();
         this.workspaceWindow.show();
         this.workspaceWindow.focus();
       }

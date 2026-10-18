@@ -42,16 +42,122 @@ let isMuted = false;
 let isPinned = true;
 let animAngle = 0;
 let gearAngle = 0;
+let smoothPulse = 0;
 let customColorValue = null;
 
+// Preload Authentic Gears of War Crimson Omen Assets
+const cogEmblemImg = new Image();
+cogEmblemImg.src = '../../assets/skins/gears/cog-emblem.png';
+const cogFullCrimson = new Image();
+cogFullCrimson.src = '../../assets/skins/gears/cog-full-crimson.png';
+const cogGearImg = new Image();
+cogGearImg.src = '../../assets/skins/gears/cog-gear-only.png';
+const cogSkullImg = new Image();
+cogSkullImg.src = '../../assets/skins/gears/cog-skull-only.png';
+
+// Fiery Molten Embers & Sparks for Gears of War Cog
+const gearsEmbers = Array.from({ length: 28 }, () => ({
+  x: (Math.random() - 0.5) * 120,
+  y: Math.random() * 120 - 40,
+  vx: (Math.random() - 0.5) * 1.2,
+  vy: -(Math.random() * 2.2 + 0.8),
+  size: Math.random() * 2.5 + 1.2,
+  alpha: Math.random() * 0.8 + 0.2,
+  decay: Math.random() * 0.015 + 0.008,
+  hue: Math.random() * 25 + 5
+}));
+
+function getThemePalette(themeId, customColor) {
+  if (customColor) {
+    const hex = customColor.startsWith('#') ? customColor : `#${customColor}`;
+    return {
+      primary: hex,
+      secondary: hex,
+      glow: hex,
+      aura: hex,
+      ring: hex,
+      coreA: '#ffffff',
+      coreB: hex,
+      coreC: hex,
+      synthGradient: [hex, '#0b0f17']
+    };
+  }
+
+  switch (themeId) {
+    case 'matrix-green':
+      return {
+        primary: '#00ff66',
+        secondary: '#00cc55',
+        glow: 'rgba(0, 255, 102, 0.45)',
+        aura: 'rgba(0, 255, 102, 0.25)',
+        ring: 'rgba(0, 255, 102, 0.4)',
+        coreA: '#ffffff',
+        coreB: '#00ff66',
+        coreC: '#008833',
+        synthGradient: ['#00ff66', '#003311']
+      };
+    case 'crimson-red':
+      return {
+        primary: '#ff3b30',
+        secondary: '#ff453a',
+        glow: 'rgba(255, 59, 48, 0.45)',
+        aura: 'rgba(255, 59, 48, 0.25)',
+        ring: 'rgba(255, 59, 48, 0.4)',
+        coreA: '#ffffff',
+        coreB: '#ff3b30',
+        coreC: '#8b0000',
+        synthGradient: ['#ff3b30', '#3b0000']
+      };
+    case 'amethyst-purple':
+      return {
+        primary: '#af52de',
+        secondary: '#bf5af2',
+        glow: 'rgba(175, 82, 222, 0.45)',
+        aura: 'rgba(175, 82, 222, 0.25)',
+        ring: 'rgba(175, 82, 222, 0.4)',
+        coreA: '#ffffff',
+        coreB: '#af52de',
+        coreC: '#581c87',
+        synthGradient: ['#af52de', '#2e0854']
+      };
+    case 'amber-gold':
+      return {
+        primary: '#ff9500',
+        secondary: '#ffaa33',
+        glow: 'rgba(255, 149, 0, 0.45)',
+        aura: 'rgba(255, 149, 0, 0.25)',
+        ring: 'rgba(255, 149, 0, 0.4)',
+        coreA: '#ffffff',
+        coreB: '#ff9500',
+        coreC: '#b45309',
+        synthGradient: ['#ff9500', '#451a03']
+      };
+    case 'cyber-cyan':
+    default:
+      return {
+        primary: '#00f0ff',
+        secondary: '#70a1ff',
+        glow: 'rgba(0, 240, 255, 0.45)',
+        aura: 'rgba(0, 240, 255, 0.25)',
+        ring: 'rgba(0, 240, 255, 0.4)',
+        coreA: '#ffffff',
+        coreB: '#70a1ff',
+        coreC: '#00d2d3',
+        synthGradient: ['#00f0ff', '#002b4d']
+      };
+  }
+}
+
 function applySkin(skinId) {
-  currentSkin = skinId === 'gears' ? 'cog-gear' : (skinId || 'default');
+  currentSkin = (skinId === 'gears' || skinId === 'cog-gear') ? 'cog-gear' : (skinId || 'default');
   document.documentElement.setAttribute('data-skin', currentSkin);
   if (canvas) {
     if (currentSkin === 'pro-studio' || currentSkin === 'enterprise-pro') {
       canvas.style.filter = 'drop-shadow(0 0 20px rgba(0, 120, 212, 0.45))';
+    } else if (currentSkin === 'cog-gear' || currentSkin === 'gears') {
+      canvas.style.filter = 'drop-shadow(0 0 30px rgba(239, 68, 68, 0.65))';
     } else {
-      const pal = (typeof getThemePalette === 'function') ? getThemePalette(currentTheme, customColorValue) : null;
+      const pal = getThemePalette(currentTheme, customColorValue);
       canvas.style.filter = pal ? `drop-shadow(0 0 25px ${pal.glow})` : 'drop-shadow(0 0 25px rgba(0, 220, 255, 0.45))';
     }
   }
@@ -243,7 +349,7 @@ function renderOrb() {
 }
 
 // ----------------------------------------------------
-// Industrial Cog Gear (Precision Mechanical Engine)
+// Gears of War Crimson Omen & Industrial Cog Engine
 // ----------------------------------------------------
 function drawProceduralGear(c, innerR, outerR, numTeeth, fillColor, strokeColor) {
   c.beginPath();
@@ -259,11 +365,51 @@ function drawProceduralGear(c, innerR, outerR, numTeeth, fillColor, strokeColor)
     c.lineTo(Math.cos(a3) * innerR, Math.sin(a3) * innerR);
   }
   c.closePath();
-  c.fillStyle = fillColor || '#11151f';
+  c.fillStyle = fillColor || '#150808';
   c.fill();
-  c.strokeStyle = strokeColor || 'rgba(0, 240, 255, 0.7)';
+  c.strokeStyle = strokeColor || '#ff2211';
   c.lineWidth = 2;
   c.stroke();
+}
+
+function drawProceduralSkull(c, r) {
+  c.save();
+  c.fillStyle = '#ff2211';
+  c.beginPath();
+  c.arc(0, -r * 0.2, r * 0.7, 0, Math.PI * 2);
+  c.fill();
+
+  // Eye sockets
+  c.fillStyle = '#0a0000';
+  c.beginPath();
+  c.arc(-r * 0.3, -r * 0.2, r * 0.2, 0, Math.PI * 2);
+  c.arc(r * 0.3, -r * 0.2, r * 0.2, 0, Math.PI * 2);
+  c.fill();
+
+  // Nose cavity
+  c.beginPath();
+  c.moveTo(0, -r * 0.05);
+  c.lineTo(-r * 0.08, r * 0.1);
+  c.lineTo(r * 0.08, r * 0.1);
+  c.closePath();
+  c.fill();
+
+  // Jaw
+  c.fillStyle = '#ff2211';
+  c.beginPath();
+  c.rect(-r * 0.35, r * 0.18, r * 0.7, r * 0.35);
+  c.fill();
+
+  // Teeth slits
+  c.strokeStyle = '#0a0000';
+  c.lineWidth = 2;
+  for (let i = -2; i <= 2; i++) {
+    c.beginPath();
+    c.moveTo(i * r * 0.1, r * 0.18);
+    c.lineTo(i * r * 0.1, r * 0.53);
+    c.stroke();
+  }
+  c.restore();
 }
 
 function renderCogGearOrb() {
@@ -271,16 +417,12 @@ function renderCogGearOrb() {
   const cx = canvas.width / 2;
   const cy = canvas.height / 2;
 
-  const pal = (typeof getThemePalette === 'function')
-    ? getThemePalette(currentTheme, customColorValue)
-    : { primary: '#00f0ff', secondary: '#70a1ff', glow: 'rgba(0, 240, 255, 0.45)' };
-
   // Smooth pulse reacting to audio output and mic
   let targetPulse = 0;
   if (currentState === 'SPEAKING') {
-    targetPulse = outputLevel * 36;
+    targetPulse = outputLevel * 40;
   } else if (currentState === 'LISTENING') {
-    targetPulse = micLevel * 24;
+    targetPulse = micLevel * 28;
   } else if (currentState === 'THINKING') {
     targetPulse = Math.sin(animAngle * 4) * 8;
   } else {
@@ -291,31 +433,31 @@ function renderCogGearOrb() {
   animAngle += (currentState === 'THINKING' ? 0.05 : 0.02);
   gearAngle += (currentState === 'THINKING' ? 0.03 : (currentState === 'SPEAKING' ? 0.015 : 0.005));
 
-  // 1. Ambient Harmonic Aura matching active theme
-  const auraR = 135 + smoothPulse * 0.5;
-  const outerGlow = ctx.createRadialGradient(cx, cy, 30, cx, cy, auraR);
-  outerGlow.addColorStop(0, pal.glow);
-  outerGlow.addColorStop(0.6, pal.aura || 'rgba(0, 240, 255, 0.15)');
+  // 1. Ominous Molten Ambient Radial Aura
+  const auraR = 145 + smoothPulse * 0.4;
+  const outerGlow = ctx.createRadialGradient(cx, cy, 25, cx, cy, auraR);
+  outerGlow.addColorStop(0, 'rgba(255, 30, 20, 0.45)');
+  outerGlow.addColorStop(0.5, 'rgba(160, 10, 10, 0.22)');
   outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
   ctx.fillStyle = outerGlow;
   ctx.beginPath();
   ctx.arc(cx, cy, auraR, 0, Math.PI * 2);
   ctx.fill();
 
-  // 2. Precision Rotating Mechanical Outer Gear
+  // 2. Heavy Rotating Industrial Outer Sprocket (Precision Mechanical Cog Teeth)
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(gearAngle);
   const gearOuter = 95 + smoothPulse * 0.25;
   const gearInner = 75 + smoothPulse * 0.15;
-  drawProceduralGear(ctx, gearInner, gearOuter, 12, '#11151f', pal.primary);
+  drawProceduralGear(ctx, gearInner, gearOuter, 12, '#150808', '#ff2211');
   ctx.restore();
 
-  // 3. Counter-Rotating Inner Precision Gear Ring
+  // 3. Counter-Rotating Inner Mechanical Sprocket
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(-gearAngle * 1.5);
-  drawProceduralGear(ctx, 45, 58, 8, '#0b0f17', pal.secondary || pal.primary);
+  drawProceduralGear(ctx, 45, 58, 8, '#0d0404', '#ff4422');
   ctx.restore();
 
   // 4. Tactical Concentric Telemetry Reticle & Ticks
@@ -324,26 +466,88 @@ function renderCogGearOrb() {
   ctx.rotate(gearAngle * 0.5);
   ctx.beginPath();
   ctx.arc(0, 0, 110 + smoothPulse * 0.2, 0, Math.PI * 2);
-  ctx.strokeStyle = pal.primary;
-  ctx.globalAlpha = (currentState === 'SPEAKING') ? 0.7 : 0.35;
+  ctx.strokeStyle = (currentState === 'SPEAKING') ? 'rgba(255, 40, 20, 0.7)' : 'rgba(200, 20, 20, 0.35)';
   ctx.lineWidth = 1.5;
   ctx.setLineDash([4, 10]);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
 
-  // 5. Central Energy Aperture Core
+  // 5. Fiery Molten Embers & Sparks (Drifting upwards)
+  gearsEmbers.forEach(e => {
+    e.y += e.vy * (currentState === 'SPEAKING' ? 2.0 : 1.0);
+    e.x += e.vx + Math.sin(animAngle * 3 + e.y * 0.05) * 0.4;
+    e.alpha -= e.decay;
+    if (e.alpha <= 0 || Math.abs(e.y) > 130) {
+      const spawnAngle = Math.random() * Math.PI * 2;
+      const spawnR = Math.random() * 45 + 30;
+      e.x = Math.cos(spawnAngle) * spawnR;
+      e.y = Math.sin(spawnAngle) * spawnR;
+      e.vx = (Math.random() - 0.5) * (currentState === 'SPEAKING' ? 2.5 : 1.0);
+      e.vy = -(Math.random() * 2.0 + 0.8);
+      e.alpha = Math.random() * 0.8 + 0.3;
+      e.size = Math.random() * 2.5 + 1;
+    }
+
+    ctx.beginPath();
+    ctx.arc(cx + e.x, cy + e.y, e.size, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${e.hue}, 100%, ${currentState === 'SPEAKING' ? 65 : 50}%, ${e.alpha})`;
+    ctx.shadowColor = `hsl(${e.hue}, 100%, 50%)`;
+    ctx.shadowBlur = 4;
+    ctx.fill();
+  });
+  ctx.shadowBlur = 0;
+
+  // 6. Central Molten Lava Backlight behind the Emblem
   ctx.save();
-  const coreR = 34 + smoothPulse * 0.3;
-  const coreGrad = ctx.createRadialGradient(cx, cy, 3, cx, cy, coreR);
-  coreGrad.addColorStop(0, '#ffffff');
-  coreGrad.addColorStop(0.4, pal.primary);
-  coreGrad.addColorStop(0.9, pal.secondary || pal.primary);
-  coreGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  ctx.fillStyle = coreGrad;
+  const flareR = 52 + smoothPulse * 0.4;
+  const flareGrad = ctx.createRadialGradient(cx, cy, 5, cx, cy, flareR);
+  if (currentState === 'SPEAKING') {
+    flareGrad.addColorStop(0, '#ffffff');
+    flareGrad.addColorStop(0.3, '#ff3b14');
+    flareGrad.addColorStop(0.7, '#8b0000');
+    flareGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  } else if (currentState === 'THINKING') {
+    flareGrad.addColorStop(0, '#ffffff');
+    flareGrad.addColorStop(0.3, '#ffaa00');
+    flareGrad.addColorStop(0.7, '#cc2200');
+    flareGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  } else {
+    flareGrad.addColorStop(0, 'rgba(255, 60, 20, 0.7)');
+    flareGrad.addColorStop(0.4, 'rgba(180, 15, 15, 0.45)');
+    flareGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  }
+  ctx.fillStyle = flareGrad;
   ctx.beginPath();
-  ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+  ctx.arc(cx, cy, flareR, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+
+  // 7. The Legendary Gears of War Crimson Omen Emblem (Crisp, High-Resolution, Upright)
+  ctx.save();
+  ctx.translate(cx, cy);
+  const emblemScale = 1.0 + (smoothPulse / 260);
+  ctx.scale(emblemScale, emblemScale);
+
+  ctx.shadowColor = (currentState === 'SPEAKING') ? '#ff1100' : 'rgba(200, 10, 10, 0.85)';
+  ctx.shadowBlur = (currentState === 'SPEAKING') ? 22 : 12;
+
+  const targetW = 205;
+  const targetH = 197;
+
+  if (cogEmblemImg.complete && cogEmblemImg.naturalWidth > 0) {
+    ctx.drawImage(cogEmblemImg, -targetW / 2, -targetH / 2, targetW, targetH);
+  } else if (cogFullCrimson.complete && cogFullCrimson.naturalWidth > 0) {
+    ctx.drawImage(cogFullCrimson, -targetW / 2, -targetH / 2, targetW, targetH);
+  } else if (cogGearImg.complete && cogGearImg.naturalWidth > 0) {
+    ctx.drawImage(cogGearImg, -targetW / 2, -targetH / 2, targetW, targetH);
+    if (cogSkullImg.complete && cogSkullImg.naturalWidth > 0) {
+      ctx.drawImage(cogSkullImg, -targetW / 2, -targetH / 2, targetW, targetH);
+    }
+  } else {
+    drawProceduralGear(ctx, 75, 95, 12, '#150808', '#ff2211');
+    drawProceduralSkull(ctx, 42);
+  }
   ctx.restore();
 }
 
@@ -685,17 +889,21 @@ function renderProStudioOrb() {
 }
 
 function renderVisuals() {
-  if (isMiniMode) {
-    animAngle += (currentState === 'THINKING' ? 0.05 : 0.02);
-    renderWaveSynth();
-  } else {
-    if (currentSkin === 'cog-gear' || currentSkin === 'gears') {
-      renderCogGearOrb();
-    } else if (currentSkin === 'pro-studio' || currentSkin === 'enterprise-pro') {
-      renderProStudioOrb();
+  try {
+    if (isMiniMode) {
+      animAngle += (currentState === 'THINKING' ? 0.05 : 0.02);
+      renderWaveSynth();
     } else {
-      renderOrb();
+      if (currentSkin === 'cog-gear' || currentSkin === 'gears') {
+        renderCogGearOrb();
+      } else if (currentSkin === 'pro-studio' || currentSkin === 'enterprise-pro') {
+        renderProStudioOrb();
+      } else {
+        renderOrb();
+      }
     }
+  } catch (renderErr) {
+    console.warn('[Orb] renderVisuals caught error:', renderErr);
   }
   requestAnimationFrame(renderVisuals);
 }

@@ -179,6 +179,10 @@ document.querySelectorAll('.skin-card').forEach(card => {
     const skinId = card.dataset.skinId;
     setActiveSkin(skinId);
     window.assistantApi.setSkin(skinId);
+    if (skinId === 'cog-gear' || skinId === 'gears') {
+      setActiveTheme('crimson-red');
+      window.assistantApi.setTheme('crimson-red');
+    }
     const skinName = card.querySelector('.skin-name')?.innerText || skinId;
     addLogEntry('System', `Visual skin changed to "${skinName}".`, 'system');
   });

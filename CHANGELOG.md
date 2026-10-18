@@ -4,6 +4,23 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.6.5] — 2026-10-18
+### Fixed & Improved
+- **Gears of War COG Orb Visual Restoration (Silent Crimson Omen)**:
+  - Fully restored the authentic Gears of War Crimson Omen emblem (`cog-emblem.png`, `cog-full-crimson.png`) with rotating industrial outer sprockets, counter-rotating inner cogs, tactical telemetry reticle, molten flare backlight, and floating fiery red embers.
+  - Selecting "Gears COG" in Settings now automatically activates the `crimson-red` color palette across the entire HUD.
+  - Audio bloat (Marcus Fenix voice clips / soundboard audio) remains completely removed—preserving pure visual immersion without sound interference.
+- **Render Loop Resilience & Crash Shielding (`renderers/orb/orb.js`)**:
+  - Fixed `ReferenceError` caused by undeclared `smoothPulse` state variable.
+  - Wrapped `renderVisuals()` in a defensive `try...catch` block ensuring that `requestAnimationFrame` is unconditionally scheduled on every frame. Any momentary skin glitch will never permanently halt the animation loop or prevent switching between skins.
+  - Implemented standalone `getThemePalette()` supporting all core themes (`cyber-cyan`, `matrix-green`, `crimson-red`, `amethyst-purple`, `amber-gold`, `custom`).
+- **Workspace Deck Screen Focus & Automatic Top Floating Pill Docking (`main.js`)**:
+  - Opening or focusing the Workspace Command Deck now automatically tucks away both the Left Control Dock and the Right Vision HUD.
+  - Simultaneously morphs the center Orb window into the sleek top-of-screen floating pill toolbar (`isMiniMode`), creating a completely uncluttered workspace where only the Workspace Deck and the top floating status pill are visible.
+  - Minimizing, closing, or hiding the Workspace Deck automatically restores the center Orb back to its circular position and restores the side docks if they were previously open.
+
+---
+
 ## [2.6.4] — 2026-10-18
 ### Security & Robustness Hardening (CodeRabbit Deep Audit)
 - **CWE-78 Command Injection Mitigation (`window-tools.js`)**:
