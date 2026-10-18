@@ -8,6 +8,7 @@ const { exec, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const pkg = require('./package.json');
 
 let electronShell = null;
 let electronClipboard = null;
@@ -1711,6 +1712,7 @@ class ToolsManager {
       os: `${os.type()} ${os.release()} (${os.arch()})`,
       hostname: os.hostname(),
       uptime: `${uptimeHours} hours`,
+      appVersion: `v${pkg.version}`,
       mcpServersDiscovered: this.availableMcpServers
     };
   }

@@ -4,6 +4,23 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.6.1] — 2026-10-18
+### Fixed & Improved
+- **Dynamic Version Synchronization Across All Prompts & Boot Memory**:
+  - Eliminated hardcoded version numbers (`v2.3.0`, `v2.0.0`, `v2.4.0`) inside `memory-manager.js` and `gemini-live-engine.js`.
+  - Tied boot memory context, system directives, session status logs, and memory state dynamically to `package.json` (`pkg.version`).
+  - When loading persistent memory from disk, automatically synchronizes `systemEnvironment.version` and the `gemini-desktop-live` ongoing project entry to the active `pkg.version`.
+  - Added dynamic `appVersion` (`v${pkg.version}`) to the `get_system_status` native tool output.
+- **Explicit Gemini Model Engine Consciousness**:
+  - Injected explicit self-awareness parameters into the live engine's `systemInstruction`:
+    - `- Active AI Model Engine: "${this.model}" (Google Gemini Live Multimodal WebSocket API)`
+    - `- Active Voice Synthesizer: "${this.voiceName}" (Real-time 24kHz PCM audio)`
+    - `- Application Version: v${appVersion}`
+  - Updated behavioral directives to ensure the assistant knows exactly what model and voice it is running on and can report it accurately whenever asked.
+  - Updated the automated startup executive briefing event (`[SYSTEM EVENT: STARTUP EXECUTIVE RUNDOWN]`) in `main.js` to dynamically supply `app.getVersion()` and `this.config.model`.
+
+---
+
 ## [2.6.0] — 2026-10-18
 ### Removed & Cleaned (Anti-Bloat Initiative)
 - **Purged Gears of War Audio Bloat**:

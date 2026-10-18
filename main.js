@@ -188,8 +188,10 @@ class AssistantApp {
         setTimeout(() => {
           console.log('[Main] Delivering automated morning startup briefing...');
           if (this.liveEngine && this.liveEngine.isConnected) {
+            const version = app.getVersion();
+            const model = this.config.model || 'gemini-3.8-live';
             this.liveEngine.sendTextMessage(
-              '[SYSTEM EVENT: STARTUP EXECUTIVE RUNDOWN] Ryan has booted up the assistant. Please invoke workspace_startup_rundown (or your workspace tools) to inspect Ryan\'s unread emails, pending tasks, and today\'s calendar schedule, then deliver a crisp, natural spoken briefing.'
+              `[SYSTEM EVENT: STARTUP EXECUTIVE RUNDOWN] Ryan has booted up the assistant (System Version: v${version}, Active Model: ${model}). Please invoke workspace_startup_rundown (or your workspace tools) to inspect Ryan's unread emails, pending tasks, and today's calendar schedule, then deliver a crisp, natural spoken briefing.`
             );
           }
         }, 3000);

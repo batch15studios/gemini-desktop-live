@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.6.0",
-  "description": "Full Desktop PC Assistant v2.6.0 - Streamlined 3-Palette Engine with Custom Color Picker, Auto-Tuck Side Docks on Workspace Deck Open, Shadowless Unclipped Context Menu, and Curated 8-MCP Core",
+  "version": "2.6.1",
+  "description": "Full Desktop PC Assistant v2.6.1 - Dynamic Version & Model Self-Awareness, Auto-Synchronized Boot Memory, and Real-Time Engine Model Consciousness",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

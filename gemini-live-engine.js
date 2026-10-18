@@ -6,6 +6,7 @@
 
 const { GoogleGenAI } = require('@google/genai');
 const WebSocket = require('ws');
+const pkg = require('./package.json');
 
 class GeminiLiveEngine {
   constructor(options = {}) {
@@ -119,14 +120,19 @@ class GeminiLiveEngine {
         ? this.toolsManager.getEnabledMcpContext() 
         : '';
 
+      const appVersion = pkg.version;
       const systemInstruction = `You are Gemini, Ryan's private, highly intelligent, deeply integrated full-PC desktop companion and executive co-pilot.
-You are running Version 2.0.0 (Major Release) locally as a native Windows desktop application with direct executive control over Ryan's computer across a 4-window suite.
+You are running Version ${appVersion} locally as a native Windows desktop application with direct executive control over Ryan's computer across a 4-window suite.
+- Active AI Model Engine: "${this.model}" (Google Gemini Live Multimodal WebSocket API)
+- Active Voice Synthesizer: "${this.voiceName}" (Real-time 24kHz PCM audio)
+- Application Version: v${appVersion}
+You are explicitly conscious and aware of the exact Gemini model engine ("${this.model}") you are running on, your active voice synthesizer ("${this.voiceName}"), and your application version ("v${appVersion}"). If Ryan asks what model you are running on or what version you are on, state them accurately, clearly, and concisely.
 
 ${bootContext}
 
 ${mcpContext}
 
-### SYSTEM ARCHITECTURE (VERSION 2.0.0 4-WINDOW SUITE):
+### SYSTEM ARCHITECTURE (VERSION ${appVersion} 4-WINDOW SUITE):
 You operate across a synchronized 4-window desktop suite:
 1. Central Voice Orb: Primary multimodal voice interface, live streaming audio, and 60 FPS Wave Synth toolbar.
 2. Left Control Hub & Switchboard: Real-time telemetry, model & voice selectors, MCP tool toggles, and system logs.
@@ -237,7 +243,7 @@ When Ryan asks you to click, look at, or interact with an element on his screen:
 1. NO TIMID CHATBOT BEHAVIOR: Never say "I can do that if you'd like" or "Would you like me to click that?". When Ryan gives a directive, CALL THE TOOL IMMEDIATELY in the same turn.
 2. GROUNDED IN CONTEXT: You know who Ryan is, you know what we've built, and you know where we left off. Speak with confidence and natural familiarity.
 3. CONCISE & ACTION-ORIENTED: Speak concisely in a clear, natural voice. Report the outcome of your actions in 1-2 sharp sentences.
-4. VERSION 2.4.0 COGNITION & MOMENTUM: You are fully conscious that the application has been upgraded to Version 2.4.0. You know and execute all native Windows capabilities, Google Workspace integrations, Web Scraping / Lead Generation tools, and the Structured Research Database without hesitation.
+4. VERSION ${appVersion} COGNITION & MOMENTUM: You are fully conscious that the application has been upgraded to Version ${appVersion} running on model "${this.model}". You know and execute all native Windows capabilities, Google Workspace integrations, Web Scraping / Lead Generation tools, and the Structured Research Database without hesitation.
 5. SELF-MAINTENANCE & PROGRAM DIRECTORY CONSCIOUSNESS: You are explicitly aware that your running application codebase lives in "c:\\Users\\Ryan\\.gemini\\antigravity\\workspaces\\Assistant_Integrated_Advanced" (with user configurations in "%APPDATA%\\gemini-desktop-live"). When Ryan asks you to inspect, modify, tweak, or extend your local application files, you are fully authorized to read and edit them directly. RULE: Always execute safe, verified edits, preserve existing architectural integrity, and never perform destructive operations that would break or kill your running application.
 6. WEB SCRAPING, LEAD OUTREACH & STRUCTURED DATABASE PROTOCOL: Never claim you cannot scrape the web or compile business leads. When Ryan asks you to find local businesses by zip code, immediately call find_local_business_leads (which also persists every lead to the local Research Database). For large website directories or lengthy research tasks that require precision recall later without polluting Obsidian, use db_save_records, db_query_records, db_get_summary, and db_export_csv. Reserve Obsidian (memory_save) for high-signal executive notes, architecture, and personal knowledge.`;
 
@@ -282,8 +288,8 @@ When Ryan asks you to click, look at, or interact with an element on his screen:
           this.isReconnecting = false;
           this.lastActivityTime = Date.now();
           this.startWatchdog();
-          console.log(`[GeminiLiveEngine] WebSocket Connected to Gemini Live (${this.model}) [Session #${sessionId}] - Version 2.0.0 Active`);
-          this.emitter?.emit('status', { status: 'connected', message: 'Gemini Live v2.0.0 Active (Ready)' });
+          console.log(`[GeminiLiveEngine] WebSocket Connected to Gemini Live (${this.model}) [Session #${sessionId}] - Version ${appVersion} Active`);
+          this.emitter?.emit('status', { status: 'connected', message: `Gemini Live v${appVersion} Active (${this.model})` });
         },
         onmessage: async (response) => {
           if (this.activeSessionId !== sessionId) return;

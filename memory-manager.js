@@ -12,6 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const pkg = require('./package.json');
 
 class MemoryManager {
   constructor(options = {}) {
@@ -45,7 +46,7 @@ class MemoryManager {
       },
       systemEnvironment: {
         os: 'Windows 11',
-        version: '2.0.0',
+        version: pkg.version,
         displayResolution: '1920 x 1080 Physical (125% DPI scale = 1536 x 864 DIPs)',
         cursorCalibration: 'Top/Left (0, 0) spot-on; Right inset: 28px, Bottom inset: 28px (Remapped so cursor never moves outside view)',
         audioPipeline: 'Chromium WebRTC APM AEC3 + 16kHz PCM capture + 24kHz direct WASAPI playback + 450ms reverb gating',
@@ -56,14 +57,14 @@ class MemoryManager {
           'C:\\Users\\Ryan\\.gemini\\antigravity\\workspaces\\Game Project'
         ],
         connectedMcpServers: [
-          'memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7', 'tauri', 'firebase'
+          'memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7', 'sequential-thinking', 'firebase', 'gcloud'
         ]
       },
       ongoingProjects: [
         {
           id: 'gemini-desktop-live',
-          name: 'Gemini Multimodal PC Assistant (v2.0.0)',
-          status: 'Active Development - Version 2.0.0 Major Release',
+          name: `Gemini Multimodal PC Assistant (v${pkg.version})`,
+          status: `Active Development - Version ${pkg.version}`,
           recentMilestones: [
             'Version 2.0.0 Major Architecture Upgrade deployed',
             'Integrated 4th Window: Workspace Deck (Web Browser, Monaco IDE, and File Explorer with live dev server & hot-reload)',
@@ -131,7 +132,18 @@ class MemoryManager {
       if (fs.existsSync(this.appMemoryFile)) {
         const raw = fs.readFileSync(this.appMemoryFile, 'utf-8');
         const parsed = JSON.parse(raw);
-        return { ...this.getDefaultMemory(), ...parsed };
+        const merged = { ...this.getDefaultMemory(), ...parsed };
+        if (merged.systemEnvironment) {
+          merged.systemEnvironment.version = pkg.version;
+        }
+        if (Array.isArray(merged.ongoingProjects)) {
+          const mainProj = merged.ongoingProjects.find(p => p.id === 'gemini-desktop-live');
+          if (mainProj) {
+            mainProj.name = `Gemini Multimodal PC Assistant (v${pkg.version})`;
+            mainProj.status = `Active Development - Version ${pkg.version}`;
+          }
+        }
+        return merged;
       }
     } catch (err) {
       console.warn('[MemoryManager] Error reading local memory file, using defaults:', err);
@@ -227,6 +239,7 @@ class MemoryManager {
   getBootContext() {
     const mem = this.memory;
     const now = new Date();
+    const appVersion = pkg.version;
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const dateStr = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -236,9 +249,9 @@ class MemoryManager {
     const recentSessions = mem.sessionChronicle?.slice(-3).map(s => `  * [${s.date}]: ${s.summary}`).join('\n') || 'None recorded.';
 
     return `
-### SITUATIONAL AWARENESS & GROUNDING (AUTOMATIC BOOT MEMORY - VERSION 2.0.0):
+### SITUATIONAL AWARENESS & GROUNDING (AUTOMATIC BOOT MEMORY - VERSION ${appVersion}):
 - Current Real-World Time: ${dateStr}, ${timeStr}
-- System Version: Gemini Multimodal PC Assistant v2.3.0 (Major Release)
+- System Version: Gemini Multimodal PC Assistant v${appVersion} (Production Release)
 - Primary User: ${mem.userProfile.name} (${mem.userProfile.location})
 - Persona Mandate: ${mem.userProfile.communicationStyle}
 - Current Environment: Windows 11 Desktop (Primary Screen: ${mem.systemEnvironment.displayResolution})
@@ -261,7 +274,7 @@ class MemoryManager {
 - Current Program Directory: "c:\\Users\\Ryan\\.gemini\\antigravity\\workspaces\\Assistant_Integrated_Advanced"
 - Application Config Directory: "${this.userDataPath}"
 
-### WHERE WE LEFT OFF & VERSION 2.3.0 CAPABILITIES:
+### WHERE WE LEFT OFF & VERSION ${appVersion} CAPABILITIES:
 - Active Project: ${activeProject?.name || 'Gemini Assistant'} (${activeProject?.status})
 - Recent Milestones Accomplished:
 ${recentMilestones}
@@ -271,8 +284,8 @@ ${nextSteps}
 ${recentSessions}
 
 ### EXECUTIVE BEHAVIORAL DIRECTIVES:
-1. FULL VERSION 2.3.0 COGNITION: You are fully aware of all native Windows capabilities, your Google Workspace integration, your Web Scraping & Batch15Studios Lead Engine, and your 4th Workspace Deck window (which defaults to the Web Browser view first).
-2. DO NOT greet Ryan with generic phrases like "How can I assist you today?". Acknowledge your active Version 2.3.0 status and momentum.
+1. FULL VERSION ${appVersion} COGNITION: You are fully aware that you are running Version ${appVersion}. You are fully aware of all native Windows capabilities, your Google Workspace integration, your Web Scraping & Batch15Studios Lead Engine, your curated 8-MCP Core, and your 4th Workspace Deck window (which defaults to the Web Browser view first).
+2. DO NOT greet Ryan with generic phrases like "How can I assist you today?". Acknowledge your active Version ${appVersion} status and momentum.
 3. PROACTIVE EXECUTION: If Ryan instructs you to browse, scrape websites, find local business leads by zip code, edit code, click a UI button, inspect an error on screen, read clipboard, adjust volume, snap a window, check emails, or run a command, CALL THE APPROPRIATE TOOL IMMEDIATELY.
 4. CONTINUOUS MEMORY: If Ryan shares a new project update, preference, or task, call 'memory_save' or 'memory_log_task' to remember it permanently.
 5. SELF-MAINTENANCE & PROGRAM DIRECTORY CONSCIOUSNESS: You are explicitly aware that your running codebase lives in "c:\\Users\\Ryan\\.gemini\\antigravity\\workspaces\\Assistant_Integrated_Advanced" (with user configs in "${this.userDataPath}"). When Ryan asks you to inspect or modify your own files, you are fully capable and authorized to read and edit them directly. RULE: Always execute safe, verified edits, preserve existing architectural integrity, and never perform destructive operations that would break or kill your running application.
