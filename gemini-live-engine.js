@@ -94,6 +94,8 @@ class GeminiLiveEngine {
     const oldSession = this.session;
     this.session = null;
     this.isConnected = false;
+    this.isModelSpeaking = false;
+    this.isExecutingTool = false;
     if (oldSession) {
       try {
         oldSession.close();
@@ -568,6 +570,7 @@ When Ryan asks you to click, look at, or interact with an element on his screen:
     this.session = null;
     this.isConnected = false;
     this.isModelSpeaking = false;
+    this.isExecutingTool = false;
     if (oldSession) {
       try {
         oldSession.close();

@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.6.5",
-  "description": "Full Desktop PC Assistant v2.6.5 - Gears COG Visual Restoration (Silent Crimson Omen), Render Loop Shielding, and Automatic Workspace Deck Top-Pill Docking",
+  "version": "2.6.6",
+  "description": "Full Desktop PC Assistant v2.6.6 - Reconnect Mic & AudioContext Auto-Resumption, Standby Desync Fix, and Engine State Reset",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

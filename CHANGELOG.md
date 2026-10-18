@@ -2,6 +2,20 @@
 
 All notable changes, version milestones, and architectural revisions to `gemini-desktop-live` (`Assistant_Integrated_Advanced`) are documented in this file.
 
+## [2.6.6] — 2026-10-18
+### Fixed & Improved
+- **Microphone & AudioContext Auto-Resumption on Reconnect (`renderers/orb/orb.js`)**:
+  - Implemented `ensureMicActive()` which verifies track health, re-initializes microphone capture if tracks ended, and explicitly invokes `audioContext.resume()` and `playbackContext.resume()` when reconnecting.
+  - Resolved Chromium WebAudio idle suspension where disconnecting a session left `audioContext.state === 'suspended'` because clicking "Connect" in the Left Dock did not deliver a direct user gesture to the Orb window.
+  - Added periodic resume watchdog check in `renderVisuals()` (every 60 frames) to auto-recover if audio context is suspended while the assistant is active and unmuted.
+  - Bound `ensureMicActive()` to window `focus` and canvas `click` events for immediate recovery.
+- **Standby Desync & Half-Duplex Echo Suppression Clearing (`main.js` & `renderers/orb/orb.js`)**:
+  - In `main.js`, `live:connect` now proactively broadcasts `'app:standby-changed', false` ensuring the Orb never treats a fresh or reconnected session as minimized/standby.
+  - On `'connected'` status, `orb.js` automatically resets `isInStandby = false`, `roomReverbDecayUntil = 0`, `turnActive = false`, and `isAssistantSpeaking = false`, eliminating stale acoustic gating that previously dropped microphone frames.
+- **Gemini Live Engine State Flag Reset (`gemini-live-engine.js`)**:
+  - In `connect()` and `disconnect()`, both `this.isModelSpeaking` and `this.isExecutingTool` are explicitly reset to `false`.
+  - Prevents mid-stream disconnects or tool execution state from permanently blocking `sendAudioChunk()` upon subsequent reconnects.
+
 ---
 
 ## [2.6.5] — 2026-10-18

@@ -806,6 +806,7 @@ class AssistantApp {
   setupIpcHandlers() {
     // Live Connection Controls
     ipcMain.handle('live:connect', async (e, config) => {
+      this.broadcast('app:standby-changed', false);
       if (config) this.saveConfig(config);
       return await this.liveEngine.connect();
     });

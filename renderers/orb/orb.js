@@ -888,8 +888,20 @@ function renderProStudioOrb() {
   ctx.restore();
 }
 
+let renderFrameCount = 0;
+
 function renderVisuals() {
   try {
+    renderFrameCount = (renderFrameCount + 1) % 60;
+    if (renderFrameCount === 0 && !isInStandby && !isMuted) {
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().catch(() => {});
+      }
+      if (playbackContext && playbackContext.state === 'suspended') {
+        playbackContext.resume().catch(() => {});
+      }
+    }
+
     if (isMiniMode) {
       animAngle += (currentState === 'THINKING' ? 0.05 : 0.02);
       renderWaveSynth();
@@ -989,6 +1001,26 @@ function playWakeChime(isSleep = false) {
     osc.stop(now + 0.28);
   } catch (e) {
     console.warn('Chime error:', e);
+  }
+}
+
+async function ensureMicActive() {
+  try {
+    isInStandby = false;
+    if (!audioContext || !micStream || (micStream.getAudioTracks()[0] && micStream.getAudioTracks()[0].readyState === 'ended')) {
+      await startMicrophoneCapture();
+      return;
+    }
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+      console.log('[Orb] Mic AudioContext resumed successfully');
+    }
+    if (playbackContext && playbackContext.state === 'suspended') {
+      await playbackContext.resume();
+      console.log('[Orb] Playback AudioContext resumed successfully');
+    }
+  } catch (err) {
+    console.warn('[Orb] ensureMicActive error:', err);
   }
 }
 
@@ -1274,6 +1306,7 @@ function userBargeIn() {
 // ----------------------------------------------------
 // Click on the orb to unmute if muted, or immediately interrupt speech if speaking
 canvas.addEventListener('click', async () => {
+  ensureMicActive();
   if (isMuted) {
     isMuted = await window.assistantApi.toggleMute();
     if (btnMiniMic) btnMiniMic.classList.toggle('muted', isMuted);
@@ -1282,6 +1315,10 @@ canvas.addEventListener('click', async () => {
     return;
   }
   userBargeIn();
+});
+
+window.addEventListener('focus', () => {
+  ensureMicActive();
 });
 
 window.addEventListener('keydown', (e) => {
@@ -1452,9 +1489,16 @@ window.assistantApi.onMiniModeChanged((mini) => {
 // Assistant Event Listeners
 window.assistantApi.onStatus((data) => {
   console.log('[Orb] Status:', data);
-  if (data.status === 'connecting') updateState('THINKING');
-  else if (data.status === 'connected') updateState('IDLE');
-  else if (data.status === 'disconnected') {
+  if (data.status === 'connecting') {
+    updateState('THINKING');
+  } else if (data.status === 'connected') {
+    ensureMicActive();
+    isInStandby = false;
+    roomReverbDecayUntil = 0;
+    turnActive = false;
+    isAssistantSpeaking = false;
+    updateState('IDLE');
+  } else if (data.status === 'disconnected') {
     clearAudioQueue();
     updateState('IDLE');
   }
