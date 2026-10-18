@@ -42,57 +42,50 @@ let isMuted = false;
 let isPinned = true;
 let animAngle = 0;
 let gearAngle = 0;
-let smoothPulse = 0;
-
-// Preload Gears of War COG assets for instant GPU rendering
-const cogFullCrimson = new Image();
-cogFullCrimson.src = '../../assets/skins/gears/cog-full-crimson.png';
-const cogGearImg = new Image();
-cogGearImg.src = '../../assets/skins/gears/cog-gear-only.png';
-const cogSkullImg = new Image();
-cogSkullImg.src = '../../assets/skins/gears/cog-skull-only.png';
-
-// Fiery Ember Particles for Gears COG skin (reusable pool, zero GC pressure)
-const embers = [];
-const numEmbers = 35;
-for (let i = 0; i < numEmbers; i++) {
-  const angle = Math.random() * Math.PI * 2;
-  const dist = Math.random() * 50 + 30;
-  embers.push({
-    x: Math.cos(angle) * dist,
-    y: Math.sin(angle) * dist,
-    vx: (Math.random() - 0.5) * 0.9,
-    vy: -(Math.random() * 1.6 + 0.6),
-    size: Math.random() * 2.5 + 1.2,
-    alpha: Math.random() * 0.8 + 0.2,
-    decay: Math.random() * 0.025 + 0.012,
-    hue: Math.floor(Math.random() * 28 + 8) // 8-36: deep blood crimson to burning amber
-  });
-}
+let customColorValue = null;
 
 function applySkin(skinId) {
-  currentSkin = skinId || 'default';
+  currentSkin = skinId === 'gears' ? 'cog-gear' : (skinId || 'default');
   document.documentElement.setAttribute('data-skin', currentSkin);
-  if (currentSkin === 'gears') {
-    preloadMarcusAudio();
-  }
   if (canvas) {
-    if (currentSkin === 'gears') {
-      canvas.style.filter = 'drop-shadow(0 0 28px rgba(255, 30, 20, 0.65))';
-    } else if (currentSkin === 'pro-studio' || currentSkin === 'enterprise-pro') {
+    if (currentSkin === 'pro-studio' || currentSkin === 'enterprise-pro') {
       canvas.style.filter = 'drop-shadow(0 0 20px rgba(0, 120, 212, 0.45))';
     } else {
-      const pal = (typeof getThemePalette === 'function') ? getThemePalette(currentTheme) : null;
+      const pal = (typeof getThemePalette === 'function') ? getThemePalette(currentTheme, customColorValue) : null;
       canvas.style.filter = pal ? `drop-shadow(0 0 25px ${pal.glow})` : 'drop-shadow(0 0 25px rgba(0, 220, 255, 0.45))';
     }
   }
 }
 
-function applyTheme(themeId) {
+function applyTheme(themeData) {
+  let themeId = 'cyber-cyan';
+  if (typeof themeData === 'string') {
+    themeId = themeData;
+  } else if (themeData && typeof themeData === 'object') {
+    themeId = themeData.themeId || 'cyber-cyan';
+    if (themeData.customColor) {
+      customColorValue = themeData.customColor;
+    }
+  }
+
   currentTheme = themeId || 'cyber-cyan';
   document.documentElement.setAttribute('data-theme', currentTheme);
-  const pal = (typeof getThemePalette === 'function') ? getThemePalette(currentTheme) : null;
-  if (canvas && currentState === 'IDLE' && pal && currentSkin !== 'gears') {
+
+  if (customColorValue) {
+    const clean = customColorValue.replace('#', '');
+    const bigint = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
+    if (!isNaN(bigint)) {
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      document.documentElement.style.setProperty('--custom-accent', customColorValue);
+      document.documentElement.style.setProperty('--custom-accent-rgb', `${r}, ${g}, ${b}`);
+      document.documentElement.style.setProperty('--custom-accent-sec', customColorValue);
+    }
+  }
+
+  const pal = (typeof getThemePalette === 'function') ? getThemePalette(currentTheme, customColorValue) : null;
+  if (canvas && currentState === 'IDLE' && pal) {
     canvas.style.filter = `drop-shadow(0 0 25px ${pal.glow})`;
   }
 }
@@ -250,9 +243,9 @@ function renderOrb() {
 }
 
 // ----------------------------------------------------
-// COG Warfare (Gears of War) Canvas Render Engine
+// Industrial Cog Gear (Precision Mechanical Engine)
 // ----------------------------------------------------
-function drawProceduralGear(c, innerR, outerR, numTeeth) {
+function drawProceduralGear(c, innerR, outerR, numTeeth, fillColor, strokeColor) {
   c.beginPath();
   const step = (Math.PI * 2) / numTeeth;
   for (let i = 0; i < numTeeth; i++) {
@@ -266,158 +259,91 @@ function drawProceduralGear(c, innerR, outerR, numTeeth) {
     c.lineTo(Math.cos(a3) * innerR, Math.sin(a3) * innerR);
   }
   c.closePath();
-  c.fillStyle = '#22252c';
+  c.fillStyle = fillColor || '#11151f';
   c.fill();
-  c.strokeStyle = '#ff3333';
+  c.strokeStyle = strokeColor || 'rgba(0, 240, 255, 0.7)';
   c.lineWidth = 2;
   c.stroke();
 }
 
-function drawProceduralSkull(c, r) {
-  c.beginPath();
-  c.arc(0, -r * 0.2, r * 0.7, 0, Math.PI * 2);
-  c.rect(-r * 0.45, r * 0.1, r * 0.9, r * 0.5);
-  c.fillStyle = '#111216';
-  c.fill();
-  c.strokeStyle = '#ff2222';
-  c.lineWidth = 1.5;
-  c.stroke();
-}
-
-function renderGearsOrb() {
+function renderCogGearOrb() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const cx = canvas.width / 2;
   const cy = canvas.height / 2;
 
-  // Smooth heartbeat pulse + audio volume lerp for silky 60 FPS transitions
+  const pal = (typeof getThemePalette === 'function')
+    ? getThemePalette(currentTheme, customColorValue)
+    : { primary: '#00f0ff', secondary: '#70a1ff', glow: 'rgba(0, 240, 255, 0.45)' };
+
+  // Smooth pulse reacting to audio output and mic
   let targetPulse = 0;
   if (currentState === 'SPEAKING') {
-    targetPulse = outputLevel * 38;
+    targetPulse = outputLevel * 36;
   } else if (currentState === 'LISTENING') {
-    targetPulse = micLevel * 25;
+    targetPulse = micLevel * 24;
   } else if (currentState === 'THINKING') {
     targetPulse = Math.sin(animAngle * 4) * 8;
   } else {
-    // Gears of War rhythmic health omen heartbeat breathing
-    targetPulse = Math.sin(animAngle * 1.8) * 4;
+    targetPulse = Math.sin(animAngle * 1.5) * 3;
   }
   smoothPulse += (targetPulse - smoothPulse) * 0.15;
 
   animAngle += (currentState === 'THINKING' ? 0.05 : 0.02);
-  gearAngle += (currentState === 'THINKING' ? 0.03 : (currentState === 'SPEAKING' ? 0.012 : 0.004));
+  gearAngle += (currentState === 'THINKING' ? 0.03 : (currentState === 'SPEAKING' ? 0.015 : 0.005));
 
-  // 1. Gears of War Blood-Red Ambient Aura
-  const outerGlow = ctx.createRadialGradient(cx, cy, 35, cx, cy, 140 + smoothPulse * 0.6);
-  if (currentState === 'SPEAKING') {
-    outerGlow.addColorStop(0, 'rgba(255, 30, 20, 0.7)');
-    outerGlow.addColorStop(0.5, 'rgba(200, 10, 10, 0.4)');
-    outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  } else if (currentState === 'LISTENING') {
-    outerGlow.addColorStop(0, 'rgba(255, 80, 20, 0.55)');
-    outerGlow.addColorStop(0.5, 'rgba(180, 40, 10, 0.28)');
-    outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  } else if (currentState === 'THINKING') {
-    outerGlow.addColorStop(0, 'rgba(255, 140, 0, 0.7)');
-    outerGlow.addColorStop(0.5, 'rgba(220, 40, 0, 0.35)');
-    outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  } else {
-    outerGlow.addColorStop(0, 'rgba(180, 15, 15, 0.5)');
-    outerGlow.addColorStop(0.6, 'rgba(120, 5, 5, 0.2)');
-    outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  }
+  // 1. Ambient Harmonic Aura matching active theme
+  const auraR = 135 + smoothPulse * 0.5;
+  const outerGlow = ctx.createRadialGradient(cx, cy, 30, cx, cy, auraR);
+  outerGlow.addColorStop(0, pal.glow);
+  outerGlow.addColorStop(0.6, pal.aura || 'rgba(0, 240, 255, 0.15)');
+  outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
   ctx.fillStyle = outerGlow;
   ctx.beginPath();
-  ctx.arc(cx, cy, 140 + smoothPulse * 0.6, 0, Math.PI * 2);
+  ctx.arc(cx, cy, auraR, 0, Math.PI * 2);
   ctx.fill();
 
-  // 2. Tactical Rotating Mechanical Reticle / Ticks (Subtle outer gear orbit)
+  // 2. Precision Rotating Mechanical Outer Gear
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(gearAngle);
-  const reticleR = 104 + smoothPulse * 0.3;
+  const gearOuter = 95 + smoothPulse * 0.25;
+  const gearInner = 75 + smoothPulse * 0.15;
+  drawProceduralGear(ctx, gearInner, gearOuter, 12, '#11151f', pal.primary);
+  ctx.restore();
+
+  // 3. Counter-Rotating Inner Precision Gear Ring
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-gearAngle * 1.5);
+  drawProceduralGear(ctx, 45, 58, 8, '#0b0f17', pal.secondary || pal.primary);
+  ctx.restore();
+
+  // 4. Tactical Concentric Telemetry Reticle & Ticks
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(gearAngle * 0.5);
   ctx.beginPath();
-  ctx.arc(0, 0, reticleR, 0, Math.PI * 2);
-  ctx.strokeStyle = (currentState === 'SPEAKING') ? 'rgba(255, 40, 20, 0.6)' : 'rgba(180, 20, 20, 0.25)';
+  ctx.arc(0, 0, 110 + smoothPulse * 0.2, 0, Math.PI * 2);
+  ctx.strokeStyle = pal.primary;
+  ctx.globalAlpha = (currentState === 'SPEAKING') ? 0.7 : 0.35;
   ctx.lineWidth = 1.5;
-  ctx.setLineDash([4, 12]);
+  ctx.setLineDash([4, 10]);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
 
-  // 3. Fiery Molten Embers & Sparks (Drifting upwards like Lancer chainsaw sparks)
-  embers.forEach(e => {
-    e.y += e.vy * (currentState === 'SPEAKING' ? 2.0 : 1.0);
-    e.x += e.vx + Math.sin(animAngle * 3 + e.y * 0.05) * 0.4;
-    e.alpha -= e.decay;
-    if (e.alpha <= 0 || Math.abs(e.y) > 130) {
-      const spawnAngle = Math.random() * Math.PI * 2;
-      const spawnR = Math.random() * 45 + 30;
-      e.x = Math.cos(spawnAngle) * spawnR;
-      e.y = Math.sin(spawnAngle) * spawnR;
-      e.vx = (Math.random() - 0.5) * (currentState === 'SPEAKING' ? 2.5 : 1.0);
-      e.vy = -(Math.random() * 2.0 + 0.8);
-      e.alpha = Math.random() * 0.8 + 0.3;
-      e.size = Math.random() * 2.5 + 1;
-    }
-
-    ctx.beginPath();
-    ctx.arc(cx + e.x, cy + e.y, e.size, 0, Math.PI * 2);
-    ctx.fillStyle = `hsla(${e.hue}, 100%, ${currentState === 'SPEAKING' ? 65 : 50}%, ${e.alpha})`;
-    ctx.shadowColor = `hsl(${e.hue}, 100%, 50%)`;
-    ctx.shadowBlur = 4;
-    ctx.fill();
-  });
-  ctx.shadowBlur = 0;
-
-  // 4. Central Molten Lava Backlight behind the Skull
+  // 5. Central Energy Aperture Core
   ctx.save();
-  const flareR = 52 + smoothPulse * 0.4;
-  const flareGrad = ctx.createRadialGradient(cx, cy, 5, cx, cy, flareR);
-  if (currentState === 'SPEAKING') {
-    flareGrad.addColorStop(0, '#ffffff');
-    flareGrad.addColorStop(0.3, '#ff3b14');
-    flareGrad.addColorStop(0.7, '#8b0000');
-    flareGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  } else if (currentState === 'THINKING') {
-    flareGrad.addColorStop(0, '#ffffff');
-    flareGrad.addColorStop(0.3, '#ffaa00');
-    flareGrad.addColorStop(0.7, '#cc2200');
-    flareGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  } else {
-    flareGrad.addColorStop(0, 'rgba(255, 60, 20, 0.7)');
-    flareGrad.addColorStop(0.4, 'rgba(180, 15, 15, 0.45)');
-    flareGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  }
-  ctx.fillStyle = flareGrad;
+  const coreR = 34 + smoothPulse * 0.3;
+  const coreGrad = ctx.createRadialGradient(cx, cy, 3, cx, cy, coreR);
+  coreGrad.addColorStop(0, '#ffffff');
+  coreGrad.addColorStop(0.4, pal.primary);
+  coreGrad.addColorStop(0.9, pal.secondary || pal.primary);
+  coreGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = coreGrad;
   ctx.beginPath();
-  ctx.arc(cx, cy, flareR, 0, Math.PI * 2);
+  ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
   ctx.fill();
-  ctx.restore();
-
-  // 5. The Legendary Gears of War Crimson Omen Emblem (Crisp, High-Resolution, Upright)
-  ctx.save();
-  ctx.translate(cx, cy);
-  const emblemScale = 1.0 + (smoothPulse / 260);
-  ctx.scale(emblemScale, emblemScale);
-
-  // Intense blood-red drop-shadow glow
-  ctx.shadowColor = (currentState === 'SPEAKING') ? '#ff1100' : 'rgba(200, 10, 10, 0.85)';
-  ctx.shadowBlur = (currentState === 'SPEAKING') ? 22 : 12;
-
-  const targetW = 205;
-  const targetH = 197;
-
-  if (cogFullCrimson.complete && cogFullCrimson.naturalWidth > 0) {
-    ctx.drawImage(cogFullCrimson, -targetW / 2, -targetH / 2, targetW, targetH);
-  } else if (cogGearImg.complete && cogGearImg.naturalWidth > 0) {
-    ctx.drawImage(cogGearImg, -targetW / 2, -targetH / 2, targetW, targetH);
-    if (cogSkullImg.complete && cogSkullImg.naturalWidth > 0) {
-      ctx.drawImage(cogSkullImg, -targetW / 2, -targetH / 2, targetW, targetH);
-    }
-  } else {
-    drawProceduralGear(ctx, 75, 95, 12);
-    drawProceduralSkull(ctx, 42);
-  }
   ctx.restore();
 }
 
@@ -763,8 +689,8 @@ function renderVisuals() {
     animAngle += (currentState === 'THINKING' ? 0.05 : 0.02);
     renderWaveSynth();
   } else {
-    if (currentSkin === 'gears') {
-      renderGearsOrb();
+    if (currentSkin === 'cog-gear' || currentSkin === 'gears') {
+      renderCogGearOrb();
     } else if (currentSkin === 'pro-studio' || currentSkin === 'enterprise-pro') {
       renderProStudioOrb();
     } else {
@@ -824,58 +750,8 @@ function detectSoundSnapOrClap(freqArray) {
   return false;
 }
 
-// ----------------------------------------------------
-// Marcus Fenix Audio Quotes (Clean, Smooth, Unfiltered)
-// ----------------------------------------------------
-const marcusQuotes = [
-  '../../assets/skins/gears/audio/marcus-i-found-a-way-to-sneak-in.mp3',
-  '../../assets/skins/gears/audio/marcus-anybody-need-some-sniper-practice.mp3',
-  '../../assets/skins/gears/audio/marcus-that-s-alota-blood.mp3',
-  '../../assets/skins/gears/audio/marcus-always-the-closest-to-home.mp3'
-];
-
-let decodedMarcusBuffers = [];
-
-async function preloadMarcusAudio() {
-  if (decodedMarcusBuffers.length > 0) return;
-  initPlaybackContext();
-  for (const url of marcusQuotes) {
-    try {
-      const resp = await fetch(url);
-      const arrayBuf = await resp.arrayBuffer();
-      const decoded = await playbackContext.decodeAudioData(arrayBuf);
-      decodedMarcusBuffers.push(decoded);
-    } catch (err) {
-      console.warn('[Orb] Preloading Marcus clip error:', url, err.message);
-    }
-  }
-}
-
-function playMarcusVoiceQuote() {
-  initPlaybackContext();
-  if (decodedMarcusBuffers.length === 0) return false;
-  try {
-    const buffer = decodedMarcusBuffers[Math.floor(Math.random() * decodedMarcusBuffers.length)];
-    const src = playbackContext.createBufferSource();
-    src.buffer = buffer;
-    src.connect(playbackContext.destination);
-    if (mediaStreamDest) {
-      try { src.connect(mediaStreamDest); } catch (e) {}
-    }
-    src.start(0);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
 // Futuristic Web Audio Synthesizer Chime
 function playWakeChime(isSleep = false) {
-  if (currentSkin === 'gears' && !isSleep) {
-    const played = playMarcusVoiceQuote('wake');
-    if (played) return;
-  }
-
   initPlaybackContext();
   try {
     const osc = playbackContext.createOscillator();
@@ -1214,19 +1090,39 @@ function showContextMenu(e) {
   if (isMiniMode || !orbContextMenu) return;
   e.preventDefault();
 
-  const menuW = 205;
-  const menuH = 220;
+  orbContextMenu.style.display = 'block';
+  updateContextMenuTexts();
+
+  const rect = orbContextMenu.getBoundingClientRect();
+  const menuW = rect.width || 205;
+  const menuH = rect.height || 225;
+
+  const winW = window.innerWidth;
+  const winH = window.innerHeight;
+
   let x = e.clientX;
   let y = e.clientY;
 
-  if (x + menuW > window.innerWidth) x = Math.max(8, window.innerWidth - menuW - 8);
-  if (y + menuH > window.innerHeight) y = Math.max(8, window.innerHeight - menuH - 8);
+  // Vertical placement: If clicking on lower half or near bottom, pop UPWARDS from the cursor
+  if (e.clientY + menuH > winH - 12) {
+    y = e.clientY - menuH;
+  } else {
+    y = e.clientY;
+  }
 
-  orbContextMenu.style.left = `${x}px`;
-  orbContextMenu.style.top = `${y}px`;
-  orbContextMenu.style.display = 'block';
+  // Horizontal placement: If clicking on right half or near right edge, pop LEFTWARDS from the cursor
+  if (e.clientX + menuW > winW - 12) {
+    x = e.clientX - menuW;
+  } else {
+    x = e.clientX;
+  }
 
-  updateContextMenuTexts();
+  // Keep strictly within viewport bounds with padding
+  x = Math.max(8, Math.min(winW - menuW - 8, x));
+  y = Math.max(8, Math.min(winH - menuH - 8, y));
+
+  orbContextMenu.style.left = `${Math.round(x)}px`;
+  orbContextMenu.style.top = `${Math.round(y)}px`;
 }
 
 function hideContextMenu() {

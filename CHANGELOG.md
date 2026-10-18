@@ -4,6 +4,34 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.6.0] — 2026-10-18
+### Removed & Cleaned (Anti-Bloat Initiative)
+- **Purged Gears of War Audio Bloat**:
+  - Removed ~30 MB of audio bloat: deleted `assets/gears-intro.mp3` and `assets/skins/gears/audio/` quote pack (`gears-of-war-3-marcus-fenix-quotes.mp3`, `marcus-*.mp3`).
+  - Removed all Marcus Fenix sound clip preloading, decoding, and speech quote triggers from `orb.js` and `left.js`.
+  - Removed `#inputGearsVoice` custom voice ID override field and `gearsVoice` branching from `main.js` and `renderers/left/index.html`.
+- **Streamlined Palettes to 3 Core Choices**:
+  - Reduced palette selector down to **Cyber Cyan** (Original Nexus Prime), **Enterprise Slate** (Native Windows Studio), and **Custom Palette** (Dynamic studio color engine).
+  - Built an interactive custom color picker (`#customColorPicker`) and hex input (`#customColorHex`) in the Left Dock settings allowing dynamic selection of any accent color with on-the-fly calculation of glows, borders, and audio visualizer wave gradients.
+- **MCP Server Pruning**:
+  - Pruned non-essential and redundant MCP servers from discovery (`science_biomolecular_structure_viewer_mcp`, `tauri`, `genkit-mcp-server`, `data-agent-kit-plugin_dak-notebook`, `data-agent-kit-plugin_dak-viz`, `gemini-api-docs`, `firebase-mcp-server`).
+  - Defaulted active MCP suite strictly to Ryan's approved daily core: `memory`, `filesystem`, `github`, `chrome-devtools-mcp`, `context7`, `sequential-thinking`, `firebase`, and `gcloud`.
+
+### Fixed & Improved
+- **Shadowless, Non-Clipping Orb Context Menu**:
+  - **Eliminated Muddy Drop Shadow**: Replaced the murky `0 12px 32px rgba(0,0,0,0.65)` box shadow on `.orb-context-menu` with a razor-sharp `inset 0 1px 0 rgba(255, 255, 255, 0.12)` highlight. Zero dark smudge or box artifacts on the transparent window.
+  - **Smart Bidirectional Flip**: Upgraded `showContextMenu(e)` to calculate live menu dimensions via `getBoundingClientRect()`. When clicking on the lower half of the Orb, the menu pops **UPWARDS** (`e.clientY - menuH`); when clicking on the top half, it pops **DOWNWARDS**.
+  - **Expanded Window Headroom**: Expanded `orbWindow` size from 360px to 420px, providing 50px of transparent breathing room so the context menu never clips or gets cut off regardless of where the user right-clicks on the Orb.
+  - **Square Corners in Studio Pro**: Styled `.orb-context-menu` and menu items with `border-radius: 0px` when `pro-studio` skin is active.
+- **Auto-Tuck Side Docks on Workspace Deck Open**:
+  - When the Workspace Command Deck is opened (`Alt+W` or via the Orb context menu), the Left Control Hub and Right Activity HUD automatically tuck away (hide) to eliminate window clutter and overlap on 1080p displays.
+  - When the Workspace Deck is minimized, closed, or hidden, the side docks automatically restore to their previous state.
+- **Preserved Industrial Cog Gear Orb Visual**:
+  - Re-architected the mechanical gear canvas animation as the `cog-gear` ("Industrial Cog") visual skin.
+  - Dual-counter-rotating 12-tooth outer and 8-tooth inner precision gears render smoothly on a procedural 60 FPS vector canvas, pulsing dynamically to voice audio (speaking/listening) and matching the active theme's colors without any audio bloat or crimson omen imagery.
+
+---
+
 ## [2.5.1] — 2026-10-18
 ### Fixed & Improved
 - **Sharp Square Corners for Enterprise Skin (`pro-studio`)**:

@@ -257,16 +257,39 @@ pollHardwareTelemetry();
 toggleWebcam();
 
 // Theme & Skin Management
-function applyTheme(themeId) {
+function applyTheme(themeData) {
+  let themeId = 'cyber-cyan';
+  let customColor = null;
+  if (typeof themeData === 'string') {
+    themeId = themeData;
+  } else if (themeData && typeof themeData === 'object') {
+    themeId = themeData.themeId || 'cyber-cyan';
+    customColor = themeData.customColor || null;
+  }
+
   document.documentElement.setAttribute('data-theme', themeId || 'cyber-cyan');
+
+  if (customColor) {
+    const clean = customColor.replace('#', '');
+    const bigint = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
+    if (!isNaN(bigint)) {
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      document.documentElement.style.setProperty('--custom-accent', customColor);
+      document.documentElement.style.setProperty('--custom-accent-rgb', `${r}, ${g}, ${b}`);
+      document.documentElement.style.setProperty('--custom-accent-sec', customColor);
+    }
+  }
 }
 
 function applySkin(skinId) {
-  document.documentElement.setAttribute('data-skin', skinId || 'default');
+  const target = skinId === 'gears' ? 'cog-gear' : (skinId || 'default');
+  document.documentElement.setAttribute('data-skin', target);
 }
 
-window.assistantApi.onThemeChanged((themeId) => {
-  applyTheme(themeId);
+window.assistantApi.onThemeChanged((themeData) => {
+  applyTheme(themeData);
 });
 
 window.assistantApi.onSkinChanged((skinId) => {
@@ -274,6 +297,6 @@ window.assistantApi.onSkinChanged((skinId) => {
 });
 
 window.assistantApi.loadConfig().then(cfg => {
-  if (cfg && cfg.theme) applyTheme(cfg.theme);
+  if (cfg && cfg.theme) applyTheme({ themeId: cfg.theme, customColor: cfg.customColor });
   if (cfg && cfg.skin) applySkin(cfg.skin);
 }).catch(err => console.warn('[Right HUD] Failed to load config theme/skin:', err));

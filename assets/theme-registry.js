@@ -14,51 +14,6 @@ const THEMES = [
     desc: 'Holographic cyan neon & deep obsidian glass'
   },
   {
-    id: 'synthwave-violet',
-    name: 'Synthwave Violet',
-    tag: 'Quantum Pulse',
-    primary: '#c084fc',
-    secondary: '#f472b6',
-    bg: '#0f0a1a',
-    desc: 'Retro-futuristic purple & vivid magenta laser'
-  },
-  {
-    id: 'matrix-emerald',
-    name: 'Matrix Emerald',
-    tag: 'Bio-Digital',
-    primary: '#10b981',
-    secondary: '#22c55e',
-    bg: '#06120c',
-    desc: 'Tactical cyberpunk emerald & terminal phosphor'
-  },
-  {
-    id: 'amber-horizon',
-    name: 'Amber Horizon',
-    tag: 'Solar Flare',
-    primary: '#f59e0b',
-    secondary: '#f97316',
-    bg: '#160e08',
-    desc: 'Aerospace telemetry gold & molten solar flare'
-  },
-  {
-    id: 'crimson-protocol',
-    name: 'Crimson Protocol',
-    tag: 'Stealth Ops',
-    primary: '#ef4444',
-    secondary: '#f43f5e',
-    bg: '#18080a',
-    desc: 'Red alert laser & dark tactical stealth carbon'
-  },
-  {
-    id: 'glacial-arctic',
-    name: 'Glacial Arctic',
-    tag: 'Cryo-Titanium',
-    primary: '#38bdf8',
-    secondary: '#94a3b8',
-    bg: '#0c1420',
-    desc: 'Cryogenic diamond ice & brushed titanium slate'
-  },
-  {
     id: 'enterprise-pro',
     name: 'Enterprise Slate',
     tag: 'Windows Studio',
@@ -66,6 +21,15 @@ const THEMES = [
     secondary: '#38bdf8',
     bg: '#0b111e',
     desc: 'Native Windows 11 Fluent Studio & brushed titanium slate'
+  },
+  {
+    id: 'custom',
+    name: 'Custom Palette',
+    tag: 'Studio Engine',
+    primary: '#a855f7',
+    secondary: '#ec4899',
+    bg: '#0c0e14',
+    desc: 'Interactive custom accent palette & dynamic harmonic glows'
   }
 ];
 
@@ -80,78 +44,6 @@ const THEME_PALETTES = {
     coreB: '#70a1ff',
     coreC: '#00d2d3',
     synthGradient: ['#00f0ff', '#70a1ff', '#00d2d3'],
-    synthWave: '#ffffff'
-  },
-  'synthwave-violet': {
-    primary: '#c084fc',
-    secondary: '#f472b6',
-    glow: 'rgba(192, 132, 252, 0.5)',
-    aura: 'rgba(192, 132, 252, 0.4)',
-    ring: 'rgba(192, 132, 252, 0.5)',
-    coreA: '#ffffff',
-    coreB: '#c084fc',
-    coreC: '#f472b6',
-    synthGradient: ['#c084fc', '#f472b6', '#ec4899'],
-    synthWave: '#fdf2f8'
-  },
-  'matrix-emerald': {
-    primary: '#10b981',
-    secondary: '#22c55e',
-    glow: 'rgba(16, 185, 129, 0.5)',
-    aura: 'rgba(16, 185, 129, 0.4)',
-    ring: 'rgba(16, 185, 129, 0.5)',
-    coreA: '#ffffff',
-    coreB: '#22c55e',
-    coreC: '#10b981',
-    synthGradient: ['#10b981', '#22c55e', '#06b6d4'],
-    synthWave: '#ecfdf5'
-  },
-  'amber-horizon': {
-    primary: '#f59e0b',
-    secondary: '#f97316',
-    glow: 'rgba(245, 158, 11, 0.5)',
-    aura: 'rgba(245, 158, 11, 0.4)',
-    ring: 'rgba(245, 158, 11, 0.5)',
-    coreA: '#ffffff',
-    coreB: '#f97316',
-    coreC: '#f59e0b',
-    synthGradient: ['#f59e0b', '#f97316', '#ef4444'],
-    synthWave: '#fffbeb'
-  },
-  'crimson-protocol': {
-    primary: '#ef4444',
-    secondary: '#f43f5e',
-    glow: 'rgba(239, 68, 68, 0.5)',
-    aura: 'rgba(239, 68, 68, 0.4)',
-    ring: 'rgba(239, 68, 68, 0.5)',
-    coreA: '#ffffff',
-    coreB: '#f43f5e',
-    coreC: '#ef4444',
-    synthGradient: ['#ef4444', '#f43f5e', '#fb923c'],
-    synthWave: '#fff1f2'
-  },
-  'glacial-arctic': {
-    primary: '#38bdf8',
-    secondary: '#94a3b8',
-    glow: 'rgba(56, 189, 248, 0.5)',
-    aura: 'rgba(56, 189, 248, 0.4)',
-    ring: 'rgba(56, 189, 248, 0.5)',
-    coreA: '#ffffff',
-    coreB: '#38bdf8',
-    coreC: '#94a3b8',
-    synthGradient: ['#38bdf8', '#94a3b8', '#e2e8f0'],
-    synthWave: '#f0f9ff'
-  },
-  'gears': {
-    primary: '#ff2222',
-    secondary: '#ff6600',
-    glow: 'rgba(255, 34, 34, 0.65)',
-    aura: 'rgba(200, 15, 15, 0.5)',
-    ring: 'rgba(255, 60, 60, 0.55)',
-    coreA: '#ffffff',
-    coreB: '#ff3311',
-    coreC: '#8b0000',
-    synthGradient: ['#ff2222', '#ff6600', '#8b0000'],
     synthWave: '#ffffff'
   },
   'enterprise-pro': {
@@ -191,20 +83,52 @@ const SKINS = [
     id: 'pro-studio',
     name: 'Studio Pro Lens',
     tag: 'Native Pro Tool',
-    desc: 'Precision optical telemetry aperture, degree ticks & enterprise studio visualizer'
+    desc: 'Precision optical telemetry aperture, degree ticks & native studio UI'
   },
   {
-    id: 'gears',
-    name: 'COG Warfare',
-    tag: 'Gears of War',
-    desc: 'Armored steel plates, rivets & rotating COG gear with molten skull'
+    id: 'cog-gear',
+    name: 'Industrial Cog Gear',
+    tag: 'Mechanical Orb',
+    desc: 'Precision mechanical rotating cog gear and tactical telemetry reticle'
   }
 ];
 
-function getThemePalette(themeId) {
+function hexToRgb(hex) {
+  if (!hex || typeof hex !== 'string') return { r: 168, g: 85, b: 247 };
+  const clean = hex.replace('#', '');
+  const bigint = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
+  if (isNaN(bigint)) return { r: 168, g: 85, b: 247 };
+  return {
+    r: (bigint >> 16) & 255,
+    g: (bigint >> 8) & 255,
+    b: bigint & 255
+  };
+}
+
+function computeCustomPalette(hexColor) {
+  const hex = hexColor || '#a855f7';
+  const rgb = hexToRgb(hex);
+  return {
+    primary: hex,
+    secondary: hex,
+    glow: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)`,
+    aura: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.35)`,
+    ring: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)`,
+    coreA: '#ffffff',
+    coreB: hex,
+    coreC: hex,
+    synthGradient: [hex, '#ffffff', hex],
+    synthWave: '#ffffff'
+  };
+}
+
+function getThemePalette(themeId, customColor = null) {
+  if (themeId === 'custom' || customColor) {
+    return computeCustomPalette(customColor);
+  }
   return THEME_PALETTES[themeId] || THEME_PALETTES['cyber-cyan'];
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { THEMES, SKINS, THEME_PALETTES, getThemePalette };
+  module.exports = { THEMES, SKINS, THEME_PALETTES, getThemePalette, computeCustomPalette, hexToRgb };
 }

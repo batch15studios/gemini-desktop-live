@@ -121,23 +121,6 @@ if (btnSaveGhKey) {
   });
 }
 
-const inputGearsVoice = document.getElementById('inputGearsVoice');
-const btnSaveGearsVoice = document.getElementById('btnSaveGearsVoice');
-
-if (btnSaveGearsVoice) {
-  btnSaveGearsVoice.addEventListener('click', async () => {
-    const customVoice = inputGearsVoice ? inputGearsVoice.value.trim() : '';
-    await window.assistantApi.saveConfig({ gearsVoice: customVoice });
-    btnSaveGearsVoice.innerText = 'Saved!';
-    setTimeout(() => { btnSaveGearsVoice.innerText = 'Save'; }, 1800);
-    if (customVoice) {
-      addLogEntry('System', `Gears of War custom voice saved: "${customVoice}". Auto-loads when Gears skin is active.`, 'system');
-    } else {
-      addLogEntry('System', 'Gears of War custom voice cleared. Will use standard voice until configured.', 'system');
-    }
-  });
-}
-
 selectVoice.addEventListener('change', async () => {
   const chosen = selectVoice.value;
   await window.assistantApi.saveConfig({ standardVoice: chosen, voiceName: chosen });
@@ -171,9 +154,10 @@ if (window.assistantApi.onModelChanged) {
 
 // Skin Selection Handlers
 function setActiveSkin(skinId) {
-  document.documentElement.setAttribute('data-skin', skinId || 'default');
+  const targetSkin = skinId === 'gears' ? 'cog-gear' : (skinId || 'default');
+  document.documentElement.setAttribute('data-skin', targetSkin);
   document.querySelectorAll('.skin-card').forEach(card => {
-    card.classList.toggle('active', card.dataset.skinId === (skinId || 'default'));
+    card.classList.toggle('active', card.dataset.skinId === targetSkin);
   });
 }
 
@@ -184,13 +168,6 @@ document.querySelectorAll('.skin-card').forEach(card => {
     window.assistantApi.setSkin(skinId);
     const skinName = card.querySelector('.skin-name')?.innerText || skinId;
     addLogEntry('System', `Visual skin changed to "${skinName}".`, 'system');
-    
-    // Play the custom Marcus Fenix voice quote!
-    if (skinId === 'gears') {
-      const audio = new Audio('../../assets/gears-intro.mp3');
-      audio.volume = 0.8;
-      audio.play().catch(e => console.warn('Could not play gears intro', e));
-    }
   });
 });
 
@@ -199,16 +176,77 @@ window.assistantApi.onSkinChanged((skinId) => {
 });
 
 // Theme Selection Handlers
-function setActiveTheme(themeId) {
+const customColorPicker = document.getElementById('customColorPicker');
+const customColorHex = document.getElementById('customColorHex');
+
+function setActiveTheme(themeData) {
+  let themeId = 'cyber-cyan';
+  let customColor = null;
+  if (typeof themeData === 'string') {
+    themeId = themeData;
+  } else if (themeData && typeof themeData === 'object') {
+    themeId = themeData.themeId || 'cyber-cyan';
+    customColor = themeData.customColor || null;
+  }
+
   document.documentElement.setAttribute('data-theme', themeId);
   document.querySelectorAll('.theme-card').forEach(card => {
     card.classList.toggle('active', card.dataset.themeId === themeId);
   });
+
+  if (customColor) {
+    const rgb = (typeof hexToRgb === 'function') ? hexToRgb(customColor) : { r: 168, g: 85, b: 247 };
+    document.documentElement.style.setProperty('--custom-accent', customColor);
+    document.documentElement.style.setProperty('--custom-accent-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+    document.documentElement.style.setProperty('--custom-accent-sec', customColor);
+    if (customColorPicker) customColorPicker.value = customColor;
+    if (customColorHex) customColorHex.value = customColor.toUpperCase();
+  }
+}
+
+function applyCustomThemeColor(hex) {
+  if (!hex) return;
+  const clean = hex.startsWith('#') ? hex : `#${hex}`;
+  if (customColorPicker) customColorPicker.value = clean;
+  if (customColorHex) customColorHex.value = clean.toUpperCase();
+
+  const rgb = (typeof hexToRgb === 'function') ? hexToRgb(clean) : { r: 168, g: 85, b: 247 };
+  document.documentElement.style.setProperty('--custom-accent', clean);
+  document.documentElement.style.setProperty('--custom-accent-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+  document.documentElement.style.setProperty('--custom-accent-sec', clean);
+
+  setActiveTheme({ themeId: 'custom', customColor: clean });
+  window.assistantApi.setTheme({ themeId: 'custom', customColor: clean });
+  addLogEntry('System', `Custom palette updated to ${clean.toUpperCase()}.`, 'system');
+}
+
+if (customColorPicker) {
+  customColorPicker.addEventListener('input', (e) => {
+    applyCustomThemeColor(e.target.value);
+  });
+}
+if (customColorHex) {
+  customColorHex.addEventListener('change', (e) => {
+    let val = e.target.value.trim();
+    if (!val.startsWith('#')) val = '#' + val;
+    if (/^#[0-9A-F]{6}$/i.test(val)) {
+      applyCustomThemeColor(val);
+    }
+  });
 }
 
 document.querySelectorAll('.theme-card').forEach(card => {
-  card.addEventListener('click', () => {
+  card.addEventListener('click', (e) => {
+    // If clicking directly into the color input, avoid double trigger
+    if (e.target.tagName === 'INPUT') return;
+
     const themeId = card.dataset.themeId;
+    if (themeId === 'custom') {
+      const color = customColorPicker ? customColorPicker.value : '#00f0ff';
+      applyCustomThemeColor(color);
+      return;
+    }
+
     setActiveTheme(themeId);
     window.assistantApi.setTheme(themeId);
     const themeName = card.querySelector('.theme-name')?.innerText || themeId;
@@ -216,8 +254,8 @@ document.querySelectorAll('.theme-card').forEach(card => {
   });
 });
 
-window.assistantApi.onThemeChanged((themeId) => {
-  setActiveTheme(themeId);
+window.assistantApi.onThemeChanged((themeData) => {
+  setActiveTheme(themeData);
 });
 
 // Status Updates
@@ -389,10 +427,9 @@ async function init() {
     } else if (config.voiceName) {
       selectVoice.value = config.voiceName;
     }
-    if (config.gearsVoice && inputGearsVoice) {
-      inputGearsVoice.value = config.gearsVoice;
+    if (config.theme) {
+      setActiveTheme({ themeId: config.theme, customColor: config.customColor });
     }
-    if (config.theme) setActiveTheme(config.theme);
     if (config.skin) setActiveSkin(config.skin);
   }
 

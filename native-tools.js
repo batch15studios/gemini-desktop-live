@@ -941,7 +941,7 @@ class ToolsManager {
     this.mcpConfigPath = path.join(os.homedir(), '.gemini', 'config', 'mcp_config.json');
     this.mcpConfig = this.loadMcpConfig();
     this.availableMcpServers = this.discoverMcpServers();
-    this.enabledMcpServers = initialEnabledServers || ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7'];
+    this.enabledMcpServers = initialEnabledServers || ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7', 'sequential-thinking', 'firebase', 'gcloud'];
     this.activeSentries = [];
     this.screenCaptureProvider = null;
     this.webviewDomExtractor = null;
@@ -1223,8 +1223,18 @@ class ToolsManager {
   discoverMcpServers() {
     try {
       if (fs.existsSync(this.mcpServersPath)) {
+        const excluded = [
+          'science_biomolecular_structure_viewer_mcp',
+          'tauri',
+          'genkit-mcp-server',
+          'data-agent-kit-plugin_dak-notebook',
+          'data-agent-kit-plugin_dak-viz',
+          'gemini-api-docs',
+          'gemini-api_gemini-api-docs',
+          'firebase-mcp-server'
+        ];
         const dirs = fs.readdirSync(this.mcpServersPath, { withFileTypes: true })
-          .filter(d => d.isDirectory())
+          .filter(d => d.isDirectory() && !excluded.includes(d.name))
           .map(d => d.name);
         return dirs;
       }

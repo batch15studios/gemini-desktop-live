@@ -33,6 +33,10 @@ class AssistantApp {
     this.isMiniMode = false;
     this.hasDeliveredStartupRundown = false;
 
+    // Auto-tuck side docks state when Workspace Deck is open
+    this.wasLeftOpenBeforeDeck = false;
+    this.wasRightOpenBeforeDeck = false;
+
     this.engineEmitter = new EventEmitter();
     this.configPath = path.join(app.getPath('userData'), 'assistant_config.json');
     this.config = this.loadConfig();
@@ -41,10 +45,7 @@ class AssistantApp {
     this.toolsManager.setScreenshotProvider((opts) => this.captureDesktopScreenshot(opts));
     this.toolsManager.setWebviewDomExtractor((selector) => this.extractWorkspaceWebviewDom(selector));
 
-    const activeVoice = (this.config.skin === 'gears' && this.config.gearsVoice && this.config.gearsVoice.trim() !== '')
-      ? this.config.gearsVoice.trim()
-      : (this.config.standardVoice || 'Vega');
-
+    const activeVoice = this.config.standardVoice || 'Vega';
     this.config.voiceName = activeVoice;
 
     this.liveEngine = new GeminiLiveEngine({
@@ -75,15 +76,13 @@ class AssistantApp {
           } catch (e) {}
         }
         loaded.theme = loaded.theme || 'cyber-cyan';
-        loaded.skin = loaded.skin || 'default';
+        loaded.skin = (loaded.skin === 'gears') ? 'cog-gear' : (loaded.skin || 'default');
         loaded.standardVoice = loaded.standardVoice || 'Vega';
-        loaded.gearsVoice = loaded.gearsVoice || '';
+        loaded.voiceName = loaded.standardVoice || 'Vega';
         loaded.model = loaded.model || 'gemini-3.8-live';
-        loaded.voiceName = (loaded.skin === 'gears' && loaded.gearsVoice && loaded.gearsVoice.trim() !== '')
-          ? loaded.gearsVoice.trim()
-          : (loaded.standardVoice || 'Vega');
+        loaded.customColor = loaded.customColor || '#00f0ff';
         if (!loaded.enabledMcpServers || !Array.isArray(loaded.enabledMcpServers)) {
-          loaded.enabledMcpServers = ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7'];
+          loaded.enabledMcpServers = ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7', 'sequential-thinking', 'firebase', 'gcloud'];
         }
         loaded.startupRundownEnabled = loaded.startupRundownEnabled !== undefined ? loaded.startupRundownEnabled : true;
         if (loaded.cursorCalibration && typeof loaded.cursorCalibration === 'object') {
@@ -100,15 +99,15 @@ class AssistantApp {
       apiKey: process.env.GEMINI_API_KEY || '',
       githubToken: '',
       standardVoice: 'Vega',
-      gearsVoice: '',
       voiceName: 'Vega',
       model: 'gemini-3.8-live',
       visionEnabled: true,
       screenShareEnabled: true,
       theme: 'cyber-cyan',
       skin: 'default',
+      customColor: '#00f0ff',
       startupRundownEnabled: true,
-      enabledMcpServers: ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7']
+      enabledMcpServers: ['memory', 'filesystem', 'github', 'chrome-devtools-mcp', 'context7', 'sequential-thinking', 'firebase', 'gcloud']
     };
   }
 
@@ -146,31 +145,18 @@ class AssistantApp {
     }
     if (newConfig.standardVoice) {
       this.config.standardVoice = newConfig.standardVoice;
-      if (this.config.skin !== 'gears') {
-        this.config.voiceName = newConfig.standardVoice;
-        this.liveEngine.setVoice(newConfig.standardVoice);
-        this.broadcast('voice:changed', newConfig.standardVoice);
-      }
+      this.config.voiceName = newConfig.standardVoice;
+      this.liveEngine.setVoice(newConfig.standardVoice);
+      this.broadcast('voice:changed', newConfig.standardVoice);
     }
-    if (newConfig.gearsVoice !== undefined) {
-      this.config.gearsVoice = (newConfig.gearsVoice || '').trim();
-      if (this.config.skin === 'gears' && this.config.gearsVoice) {
-        this.config.voiceName = this.config.gearsVoice;
-        this.liveEngine.setVoice(this.config.gearsVoice);
-        this.broadcast('voice:changed', this.config.gearsVoice);
-      }
-    }
-    if (newConfig.voiceName && !newConfig.standardVoice && newConfig.gearsVoice === undefined) {
+    if (newConfig.voiceName && !newConfig.standardVoice) {
       this.config.voiceName = newConfig.voiceName;
-      if (this.config.skin === 'gears' && this.config.gearsVoice) {
-        this.config.gearsVoice = newConfig.voiceName;
-      } else {
-        this.config.standardVoice = newConfig.voiceName;
-      }
+      this.config.standardVoice = newConfig.voiceName;
       this.liveEngine.setVoice(newConfig.voiceName);
       this.broadcast('voice:changed', newConfig.voiceName);
     }
     if (newConfig.theme) this.config.theme = newConfig.theme;
+    if (newConfig.customColor) this.config.customColor = newConfig.customColor;
     if (newConfig.skin) this.config.skin = newConfig.skin;
     if (newConfig.enabledMcpServers && Array.isArray(newConfig.enabledMcpServers)) {
       this.config.enabledMcpServers = newConfig.enabledMcpServers;
@@ -493,7 +479,7 @@ class AssistantApp {
     };
 
     // 1. Center Window: The Multimodal AI Orb
-    const orbSize = 360;
+    const orbSize = 420;
     this.orbWindow = new BrowserWindow({
       width: orbSize,
       height: orbSize,
@@ -570,8 +556,34 @@ class AssistantApp {
     this.createSystemTray();
   }
 
+  autoTuckSideDocks() {
+    this.wasLeftOpenBeforeDeck = !!(this.leftWindow && !this.leftWindow.isDestroyed() && this.leftWindow.isVisible());
+    this.wasRightOpenBeforeDeck = !!(this.rightWindow && !this.rightWindow.isDestroyed() && this.rightWindow.isVisible());
+
+    if (this.wasLeftOpenBeforeDeck) {
+      this.leftWindow.hide();
+    }
+    if (this.wasRightOpenBeforeDeck) {
+      this.rightWindow.hide();
+    }
+    console.log(`[Main] Auto-tucked side docks (left=${this.wasLeftOpenBeforeDeck}, right=${this.wasRightOpenBeforeDeck})`);
+  }
+
+  restoreTuckedSideDocks() {
+    if (this.wasLeftOpenBeforeDeck && this.leftWindow && !this.leftWindow.isDestroyed()) {
+      this.leftWindow.show();
+      this.wasLeftOpenBeforeDeck = false;
+    }
+    if (this.wasRightOpenBeforeDeck && this.rightWindow && !this.rightWindow.isDestroyed()) {
+      this.rightWindow.show();
+      this.wasRightOpenBeforeDeck = false;
+    }
+    console.log('[Main] Restored side docks after Workspace Deck minimized/hidden.');
+  }
+
   createWorkspaceWindow() {
     if (this.workspaceWindow && !this.workspaceWindow.isDestroyed()) {
+      this.autoTuckSideDocks();
       this.workspaceWindow.show();
       this.workspaceWindow.focus();
       return;
@@ -610,8 +622,25 @@ class AssistantApp {
     this.workspaceWindow.loadFile(path.join(__dirname, 'renderers', 'workspace', 'workspace.html'));
 
     this.workspaceWindow.once('ready-to-show', () => {
+      this.autoTuckSideDocks();
       this.workspaceWindow.show();
       this.workspaceWindow.focus();
+    });
+
+    this.workspaceWindow.on('show', () => {
+      this.autoTuckSideDocks();
+    });
+
+    this.workspaceWindow.on('hide', () => {
+      this.restoreTuckedSideDocks();
+    });
+
+    this.workspaceWindow.on('minimize', () => {
+      this.restoreTuckedSideDocks();
+    });
+
+    this.workspaceWindow.on('restore', () => {
+      this.autoTuckSideDocks();
     });
 
     this.workspaceWindow.on('close', (e) => {
@@ -619,6 +648,7 @@ class AssistantApp {
         e.preventDefault();
         this.workspaceWindow.hide();
         this.workspaceWindow.webContents.send('workspace:unloaded');
+        this.restoreTuckedSideDocks();
       }
     });
   }
@@ -627,13 +657,16 @@ class AssistantApp {
     if (!this.workspaceWindow || this.workspaceWindow.isDestroyed()) {
       this.createWorkspaceWindow();
     } else if (this.workspaceWindow.isMinimized()) {
+      this.autoTuckSideDocks();
       this.workspaceWindow.restore();
       this.workspaceWindow.show();
       this.workspaceWindow.focus();
     } else if (this.workspaceWindow.isVisible()) {
       this.workspaceWindow.hide();
       this.workspaceWindow.webContents.send('workspace:unloaded');
+      this.restoreTuckedSideDocks();
     } else {
+      this.autoTuckSideDocks();
       this.workspaceWindow.show();
       this.workspaceWindow.focus();
     }
@@ -834,31 +867,29 @@ class AssistantApp {
     ipcMain.handle('cursor:calibrate', (e, calib) => {
       return this.toolsManager.calibrateCursorBounds(calib?.insetRight, calib?.insetBottom, calib?.originX, calib?.originY);
     });
-    ipcMain.on('theme:set', (e, themeId) => {
+    ipcMain.on('theme:set', (e, themePayload) => {
+      let themeId = 'cyber-cyan';
+      let customColor = null;
+      if (typeof themePayload === 'string') {
+        themeId = themePayload;
+      } else if (themePayload && typeof themePayload === 'object') {
+        themeId = themePayload.themeId || 'cyber-cyan';
+        customColor = themePayload.customColor || null;
+      }
       this.config.theme = themeId;
-      this.saveConfig({ theme: themeId });
-      this.broadcast('theme:changed', themeId);
-      console.log('[Main] Theme applied and broadcast to all windows:', themeId);
+      if (customColor) {
+        this.config.customColor = customColor;
+      }
+      this.saveConfig({ theme: themeId, customColor: this.config.customColor });
+      this.broadcast('theme:changed', { themeId, customColor: this.config.customColor });
+      console.log('[Main] Theme applied and broadcast to all windows:', themeId, this.config.customColor);
     });
     ipcMain.on('skin:set', (e, skinId) => {
-      this.config.skin = skinId;
-
-      // Auto-load voice based on active skin
-      let targetVoice = this.config.standardVoice || 'Vega';
-      if (skinId === 'gears' && this.config.gearsVoice && this.config.gearsVoice.trim() !== '') {
-        targetVoice = this.config.gearsVoice.trim();
-      }
-
-      if (this.config.voiceName !== targetVoice) {
-        this.config.voiceName = targetVoice;
-        this.liveEngine.setVoice(targetVoice);
-        this.broadcast('voice:changed', targetVoice);
-        console.log(`[Main] Skin changed to "${skinId}". Auto-switched voice to "${targetVoice}".`);
-      }
-
-      this.saveConfig({ skin: skinId, voiceName: this.config.voiceName });
-      this.broadcast('skin:changed', skinId);
-      console.log('[Main] Skin applied and broadcast to all windows:', skinId);
+      const targetSkin = skinId === 'gears' ? 'cog-gear' : (skinId || 'default');
+      this.config.skin = targetSkin;
+      this.saveConfig({ skin: targetSkin });
+      this.broadcast('skin:changed', targetSkin);
+      console.log(`[Main] Skin changed to "${targetSkin}".`);
     });
 
     // Native Tools & System Status
@@ -971,7 +1002,7 @@ class AssistantApp {
       }
     } else {
       // Restore full 3-window desktop suite
-      const orbSize = 360;
+      const orbSize = 420;
       const orbX = Math.round((width - orbSize) / 2);
       const orbY = Math.round((height - orbSize) / 2) - 40;
 

@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.5.1",
-  "description": "Full Desktop PC Assistant v2.5.1 with Sharp Square Corners on Enterprise Skin, Shadowless Glass Cards, Orb Click-to-Unmute, and Alt+M / Ctrl+Shift+M Global Hotkeys",
+  "version": "2.6.0",
+  "description": "Full Desktop PC Assistant v2.6.0 - Streamlined 3-Palette Engine with Custom Color Picker, Auto-Tuck Side Docks on Workspace Deck Open, Shadowless Unclipped Context Menu, and Curated 8-MCP Core",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

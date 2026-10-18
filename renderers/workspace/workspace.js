@@ -1255,21 +1255,51 @@
 
     // Synchronize Theme & Visual Skin with Assistant HUD
     if (window.assistantApi) {
+      const applyWorkspaceTheme = (themeData) => {
+        let themeId = 'cyber-cyan';
+        let customColor = null;
+        if (typeof themeData === 'string') {
+          themeId = themeData;
+        } else if (themeData && typeof themeData === 'object') {
+          themeId = themeData.themeId || 'cyber-cyan';
+          customColor = themeData.customColor || null;
+        }
+        document.documentElement.setAttribute('data-theme', themeId || 'cyber-cyan');
+        if (customColor) {
+          const clean = customColor.replace('#', '');
+          const bigint = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16);
+          if (!isNaN(bigint)) {
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            document.documentElement.style.setProperty('--custom-accent', customColor);
+            document.documentElement.style.setProperty('--custom-accent-rgb', `${r}, ${g}, ${b}`);
+            document.documentElement.style.setProperty('--custom-accent-sec', customColor);
+          }
+        }
+      };
+
       if (window.assistantApi.onSkinChanged) {
         window.assistantApi.onSkinChanged((skinId) => {
-          document.documentElement.setAttribute('data-skin', skinId || 'default');
+          const target = skinId === 'gears' ? 'cog-gear' : (skinId || 'default');
+          document.documentElement.setAttribute('data-skin', target);
         });
       }
       if (window.assistantApi.onThemeChanged) {
-        window.assistantApi.onThemeChanged((themeId) => {
-          document.documentElement.setAttribute('data-theme', themeId || 'cyber-cyan');
+        window.assistantApi.onThemeChanged((themeData) => {
+          applyWorkspaceTheme(themeData);
         });
       }
       try {
         const cfg = await window.assistantApi.loadConfig();
         if (cfg) {
-          if (cfg.skin) document.documentElement.setAttribute('data-skin', cfg.skin);
-          if (cfg.theme) document.documentElement.setAttribute('data-theme', cfg.theme);
+          if (cfg.skin) {
+            const target = cfg.skin === 'gears' ? 'cog-gear' : cfg.skin;
+            document.documentElement.setAttribute('data-skin', target);
+          }
+          if (cfg.theme) {
+            applyWorkspaceTheme({ themeId: cfg.theme, customColor: cfg.customColor });
+          }
         }
       } catch (err) {}
     }

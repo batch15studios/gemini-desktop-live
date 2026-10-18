@@ -195,15 +195,6 @@
         <span class="form-hint">Default voice for standard and cyber themes.</span>
       </div>
 
-      <div class="form-group" style="margin-top: 14px;">
-        <label for="inputGearsVoice">Gears of War Custom Voice (Google AI Studio Voice ID)</label>
-        <div class="input-with-button">
-          <input type="text" id="inputGearsVoice" placeholder="e.g. voices/marcus-fenix (leave blank until created)" />
-          <button id="btnSaveGearsVoice">Save</button>
-        </div>
-        <span class="form-hint">Auto-loads whenever Gears of War skin is active. Switching back to standard restores Vega.</span>
-      </div>
-
       <div class="section-title" style="margin-top: 18px;">VISUAL SKINS (GEOMETRY & TEXTURES)</div>
       <div class="skin-grid" id="skinGrid">
         <div class="skin-card active" data-skin-id="default" title="Nexus Hologram Glassmorphism & Energy Orb">
@@ -218,10 +209,10 @@
           <div class="skin-desc">Precision optical telemetry aperture, degree ticks & native studio UI</div>
         </div>
 
-        <div class="skin-card" data-skin-id="gears" title="Gears of War Armored Plates & COG Gear">
-          <div class="skin-badge" style="color: #ff3333;">GEARS OF WAR</div>
-          <div class="skin-name">COG Warfare</div>
-          <div class="skin-desc">Riveted steel armor, rotating gear & molten skull</div>
+        <div class="skin-card" data-skin-id="cog-gear" title="Precision Mechanical Rotating Cog Gear">
+          <div class="skin-badge" style="color: #00f0ff;">MECHANICAL</div>
+          <div class="skin-name">Industrial Cog</div>
+          <div class="skin-desc">Precision mechanical rotating cog gear and tactical telemetry reticle</div>
         </div>
       </div>
 
@@ -251,63 +242,14 @@
           </div>
         </div>
 
-        <div class="theme-card" data-theme-id="synthwave-violet" title="Select Synthwave Violet Theme">
+        <div class="theme-card" data-theme-id="custom" id="themeCardCustom" title="Custom Dynamic Palette (Select Any Accent Color)">
           <div class="theme-card-header">
-            <span class="theme-name">Synthwave Violet</span>
-            <span class="theme-tag">Quantum</span>
+            <span class="theme-name">Custom Palette</span>
+            <span class="theme-tag">Interactive</span>
           </div>
-          <div class="theme-swatches">
-            <span class="swatch" style="background: #c084fc;"></span>
-            <span class="swatch" style="background: #f472b6;"></span>
-            <span class="swatch" style="background: #0f0a1a;"></span>
-          </div>
-        </div>
-
-        <div class="theme-card" data-theme-id="matrix-emerald" title="Select Matrix Emerald Theme">
-          <div class="theme-card-header">
-            <span class="theme-name">Matrix Emerald</span>
-            <span class="theme-tag">Bio-Digital</span>
-          </div>
-          <div class="theme-swatches">
-            <span class="swatch" style="background: #10b981;"></span>
-            <span class="swatch" style="background: #22c55e;"></span>
-            <span class="swatch" style="background: #06120c;"></span>
-          </div>
-        </div>
-
-        <div class="theme-card" data-theme-id="amber-horizon" title="Select Amber Horizon Theme">
-          <div class="theme-card-header">
-            <span class="theme-name">Amber Horizon</span>
-            <span class="theme-tag">Solar Flare</span>
-          </div>
-          <div class="theme-swatches">
-            <span class="swatch" style="background: #f59e0b;"></span>
-            <span class="swatch" style="background: #f97316;"></span>
-            <span class="swatch" style="background: #160e08;"></span>
-          </div>
-        </div>
-
-        <div class="theme-card" data-theme-id="crimson-protocol" title="Select Crimson Protocol Theme">
-          <div class="theme-card-header">
-            <span class="theme-name">Crimson Protocol</span>
-            <span class="theme-tag">Stealth Ops</span>
-          </div>
-          <div class="theme-swatches">
-            <span class="swatch" style="background: #ef4444;"></span>
-            <span class="swatch" style="background: #f43f5e;"></span>
-            <span class="swatch" style="background: #18080a;"></span>
-          </div>
-        </div>
-
-        <div class="theme-card" data-theme-id="glacial-arctic" title="Select Glacial Arctic Theme">
-          <div class="theme-card-header">
-            <span class="theme-name">Glacial Arctic</span>
-            <span class="theme-tag">Cryo-Slate</span>
-          </div>
-          <div class="theme-swatches">
-            <span class="swatch" style="background: #38bdf8;"></span>
-            <span class="swatch" style="background: #94a3b8;"></span>
-            <span class="swatch" style="background: #0c1420;"></span>
+          <div class="custom-color-control" style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+            <input type="color" id="customColorPicker" value="#00f0ff" style="width: 28px; height: 24px; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; background: transparent; cursor: pointer; padding: 0;" />
+            <input type="text" id="customColorHex" value="#00F0FF" maxlength="7" style="width: 68px; padding: 2px 6px; font-size: 11px; text-transform: uppercase; font-family: monospace; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; background: rgba(0,0,0,0.3); color: #fff;" />
           </div>
         </div>
       </div>

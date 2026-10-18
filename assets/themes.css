@@ -21,91 +21,6 @@
   --theme-selection: rgba(0, 240, 255, 0.3);
 }
 
-[data-theme="synthwave-violet"] {
-  --theme-accent: #c084fc;
-  --theme-accent-rgb: 192, 132, 252;
-  --theme-accent-sec: #f472b6;
-  --theme-glow: 0 0 12px rgba(192, 132, 252, 0.45);
-  --theme-glow-strong: 0 0 22px rgba(192, 132, 252, 0.75);
-  --theme-text-glow: 0 0 10px rgba(192, 132, 252, 0.6);
-  --theme-border: rgba(192, 132, 252, 0.3);
-  --theme-border-hover: rgba(192, 132, 252, 0.75);
-  --theme-bg-card: rgba(15, 10, 26, 0.92);
-  --theme-bg-toolbar: rgba(15, 10, 26, 0.95);
-  --theme-bg-box: rgba(26, 16, 44, 0.72);
-  --theme-text-bright: #faf5ff;
-  --theme-text-muted: #c4b5fd;
-  --theme-selection: rgba(192, 132, 252, 0.3);
-}
-
-[data-theme="matrix-emerald"] {
-  --theme-accent: #10b981;
-  --theme-accent-rgb: 16, 185, 129;
-  --theme-accent-sec: #22c55e;
-  --theme-glow: 0 0 12px rgba(16, 185, 129, 0.45);
-  --theme-glow-strong: 0 0 22px rgba(16, 185, 129, 0.75);
-  --theme-text-glow: 0 0 10px rgba(16, 185, 129, 0.6);
-  --theme-border: rgba(16, 185, 129, 0.28);
-  --theme-border-hover: rgba(16, 185, 129, 0.75);
-  --theme-bg-card: rgba(6, 18, 12, 0.92);
-  --theme-bg-toolbar: rgba(6, 18, 12, 0.95);
-  --theme-bg-box: rgba(10, 30, 20, 0.72);
-  --theme-text-bright: #ecfdf5;
-  --theme-text-muted: #6ee7b7;
-  --theme-selection: rgba(16, 185, 129, 0.3);
-}
-
-[data-theme="amber-horizon"] {
-  --theme-accent: #f59e0b;
-  --theme-accent-rgb: 245, 158, 11;
-  --theme-accent-sec: #f97316;
-  --theme-glow: 0 0 12px rgba(245, 158, 11, 0.45);
-  --theme-glow-strong: 0 0 22px rgba(245, 158, 11, 0.75);
-  --theme-text-glow: 0 0 10px rgba(245, 158, 11, 0.6);
-  --theme-border: rgba(245, 158, 11, 0.28);
-  --theme-border-hover: rgba(245, 158, 11, 0.75);
-  --theme-bg-card: rgba(22, 14, 8, 0.92);
-  --theme-bg-toolbar: rgba(22, 14, 8, 0.95);
-  --theme-bg-box: rgba(36, 22, 12, 0.72);
-  --theme-text-bright: #fffbeb;
-  --theme-text-muted: #fcd34d;
-  --theme-selection: rgba(245, 158, 11, 0.3);
-}
-
-[data-theme="crimson-protocol"] {
-  --theme-accent: #ef4444;
-  --theme-accent-rgb: 239, 68, 68;
-  --theme-accent-sec: #f43f5e;
-  --theme-glow: 0 0 12px rgba(239, 68, 68, 0.45);
-  --theme-glow-strong: 0 0 22px rgba(239, 68, 68, 0.75);
-  --theme-text-glow: 0 0 10px rgba(239, 68, 68, 0.6);
-  --theme-border: rgba(239, 68, 68, 0.28);
-  --theme-border-hover: rgba(239, 68, 68, 0.75);
-  --theme-bg-card: rgba(24, 8, 10, 0.92);
-  --theme-bg-toolbar: rgba(24, 8, 10, 0.95);
-  --theme-bg-box: rgba(38, 14, 18, 0.72);
-  --theme-text-bright: #fff1f2;
-  --theme-text-muted: #fca5a5;
-  --theme-selection: rgba(239, 68, 68, 0.3);
-}
-
-[data-theme="glacial-arctic"] {
-  --theme-accent: #38bdf8;
-  --theme-accent-rgb: 56, 189, 248;
-  --theme-accent-sec: #94a3b8;
-  --theme-glow: 0 0 12px rgba(56, 189, 248, 0.45);
-  --theme-glow-strong: 0 0 22px rgba(56, 189, 248, 0.75);
-  --theme-text-glow: 0 0 10px rgba(56, 189, 248, 0.6);
-  --theme-border: rgba(56, 189, 248, 0.28);
-  --theme-border-hover: rgba(56, 189, 248, 0.75);
-  --theme-bg-card: rgba(12, 20, 32, 0.92);
-  --theme-bg-toolbar: rgba(12, 20, 32, 0.95);
-  --theme-bg-box: rgba(20, 32, 50, 0.72);
-  --theme-text-bright: #f0f9ff;
-  --theme-text-muted: #7dd3fc;
-  --theme-selection: rgba(56, 189, 248, 0.3);
-}
-
 [data-theme="enterprise-pro"] {
   --theme-accent: #0078d4;
   --theme-accent-rgb: 0, 120, 212;
@@ -121,6 +36,23 @@
   --theme-text-bright: #f8fafc;
   --theme-text-muted: #94a3b8;
   --theme-selection: rgba(0, 120, 212, 0.3);
+}
+
+[data-theme="custom"] {
+  --theme-accent: var(--custom-accent, #a855f7);
+  --theme-accent-rgb: var(--custom-accent-rgb, 168, 85, 247);
+  --theme-accent-sec: var(--custom-accent-sec, #ec4899);
+  --theme-glow: 0 0 12px rgba(var(--custom-accent-rgb, 168, 85, 247), 0.45);
+  --theme-glow-strong: 0 0 22px rgba(var(--custom-accent-rgb, 168, 85, 247), 0.75);
+  --theme-text-glow: 0 0 10px rgba(var(--custom-accent-rgb, 168, 85, 247), 0.6);
+  --theme-border: rgba(var(--custom-accent-rgb, 168, 85, 247), 0.28);
+  --theme-border-hover: rgba(var(--custom-accent-rgb, 168, 85, 247), 0.75);
+  --theme-bg-card: rgba(12, 14, 20, 0.92);
+  --theme-bg-toolbar: rgba(12, 14, 20, 0.95);
+  --theme-bg-box: rgba(22, 24, 34, 0.72);
+  --theme-text-bright: #fafafa;
+  --theme-text-muted: #a1a1aa;
+  --theme-selection: rgba(var(--custom-accent-rgb, 168, 85, 247), 0.3);
 }
 
 /* ==========================================================================
@@ -177,98 +109,10 @@
 }
 
 /* ==========================================================================
-   SKIN: COG WARFARE (Gears of War Industrial Armor & Crimson Rim Lighting)
+   SKIN: INDUSTRIAL COG GEAR (Precision Mechanical Rotating Gear Mode)
    ========================================================================== */
-[data-skin="gears"] {
-  --theme-accent: #ff2222;
-  --theme-accent-rgb: 255, 34, 34;
-  --theme-accent-sec: #ff6600;
-  --theme-glow: 0 0 14px rgba(255, 34, 34, 0.55);
-  --theme-glow-strong: 0 0 25px rgba(255, 34, 34, 0.85);
-  --theme-text-glow: 0 0 10px rgba(255, 40, 40, 0.7);
-  --theme-border: rgba(180, 20, 20, 0.45);
-  --theme-border-hover: rgba(255, 34, 34, 0.85);
-  --theme-bg-card: rgba(16, 17, 22, 0.95);
-  --theme-bg-toolbar: rgba(14, 15, 18, 0.97);
-  --theme-bg-box: rgba(24, 25, 32, 0.85);
-  --theme-text-bright: #fff2f2;
-  --theme-text-muted: #b08a8a;
-  --theme-selection: rgba(255, 34, 34, 0.4);
-}
-
-/* Gritty Industrial Weathered Armor Plate Background for Windows */
-[data-skin="gears"] .glass-card {
-  background: 
-    linear-gradient(135deg, rgba(22, 24, 30, 0.98) 0%, rgba(12, 13, 16, 0.99) 100%),
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 2px, transparent 2px, transparent 5px) !important;
-  border: 1.5px solid #6b1216 !important;
-  box-shadow: 
-    inset 0 0 18px rgba(180, 20, 20, 0.25),
-    inset 0 1px 1px rgba(255, 80, 80, 0.2),
-    0 2px 8px rgba(0, 0, 0, 0.35),
-    0 0 8px rgba(180, 15, 15, 0.25) !important;
-  border-radius: 10px !important;
-  position: relative;
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-[data-skin="gears"] .orb-container {
+[data-skin="cog-gear"] .orb-container {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
 }
-
-/* Mechanical Corner Bolt Studs */
-[data-skin="gears"] .glass-card::before,
-[data-skin="gears"] .glass-card::after {
-  content: '';
-  position: absolute;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #666 30%, #222 90%);
-  border: 1px solid #111;
-  box-shadow: inset 0 1px 1px rgba(255,255,255,0.4), 0 0 2px rgba(0,0,0,0.8);
-  pointer-events: none;
-  z-index: 10;
-}
-[data-skin="gears"] .glass-card::before { top: 8px; left: 8px; }
-[data-skin="gears"] .glass-card::after { top: 8px; right: 8px; }
-
-/* Military Stencil Header Accents */
-[data-skin="gears"] .header-title {
-  letter-spacing: 2px !important;
-  text-transform: uppercase;
-  font-weight: 800;
-  text-shadow: 0 0 8px rgba(255, 34, 34, 0.6);
-}
-
-[data-skin="gears"] .header-badge {
-  background: rgba(180, 20, 20, 0.25) !important;
-  border: 1px solid rgba(255, 34, 34, 0.4) !important;
-  color: #ff4d4d !important;
-}
-
-/* Heavy Tactical Mini-Toolbar */
-[data-skin="gears"] .mini-toolbar {
-  background: linear-gradient(135deg, rgba(24, 25, 32, 0.98), rgba(14, 15, 18, 0.99)) !important;
-  border: 1.5px solid #751419 !important;
-  box-shadow: 
-    inset 0 0 12px rgba(180, 20, 20, 0.3),
-    0 2px 8px rgba(0, 0, 0, 0.38),
-    0 0 8px rgba(220, 20, 20, 0.25) !important;
-  border-radius: 21px !important;
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-[data-skin="gears"] .orb-btn {
-  background: rgba(35, 37, 46, 0.75) !important;
-  border: 1px solid rgba(180, 20, 20, 0.35) !important;
-}
-
-[data-skin="gears"] .orb-btn:hover {
-  background: rgba(180, 20, 20, 0.45) !important;
-  border-color: #ff3333 !important;
-  box-shadow: 0 0 10px rgba(255, 34, 34, 0.6) !important;
-}
-

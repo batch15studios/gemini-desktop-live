@@ -79,23 +79,34 @@ html, body {
   pointer-events: none;
 }
 
-/* Sleek Right-Click Holographic Context Menu */
+/* Sleek Right-Click Holographic Context Menu (Shadowless, Zero Smudge, Crisp Inset) */
 .orb-context-menu {
-  position: absolute;
+  position: fixed;
   min-width: 200px;
-  background: var(--theme-bg-toolbar, rgba(12, 18, 30, 0.96));
-  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.3));
-  border-radius: 12px;
+  background: var(--theme-bg-toolbar, rgba(15, 23, 42, 0.98));
+  border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.18));
+  border-radius: 8px;
   padding: 6px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 0 16px rgba(var(--theme-accent-rgb, 0, 240, 255), 0.2);
-  backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12) !important; /* Zero outer muddy drop-shadow */
+  backdrop-filter: blur(24px);
   z-index: 100;
   -webkit-app-region: no-drag;
-  animation: contextMenuPop 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: contextMenuPop 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-skin="pro-studio"] .orb-context-menu {
+  border-radius: 0px !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.99) 0%, rgba(10, 16, 30, 0.99) 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-skin="pro-studio"] .menu-item {
+  border-radius: 0px !important;
 }
 
 @keyframes contextMenuPop {
-  from { opacity: 0; transform: scale(0.92); }
+  from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
 
