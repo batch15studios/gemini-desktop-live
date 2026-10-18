@@ -3,7 +3,7 @@
  * Native Windows Window Management & Media Controls for Assistant_Integrated_Advanced
  */
 
-const { exec, execSync } = require('child_process');
+const { exec, execSync, execFile } = require('child_process');
 const path = require('path');
 const { safetyGuard } = require('./safety-guard.js');
 
@@ -123,6 +123,14 @@ class WindowTools {
     }
 
     const pos = position.toLowerCase().trim();
+    const ALLOWED_POS = new Set(['maximize', 'minimize', 'left', 'right', 'top', 'bottom', 'center', 'restore']);
+    if (!ALLOWED_POS.has(pos)) {
+      return { success: false, error: `Invalid snap position: "${pos}". Allowed: ${[...ALLOWED_POS].join(', ')}` };
+    }
+    const pid = parseInt(target.pid, 10);
+    if (isNaN(pid) || pid <= 0) {
+      return { success: false, error: `Invalid target process ID: "${target.pid}"` };
+    }
 
     return new Promise((resolve) => {
       const psScript = `
@@ -135,7 +143,7 @@ class WindowTools {
           [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int W, int H, bool repaint);
         }
 '@
-        $p = Get-Process -Id ${target.pid} -ErrorAction SilentlyContinue
+        $p = Get-Process -Id ${pid} -ErrorAction SilentlyContinue
         if ($p -and $p.MainWindowHandle -ne 0) {
           $h = $p.MainWindowHandle
           [System.Windows.Forms.Screen]::PrimaryScreen | Out-Null
@@ -225,14 +233,19 @@ class WindowTools {
 
   static async mediaControl(action, times = 1) {
     const cleanAction = (action || '').toLowerCase().trim();
+    const VALID_ACTIONS = new Set(['mute', 'volup', 'volume_up', 'voldown', 'volume_down', 'playpause', 'play_pause', 'play', 'pause', 'next', 'next_track', 'prev', 'prev_track']);
+    if (!VALID_ACTIONS.has(cleanAction)) {
+      return { success: false, error: `Invalid media command: "${action}". Valid commands: ${[...VALID_ACTIONS].join(', ')}` };
+    }
+    const boundedTimes = Math.max(1, Math.min(parseInt(times, 10) || 1, 50));
     return new Promise((resolve) => {
-      exec(`"${DRIVER_PATH}" media ${cleanAction} ${parseInt(times, 10) || 1}`, { windowsHide: true }, (err, stdout) => {
+      execFile(DRIVER_PATH, ['media', cleanAction, String(boundedTimes)], { windowsHide: true, timeout: 8000 }, (err, stdout) => {
         if (err) return resolve({ success: false, error: err.message });
         try {
-          const res = JSON.parse(stdout.trim());
+          const res = JSON.parse((stdout || '').trim());
           resolve(res);
         } catch (e) {
-          resolve({ success: true, action: 'media', command: cleanAction, stdout: stdout.trim() });
+          resolve({ success: true, action: 'media', command: cleanAction, stdout: (stdout || '').trim() });
         }
       });
     });

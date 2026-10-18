@@ -458,7 +458,7 @@ When Ryan asks you to click, look at, or interact with an element on his screen:
             });
           }
         } catch (callErr) {
-          console.error('[GeminiLiveEngine] Error sending tool response:', callErr);
+          console.error('[GeminiLiveEngine] Error sending tool response:', callErr?.message || 'Transmit error');
         }
       }
       this.isExecutingTool = false;
@@ -475,7 +475,7 @@ When Ryan asks you to click, look at, or interact with an element on his screen:
         }
       });
     } catch (e) {
-      console.warn('[GeminiLiveEngine] Error sending audio chunk:', e);
+      console.warn('[GeminiLiveEngine] Error sending audio chunk:', e?.message || 'Transmit error');
     }
   }
 
@@ -484,7 +484,7 @@ When Ryan asks you to click, look at, or interact with an element on his screen:
     try {
       this.session.sendRealtimeInput({ audioStreamEnd: true });
     } catch (e) {
-      console.warn('[GeminiLiveEngine] Error sending audioStreamEnd:', e);
+      console.warn('[GeminiLiveEngine] Error sending audioStreamEnd:', e?.message || 'Transmit error');
     }
   }
 
@@ -499,7 +499,7 @@ When Ryan asks you to click, look at, or interact with an element on his screen:
       });
       this.emitter?.emit('vision_frame_sent', { source, time: Date.now() });
     } catch (e) {
-      console.warn(`[GeminiLiveEngine] Error sending ${source} frame:`, e);
+      console.warn(`[GeminiLiveEngine] Error sending ${source} frame:`, e?.message || 'Transmit error');
     }
   }
 
@@ -513,7 +513,7 @@ When Ryan asks you to click, look at, or interact with an element on his screen:
         time: new Date().toLocaleTimeString()
       });
     } catch (e) {
-      console.warn('[GeminiLiveEngine] Error sending text:', e);
+      console.warn('[GeminiLiveEngine] Error sending text:', e?.message || 'Transmit error');
     }
   }
 

@@ -106,9 +106,12 @@ function startDevServer(rootDir) {
   };
 
   devServer = http.createServer((req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin || '';
+    if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      res.setHeader('Access-Control-Allow-Origin', origin || 'http://127.0.0.1:4242');
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
       res.writeHead(204);
@@ -121,6 +124,25 @@ function startDevServer(rootDir) {
       if (reqPath === '/' || reqPath === '') reqPath = '/preview.html';
       const safePath = path.normalize(reqPath).replace(/^(\.\.[\/\\])+/, '');
       const filePath = path.join(rootDir, safePath);
+
+      // Block sensitive and dotfiles (CWE-552 prevention)
+      const baseName = path.basename(filePath).toLowerCase();
+      const SENSITIVE_PATTERNS = [
+        /^\.env/i,
+        /^\.git/i,
+        /token/i,
+        /credential/i,
+        /secret/i,
+        /assistant_memory\.json/i,
+        /\.key$/i,
+        /\.pem$/i
+      ];
+
+      if (SENSITIVE_PATTERNS.some(p => p.test(baseName)) || (baseName.startsWith('.') && baseName !== '.html')) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end('403 Forbidden: Access to sensitive system or environment file blocked.');
+        return;
+      }
 
       if (!filePath.startsWith(rootDir) || !fs.existsSync(filePath)) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });

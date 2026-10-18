@@ -10,6 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { safetyGuard } = require('./safety-guard');
 
 class ResearchDatabase {
   constructor(options = {}) {
@@ -412,12 +413,21 @@ class ResearchDatabase {
       ? path.resolve(outputPath)
       : path.join(this.rootDir, `export_${datasetName || table}_${Date.now()}.csv`);
 
-    fs.writeFileSync(fileName, csvLines.join('\n'), 'utf-8');
-    return {
-      success: true,
-      exportedCount: records.length,
-      filePath: fileName
-    };
+    try {
+      if (safetyGuard) {
+        safetyGuard.assertPathSafety(fileName, 'write');
+      }
+      fs.writeFileSync(fileName, csvLines.join('\n'), 'utf-8');
+      return {
+        success: true,
+        exportedCount: records.length,
+        filePath: fileName
+      };
+    } catch (err) {
+      return {
+        error: `Failed to export CSV: ${err.message}`
+      };
+    }
   }
 }
 

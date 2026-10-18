@@ -4,6 +4,31 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.6.4] — 2026-10-18
+### Security & Robustness Hardening (CodeRabbit Deep Audit)
+- **CWE-78 Command Injection Mitigation (`window-tools.js`)**:
+  - `snapWindow`: Hardened `position` validation against a strict whitelist Set (`maximize`, `minimize`, `left`, `right`, `top`, `bottom`, `center`, `restore`) and enforced integer parsing on `pid` before passing to PowerShell command strings.
+  - `mediaControl`: Eliminated shell execution (`exec`) in favor of direct parameterized binary execution (`execFile`) with strict command whitelist validation and bounded iteration count (`times`).
+- **CWE-552 Sensitive File Exposure & CORS Restriction (`workspace-ipc.js`)**:
+  - Restricted internal HTTP dev server CORS headers to loopback origin (`http://localhost:${actualPort}`).
+  - Implemented access block lists guarding against access to `.env`, `.git`, credentials, tokens, secrets, private keys (`.pem`, `.key`), and `assistant_memory.json`.
+- **CWE-834 Denial of Service via Unbounded Loop (`assets/bin/CursorDriver.cs`)**:
+  - Bounded media loop repetition count to a maximum of 50 iterations using `int.TryParse` and `Math.Min(parsedTimes, 50)`.
+  - Recompiled `CursorDriver.exe` via .NET Framework 4.0 64-bit compiler with full backward compatibility.
+- **CWE-79 Cross-Site Scripting (XSS) in File Explorer (`renderers/workspace/workspace.js`)**:
+  - Wrapped `item.name`, `item.dateModified`, `item.type`, and `item.size` with `escapeHtml()` when generating the file explorer directory listing.
+- **CWE-184 / Email Header Injection Mitigation (`google-workspace-manager.js`)**:
+  - Stripped `\r` and `\n` characters from `to` recipient addresses in `sendEmail` and `createDraft` prior to constructing raw MIME payloads.
+- **CWE-407 Sync I/O Denial of Service (`google-workspace-manager.js`, `memory-manager.js`)**:
+  - Capped Google Takeout conversation ingestion at 100 entries.
+  - Added batching support (`autoSave = false`) to `saveMemoryItem` to prevent repeated synchronous disk writes and Obsidian note writes on every item loop.
+- **CWE-22 / CWE-180 Path Traversal Protection (`research-database.js`)**:
+  - Bound `exportToCsv` output file resolution to `safetyGuard.assertPathSafety(fileName, 'write')` to prevent arbitrary file overwrites or targeting of protected Windows core directories.
+- **CWE-209 Sensitive Object & Buffer Logging (`gemini-live-engine.js`)**:
+  - Sanitized realtime WebSocket streaming error logs in `sendAudioChunk`, `sendAudioStreamEnd`, `sendVideoFrame`, and `sendTextMessage` to output `e?.message` rather than dumping raw error objects that may expose buffer pointers or authentication headers.
+
+---
+
 ## [2.6.3] — 2026-10-18
 ### Fixed & Improved
 - **DOM & XSS Sanitization in Task Log (`renderers/left/left.js`)**:

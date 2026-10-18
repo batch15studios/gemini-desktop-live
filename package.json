@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.6.3",
-  "description": "Full Desktop PC Assistant v2.6.3 - Deep CodeRabbit Hardening: DOM/XSS Protection, Safe I/O Handlers, AudioContext Lifecycle, and Interval Cleanup",
+  "version": "2.6.4",
+  "description": "Full Desktop PC Assistant v2.6.4 - Comprehensive CodeRabbit Audit & Security Hardening: Anti-Injection, CORS Isolation, Path Traversal Defense, XSS Mitigation, and Loop Denial-of-Service Immunization",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

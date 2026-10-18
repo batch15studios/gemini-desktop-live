@@ -342,13 +342,14 @@ class GoogleWorkspaceManager {
   }
 
   async sendEmail(to, subject, body) {
-    if (!to || !subject || !body) {
+    const cleanTo = String(to || '').replace(/[\r\n]/g, '').trim();
+    if (!cleanTo || !subject || !body) {
       return { error: 'Fields "to", "subject", and "body" are required.' };
     }
 
     const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
     const emailLines = [
-      `To: ${to}`,
+      `To: ${cleanTo}`,
       'Content-Type: text/plain; charset=utf-8',
       'MIME-Version: 1.0',
       `Subject: ${utf8Subject}`,
@@ -371,7 +372,7 @@ class GoogleWorkspaceManager {
     if (res.error) return res;
     return {
       success: true,
-      sentTo: to,
+      sentTo: cleanTo,
       subject,
       id: res.id,
       threadId: res.threadId
@@ -379,13 +380,14 @@ class GoogleWorkspaceManager {
   }
 
   async createDraft(to, subject, body) {
-    if (!to || !subject || !body) {
+    const cleanTo = String(to || '').replace(/[\r\n]/g, '').trim();
+    if (!cleanTo || !subject || !body) {
       return { error: 'Fields "to", "subject", and "body" are required.' };
     }
 
     const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
     const emailLines = [
-      `To: ${to}`,
+      `To: ${cleanTo}`,
       'Content-Type: text/plain; charset=utf-8',
       'MIME-Version: 1.0',
       `Subject: ${utf8Subject}`,
@@ -1010,8 +1012,10 @@ class GoogleWorkspaceManager {
 
       let importedCount = 0;
       let newObservationsCount = 0;
+      const maxConversations = 100;
+      const targetConversations = Array.isArray(conversations) ? conversations.slice(0, maxConversations) : [];
 
-      for (const conv of conversations) {
+      for (const conv of targetConversations) {
         const title = conv.title || conv.name || 'Past Gemini Conversation';
         const date = conv.createTime ? new Date(conv.createTime).toISOString().split('T')[0] : 'Historical';
         const messages = conv.messages || conv.turns || [];
@@ -1024,10 +1028,14 @@ class GoogleWorkspaceManager {
             .slice(0, 3);
 
           if (memoryManager) {
-            memoryManager.saveMemoryItem('imported_session', title, `Past session on ${date}: ${sampleQueries.join('; ')}`);
+            memoryManager.saveMemoryItem('imported_session', title, `Past session on ${date}: ${sampleQueries.join('; ')}`, false);
             newObservationsCount++;
           }
         }
+      }
+
+      if (memoryManager && newObservationsCount > 0) {
+        memoryManager.saveMemory();
       }
 
       if (memoryManager && memoryManager.obsidianVaultPath && fs.existsSync(memoryManager.obsidianVaultPath)) {

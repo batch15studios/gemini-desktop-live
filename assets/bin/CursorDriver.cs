@@ -342,7 +342,12 @@ namespace DesktopController
                         else if (mAction == "prev" || mAction == "prev_track") mVk = VK_MEDIA_PREV_TRACK;
                         else return Error("Unknown media action: " + mAction);
 
-                        int mTimes = args.Length > 2 ? int.Parse(args[2]) : 1;
+                        int mTimes = 1;
+                        int parsedTimes;
+                        if (args.Length > 2 && int.TryParse(args[2], out parsedTimes))
+                        {
+                            mTimes = Math.Max(1, Math.Min(parsedTimes, 50));
+                        }
                         for (int i = 0; i < mTimes; i++)
                         {
                             keybd_event(mVk, 0, 0, UIntPtr.Zero);

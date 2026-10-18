@@ -294,7 +294,7 @@ ${recentSessions}
 
   // --- Native Tool Handlers ---
 
-  saveMemoryItem(category, key, value) {
+  saveMemoryItem(category, key, value, autoSave = true) {
     if (!category || !key || !value) {
       return { error: 'Category, key, and value are required.' };
     }
@@ -320,8 +320,10 @@ ${recentSessions}
       }
     }
 
-    this.saveMemory();
-    console.log(`[MemoryManager] Saved memory: [${category}] ${key} -> ${value}`);
+    if (autoSave) {
+      this.saveMemory();
+      console.log(`[MemoryManager] Saved memory: [${category}] ${key} -> ${value}`);
+    }
     return {
       status: 'saved',
       category,

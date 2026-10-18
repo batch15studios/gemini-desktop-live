@@ -638,10 +638,10 @@
       tr.dataset.isDir = item.isDirectory;
 
       tr.innerHTML = `
-        <td class="file-name-cell"><span class="explorer-item-icon">${item.isDirectory ? folderSvg : fileSvg}</span><span>${item.name}</span></td>
-        <td>${item.dateModified}</td>
-        <td>${item.type}</td>
-        <td>${item.size}</td>
+        <td class="file-name-cell"><span class="explorer-item-icon">${item.isDirectory ? folderSvg : fileSvg}</span><span>${escapeHtml(item.name)}</span></td>
+        <td>${escapeHtml(item.dateModified)}</td>
+        <td>${escapeHtml(item.type)}</td>
+        <td>${escapeHtml(item.size)}</td>
       `;
 
       tr.addEventListener('click', () => {
