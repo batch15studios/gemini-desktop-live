@@ -1252,6 +1252,28 @@
       // Initial DB Badge Count Load
       updateDbBadge();
     }
+
+    // Synchronize Theme & Visual Skin with Assistant HUD
+    if (window.assistantApi) {
+      if (window.assistantApi.onSkinChanged) {
+        window.assistantApi.onSkinChanged((skinId) => {
+          document.documentElement.setAttribute('data-skin', skinId || 'default');
+        });
+      }
+      if (window.assistantApi.onThemeChanged) {
+        window.assistantApi.onThemeChanged((themeId) => {
+          document.documentElement.setAttribute('data-theme', themeId || 'cyber-cyan');
+        });
+      }
+      try {
+        const cfg = await window.assistantApi.loadConfig();
+        if (cfg) {
+          if (cfg.skin) document.documentElement.setAttribute('data-skin', cfg.skin);
+          if (cfg.theme) document.documentElement.setAttribute('data-theme', cfg.theme);
+        }
+      } catch (err) {}
+    }
+
     initBrowser();
   }
 

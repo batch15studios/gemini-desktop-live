@@ -1185,8 +1185,15 @@ function userBargeIn() {
 // ----------------------------------------------------
 // UI Button Listeners & IPC Bindings
 // ----------------------------------------------------
-// Click on the orb or press Spacebar to immediately interrupt speech
-canvas.addEventListener('click', () => {
+// Click on the orb to unmute if muted, or immediately interrupt speech if speaking
+canvas.addEventListener('click', async () => {
+  if (isMuted) {
+    isMuted = await window.assistantApi.toggleMute();
+    if (btnMiniMic) btnMiniMic.classList.toggle('muted', isMuted);
+    updateContextMenuTexts();
+    updateState(currentState);
+    return;
+  }
   userBargeIn();
 });
 

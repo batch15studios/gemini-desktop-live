@@ -4,6 +4,23 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.5.1] — 2026-10-18
+### Fixed & Improved
+- **Sharp Square Corners for Enterprise Skin (`pro-studio`)**:
+  - Configured `[data-skin="pro-studio"]` across all panels (`.glass-card`, `.deck-container`, `.card-header`, `.deck-titlebar`, `.mini-toolbar`, tabs, inputs, buttons) to use **crisp 90-degree square corners** (`border-radius: 0px !important`).
+  - Delivers an authentic native Windows enterprise desktop look, matching developer environments, CAD software, and system monitoring utilities.
+- **Removed Outer Drop-Shadows & Square Bounding Box Artifacts**:
+  - Eliminated the wide `0 10px 30px rgba(0, 0, 0, 0.4)` drop shadows that previously reached the transparent Electron window edges and caused tacky rectangular corner artifacts.
+  - Replaced across all themes with clean `inset 0 0 20px` internal illumination and flush 1px border outlines so transparent window regions remain 100% invisible.
+- **Synchronized Theme & Skin on Workspace Deck**:
+  - Wired live `onSkinChanged` and `onThemeChanged` listeners in `renderers/workspace/workspace.js` so the 4th Workspace Deck window matches the active visual skin and square corners seamlessly.
+- **Microphone Unmute Ergonomics & Global Hotkeys**:
+  - **Click-to-Unmute on Orb**: When muted, clicking the Orb directly unmutes the microphone immediately.
+  - **Global Hotkeys**: Registered `Alt+M` and `CommandOrControl+Shift+M` (alongside `Ctrl+Alt+Space`) as system-wide mute/unmute toggles operable from any game, browser, or application.
+  - **Gemini Audio Awareness**: Updated system prompt so Gemini proactively reminds Ryan that microphone audio transmission is stopped during mute for privacy, and explains that he can unmute anytime by clicking the Orb, using the right-click menu, or pressing `Alt+M`.
+
+---
+
 ## [2.5.0] — 2026-10-18
 ### Added
 - **Enterprise Slate & Studio Pro Mode (Native Windows Enterprise Look)**:

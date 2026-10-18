@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.5.0",
-  "description": "Full Desktop PC Assistant v2.5.0 with Studio Pro & Enterprise Slate Mode, Clean Floating Orb Context Menu, Native Screenshot Tool, Universal Minimize, and Voice Disconnect/Mute/Control",
+  "version": "2.5.1",
+  "description": "Full Desktop PC Assistant v2.5.1 with Sharp Square Corners on Enterprise Skin, Shadowless Glass Cards, Orb Click-to-Unmute, and Alt+M / Ctrl+Shift+M Global Hotkeys",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

@@ -124,17 +124,20 @@
 }
 
 /* ==========================================================================
-   SKIN: STUDIO PRO (Native Windows 11 Fluent Studio & Precision Aperture)
+   SKIN: STUDIO PRO (Native Windows Enterprise Mode - Sharp Square Corners)
    ========================================================================== */
-[data-skin="pro-studio"] .glass-card {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 16, 30, 0.97) 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 10px 30px rgba(0, 0, 0, 0.4),
-    0 0 1px rgba(0, 120, 212, 0.3) !important;
-  border-radius: 10px !important;
+[data-skin="pro-studio"] .glass-card,
+[data-skin="pro-studio"] .deck-container {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 16, 30, 0.99) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important; /* Zero outer drop-shadow */
+  border-radius: 0px !important; /* Sharp native 90-degree square corners */
   backdrop-filter: blur(20px) !important;
+}
+
+[data-skin="pro-studio"] .card-header,
+[data-skin="pro-studio"] .deck-titlebar {
+  border-radius: 0px !important;
 }
 
 [data-skin="pro-studio"] .header-title {
@@ -148,16 +151,29 @@
   color: #60a5fa !important;
   font-weight: 500 !important;
   letter-spacing: 0.5px !important;
+  border-radius: 0px !important;
 }
 
 [data-skin="pro-studio"] .mini-toolbar {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(11, 17, 30, 0.98)) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 10px 24px rgba(0, 0, 0, 0.45),
-    0 0 12px rgba(0, 120, 212, 0.2) !important;
-  border-radius: 20px !important;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(11, 17, 30, 0.99)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0px !important;
+}
+
+[data-skin="pro-studio"] .tab-btn,
+[data-skin="pro-studio"] .deck-tab-btn,
+[data-skin="pro-studio"] .skin-card,
+[data-skin="pro-studio"] .theme-card,
+[data-skin="pro-studio"] .mcp-card,
+[data-skin="pro-studio"] .tool-pill,
+[data-skin="pro-studio"] .telemetry-box,
+[data-skin="pro-studio"] .deck-mode-tab,
+[data-skin="pro-studio"] .url-input-container,
+[data-skin="pro-studio"] input,
+[data-skin="pro-studio"] select,
+[data-skin="pro-studio"] button {
+  border-radius: 0px !important;
 }
 
 /* ==========================================================================

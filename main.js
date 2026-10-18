@@ -1065,10 +1065,18 @@ app.whenReady().then(() => {
       const isMuted = assistant.liveEngine.toggleMute();
       console.log('[Main] Global Hotkey (Ctrl+Alt+Space) toggled microphone mute:', isMuted);
     });
+    globalShortcut.register('Alt+M', () => {
+      const isMuted = assistant.liveEngine.toggleMute();
+      console.log('[Main] Global Hotkey (Alt+M) toggled microphone mute:', isMuted);
+    });
+    globalShortcut.register('CommandOrControl+Shift+M', () => {
+      const isMuted = assistant.liveEngine.toggleMute();
+      console.log('[Main] Global Hotkey (Ctrl+Shift+M) toggled microphone mute:', isMuted);
+    });
     globalShortcut.register('CommandOrControl+Shift+W', () => {
       assistant.toggleWorkspaceDeck();
     });
-    console.log('[Main] Global shortcuts registered: Ctrl+Shift+Space / Ctrl+Shift+G (Wake/Standby) | Ctrl+Alt+Space (Mute Toggle) | Ctrl+Shift+W (Workspace Deck)');
+    console.log('[Main] Global shortcuts registered: Ctrl+Shift+Space / Ctrl+Shift+G (Wake/Standby) | Alt+M / Ctrl+Shift+M / Ctrl+Alt+Space (Mute Toggle) | Ctrl+Shift+W (Workspace Deck)');
   } catch (err) {
     console.warn('[Main] Global shortcut registration error:', err);
   }
