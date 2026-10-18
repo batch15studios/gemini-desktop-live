@@ -64,7 +64,7 @@ class WebScraperLeadEngine {
       let match;
       while ((match = blockRegex.exec(html)) !== null && results.length < maxResults) {
         const block = match[1];
-        const titleMatch = block.match(/<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+        const titleMatch = block.match(/<a[^>]*class="result__a"[^>]*>([\s\S]*?)<\/a>/i);
         const snippetMatch = block.match(/<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/i);
 
         if (titleMatch) {
@@ -525,13 +525,14 @@ class WebScraperLeadEngine {
         if (sheetRes && sheetRes.spreadsheetId) {
           googleSheetUrl = sheetRes.url;
           const rows = [
-            ['Lead #', 'Business Name', 'Category', 'Phone', 'Email', 'Location / Address', 'Website Status', 'Batch15Studios Pitch Angle', 'Email Subject', 'Email Draft Body', 'Draft Status'],
+            ['Lead #', 'Business Name', 'Category', 'Phone', 'Email', 'Website URL', 'Location / Address', 'Website Status', 'Batch15Studios Pitch Angle', 'Email Subject', 'Email Draft Body', 'Draft Status'],
             ...enrichedLeads.map(l => [
               String(l.leadNumber),
               l.name,
               l.category,
               l.phone || 'Not listed',
               l.email || 'Phone / Social Outreach',
+              l.website || 'No Website',
               l.address,
               l.websiteStatusLabel,
               l.pitchAngle,
@@ -779,11 +780,13 @@ batch15studios@gmail.com`;
             <div><strong>Email:</strong> ${l.email ? `<a href="mailto:${this.escapeHtml(l.email)}">${this.escapeHtml(l.email)}</a>` : '<span class="muted">None on public page</span>'}</div>
             <div class="biz-addr">${this.escapeHtml(l.address)}</div>
           </td>
+          <td class="col-website">
+            ${l.website ? `<a href="${this.escapeHtml(l.website)}" class="btn-visit" target="_blank">Visit Website</a>` : '<span class="muted">No Website</span>'}
+          </td>
           <td class="col-status">
             <span class="status-pill" style="border-color:${badgeColor}; color:${badgeColor};">
               ${this.escapeHtml(l.websiteStatusLabel)}
             </span>
-            ${l.website ? `<div class="site-link"><a href="${this.escapeHtml(l.website)}" target="_blank">${this.escapeHtml(l.website)}</a></div>` : ''}
           </td>
           <td class="col-pitch">${this.escapeHtml(l.pitchAngle)}</td>
           <td class="col-draft">
@@ -865,6 +868,21 @@ batch15studios@gmail.com`;
       background: var(--cyan);
       color: #050a10;
     }
+    .btn-visit {
+      display: inline-block;
+      background: rgba(0, 229, 255, 0.1);
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .btn-visit:hover {
+      background: var(--cyan);
+      color: #050a10;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -895,8 +913,9 @@ batch15studios@gmail.com`;
     .col-num { width: 50px; font-weight: 700; color: var(--cyan); }
     .col-name { width: 18%; }
     .col-contact { width: 20%; }
+    .col-website { width: 12%; }
     .col-status { width: 16%; }
-    .col-pitch { width: 20%; color: #cbd5e1; line-height: 1.4; }
+    .col-pitch { width: 18%; color: #cbd5e1; line-height: 1.4; }
     .col-draft { width: 22%; }
     .biz-name { font-weight: 700; font-size: 14px; color: #fff; margin-bottom: 3px; }
     .biz-sub { font-size: 11.5px; color: var(--muted); text-transform: capitalize; }
@@ -912,7 +931,6 @@ batch15studios@gmail.com`;
       font-size: 11px;
       font-weight: 600;
     }
-    .site-link { margin-top: 5px; font-size: 11px; word-break: break-all; }
     .badge {
       display: inline-block;
       padding: 3px 8px;
@@ -950,7 +968,7 @@ batch15studios@gmail.com`;
     @media print {
       body { background: #fff; color: #000; padding: 0; }
       .header-bar, table, td, th { background: #fff !important; color: #000 !important; border-color: #ccc !important; }
-      .btn { display: none; }
+      .btn, .btn-visit { display: none; }
       details { open: true; }
     }
   </style>
@@ -975,9 +993,10 @@ batch15studios@gmail.com`;
         <th>#</th>
         <th>Business Name & Trade</th>
         <th>Contact Information</th>
-        <th>Website & Stack Status</th>
-        <th>Batch15Studios Pitch Angle</th>
-        <th>Outreach Draft & Approval</th>
+        <th>Website</th>
+        <th>Stack Status</th>
+        <th>Pitch Angle</th>
+        <th>Outreach & Approval</th>
       </tr>
     </thead>
     <tbody>
@@ -1001,8 +1020,8 @@ batch15studios@gmail.com`;
       `================================================================================`,
       ``,
       `SUMMARY TABLE (COLUMNS):`,
-      `#   | BUSINESS NAME                  | PHONE            | EMAIL                          | WEBSITE STATUS`,
-      `--------------------------------------------------------------------------------------------------------------`
+      `#   | BUSINESS NAME                  | PHONE            | EMAIL                          | WEBSITE URL                    | WEBSITE STATUS`,
+      `----------------------------------------------------------------------------------------------------------------------------------------------`
     ];
 
     for (const l of leads) {
@@ -1010,7 +1029,8 @@ batch15studios@gmail.com`;
       const name = (l.name || '').substring(0, 28).padEnd(30, ' ');
       const phone = (l.phone || 'Not listed').substring(0, 14).padEnd(16, ' ');
       const email = (l.email || 'Phone/Social').substring(0, 28).padEnd(30, ' ');
-      lines.push(`${num} | ${name} | ${phone} | ${email} | ${l.websiteStatusLabel}`);
+      const website = (l.website || 'No Website').substring(0, 28).padEnd(30, ' ');
+      lines.push(`${num} | ${name} | ${phone} | ${email} | ${website} | ${l.websiteStatusLabel}`);
     }
 
     lines.push(``);
@@ -1022,6 +1042,7 @@ batch15studios@gmail.com`;
     for (const l of leads) {
       lines.push(`[LEAD #${l.leadNumber}] ${l.name} (${l.category})`);
       lines.push(`Phone: ${l.phone || 'Not listed'} | Email: ${l.email || 'Not listed'} | Address: ${l.address}`);
+      lines.push(`Website: ${l.website || 'No Website'}`);
       lines.push(`Status: ${l.websiteStatusLabel}`);
       lines.push(`Pitch Angle: ${l.pitchAngle}`);
       lines.push(`--- DRAFT EMAIL ---`);
