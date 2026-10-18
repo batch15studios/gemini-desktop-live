@@ -7,9 +7,18 @@
 const canvas = document.getElementById('orbCanvas');
 const ctx = canvas.getContext('2d');
 const stateBadge = document.getElementById('stateBadge');
-const btnMic = document.getElementById('btnMic');
-const btnPin = document.getElementById('btnPin');
-const btnMin = document.getElementById('btnMin');
+// Context Menu & Window Controls
+const orbContextMenu = document.getElementById('orbContextMenu');
+const menuItemMic = document.getElementById('menuItemMic');
+const menuItemPin = document.getElementById('menuItemPin');
+const menuItemMinimize = document.getElementById('menuItemMinimize');
+const menuItemTray = document.getElementById('menuItemTray');
+const menuItemDeck = document.getElementById('menuItemDeck');
+const menuItemSettings = document.getElementById('menuItemSettings');
+const menuItemQuit = document.getElementById('menuItemQuit');
+const menuMicText = document.getElementById('menuMicText');
+const menuPinText = document.getElementById('menuPinText');
+const menuStatusSub = document.getElementById('menuStatusSub');
 
 // Mini Floating Toolbar Elements
 const miniToolbar = document.getElementById('miniToolbar');
@@ -70,6 +79,8 @@ function applySkin(skinId) {
   if (canvas) {
     if (currentSkin === 'gears') {
       canvas.style.filter = 'drop-shadow(0 0 28px rgba(255, 30, 20, 0.65))';
+    } else if (currentSkin === 'pro-studio' || currentSkin === 'enterprise-pro') {
+      canvas.style.filter = 'drop-shadow(0 0 20px rgba(0, 120, 212, 0.45))';
     } else {
       const pal = (typeof getThemePalette === 'function') ? getThemePalette(currentTheme) : null;
       canvas.style.filter = pal ? `drop-shadow(0 0 25px ${pal.glow})` : 'drop-shadow(0 0 25px rgba(0, 220, 255, 0.45))';
@@ -565,6 +576,188 @@ function renderWaveSynth() {
   synthCtx.shadowBlur = 0;
 }
 
+// ----------------------------------------------------
+// Studio Pro Lens: Precision Telemetry & Enterprise Visualizer
+// ----------------------------------------------------
+function renderProStudioOrb() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+
+  animAngle += (currentState === 'THINKING' ? 0.04 : 0.015);
+
+  let baseRadius = 54;
+  let pulse = 0;
+  if (currentState === 'SPEAKING') {
+    pulse = outputLevel * 38;
+  } else if (currentState === 'LISTENING') {
+    pulse = micLevel * 32;
+  } else {
+    pulse = Math.sin(animAngle * 2.2) * 2.5;
+  }
+  const currentRadius = baseRadius + pulse;
+
+  // 1. Subtle Enterprise Mica / Acrylic Outer Vignette
+  const outerBacking = ctx.createRadialGradient(cx, cy, currentRadius * 0.5, cx, cy, 135);
+  outerBacking.addColorStop(0, 'rgba(15, 23, 42, 0.4)');
+  outerBacking.addColorStop(0.7, 'rgba(10, 16, 30, 0.25)');
+  outerBacking.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = outerBacking;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 135, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. Precision Outer Telemetry Bezel & Index Ticks
+  const bezelRadius = 110;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, bezelRadius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Fine 24-division degree ticks with rotating accent indices
+  const tickCount = 24;
+  const tickStep = (Math.PI * 2) / tickCount;
+  for (let i = 0; i < tickCount; i++) {
+    const angle = i * tickStep + (currentState === 'THINKING' ? animAngle * 0.5 : 0);
+    const isMajor = (i % 6 === 0);
+    const innerDist = bezelRadius - (isMajor ? 8 : 4);
+    const outerDist = bezelRadius;
+    const x1 = cx + Math.cos(angle) * innerDist;
+    const y1 = cy + Math.sin(angle) * innerDist;
+    const x2 = cx + Math.cos(angle) * outerDist;
+    const y2 = cy + Math.sin(angle) * outerDist;
+
+    ctx.strokeStyle = isMajor
+      ? (currentState === 'THINKING' ? '#f59e0b' : (currentState === 'LISTENING' ? '#10b981' : '#0078d4'))
+      : 'rgba(148, 163, 184, 0.28)';
+    ctx.lineWidth = isMajor ? 1.5 : 1;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // 3. Middle Studio Visualizer Ring / Concentric Aperture
+  const midRadius = currentRadius * 1.35;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(animAngle * 0.4);
+  ctx.strokeStyle = (currentState === 'THINKING')
+    ? 'rgba(245, 158, 11, 0.4)'
+    : (currentState === 'LISTENING' ? 'rgba(16, 185, 129, 0.4)' : 'rgba(0, 120, 212, 0.35)');
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 8]);
+  ctx.beginPath();
+  ctx.arc(0, 0, midRadius, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // 4. Counter-rotating Precision Telemetry Ring
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-animAngle * 0.6);
+  ctx.strokeStyle = (currentState === 'SPEAKING')
+    ? 'rgba(56, 189, 248, 0.5)'
+    : 'rgba(148, 163, 184, 0.22)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, currentRadius * 1.15, currentRadius * 1.05, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // 5. Reticle Crosshairs (Studio Precision Alignment)
+  ctx.save();
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx - currentRadius * 1.4, cy);
+  ctx.lineTo(cx - currentRadius * 0.8, cy);
+  ctx.moveTo(cx + currentRadius * 0.8, cy);
+  ctx.lineTo(cx + currentRadius * 1.4, cy);
+  ctx.moveTo(cx, cy - currentRadius * 1.4);
+  ctx.lineTo(cx, cy - currentRadius * 0.8);
+  ctx.moveTo(cx, cy + currentRadius * 0.8);
+  ctx.lineTo(cx, cy + currentRadius * 1.4);
+  ctx.stroke();
+  ctx.restore();
+
+  // 6. Audio Waveform Oscilloscope Ring (Silky Audio Reactivity)
+  if (currentState === 'SPEAKING' || currentState === 'LISTENING') {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.beginPath();
+    const wavePoints = 48;
+    const waveStep = (Math.PI * 2) / wavePoints;
+    const waveAmp = (currentState === 'SPEAKING' ? outputLevel : micLevel) * 16;
+    for (let p = 0; p <= wavePoints; p++) {
+      const theta = p * waveStep;
+      const waveOffset = Math.sin(theta * 6 + animAngle * 5) * waveAmp;
+      const r = currentRadius * 1.1 + waveOffset;
+      const wx = Math.cos(theta) * r;
+      const wy = Math.sin(theta) * r;
+      if (p === 0) ctx.moveTo(wx, wy);
+      else ctx.lineTo(wx, wy);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = (currentState === 'LISTENING') ? 'rgba(16, 185, 129, 0.7)' : 'rgba(56, 189, 248, 0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 7. Executive Core Radial Gradient (High-end metallic / frosted crystal lens)
+  const coreGrad = ctx.createRadialGradient(
+    cx - currentRadius * 0.25,
+    cy - currentRadius * 0.25,
+    currentRadius * 0.05,
+    cx,
+    cy,
+    currentRadius
+  );
+
+  if (currentState === 'THINKING') {
+    coreGrad.addColorStop(0, '#ffffff');
+    coreGrad.addColorStop(0.3, '#fcd34d');
+    coreGrad.addColorStop(0.7, '#f59e0b');
+    coreGrad.addColorStop(1, '#78350f');
+  } else if (currentState === 'LISTENING') {
+    coreGrad.addColorStop(0, '#ffffff');
+    coreGrad.addColorStop(0.3, '#6ee7b7');
+    coreGrad.addColorStop(0.7, '#10b981');
+    coreGrad.addColorStop(1, '#064e3b');
+  } else if (currentState === 'SPEAKING') {
+    coreGrad.addColorStop(0, '#ffffff');
+    coreGrad.addColorStop(0.25, '#7dd3fc');
+    coreGrad.addColorStop(0.65, '#0078d4');
+    coreGrad.addColorStop(1, '#0c4a6e');
+  } else {
+    coreGrad.addColorStop(0, '#ffffff');
+    coreGrad.addColorStop(0.25, '#94a3b8');
+    coreGrad.addColorStop(0.65, '#0078d4');
+    coreGrad.addColorStop(1, '#0f172a');
+  }
+
+  ctx.fillStyle = coreGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, currentRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 8. Subtle Inner Specular Lens Reflection Arc
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - currentRadius * 0.35, currentRadius * 0.65, currentRadius * 0.35, 0, 0, Math.PI * 2);
+  const specGrad = ctx.createLinearGradient(cx, cy - currentRadius * 0.7, cx, cy);
+  specGrad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+  specGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+  ctx.fillStyle = specGrad;
+  ctx.fill();
+  ctx.restore();
+}
+
 function renderVisuals() {
   if (isMiniMode) {
     animAngle += (currentState === 'THINKING' ? 0.05 : 0.02);
@@ -572,6 +765,8 @@ function renderVisuals() {
   } else {
     if (currentSkin === 'gears') {
       renderGearsOrb();
+    } else if (currentSkin === 'pro-studio' || currentSkin === 'enterprise-pro') {
+      renderProStudioOrb();
     } else {
       renderOrb();
     }
@@ -1002,22 +1197,101 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-btnMic.addEventListener('click', async () => {
-  isMuted = await window.assistantApi.toggleMute();
-  btnMic.classList.toggle('muted', isMuted);
-  btnMic.title = isMuted ? 'Unmute Microphone' : 'Mute Microphone';
+function updateContextMenuTexts() {
+  if (menuMicText) menuMicText.innerText = isMuted ? 'Unmute Microphone' : 'Mute Microphone';
+  if (menuPinText) menuPinText.innerText = isPinned ? 'Unpin from Top' : 'Pin to Top';
+  if (menuStatusSub) menuStatusSub.innerText = isMuted ? 'MUTED' : currentState;
+}
+
+function showContextMenu(e) {
+  if (isMiniMode || !orbContextMenu) return;
+  e.preventDefault();
+
+  const menuW = 205;
+  const menuH = 220;
+  let x = e.clientX;
+  let y = e.clientY;
+
+  if (x + menuW > window.innerWidth) x = Math.max(8, window.innerWidth - menuW - 8);
+  if (y + menuH > window.innerHeight) y = Math.max(8, window.innerHeight - menuH - 8);
+
+  orbContextMenu.style.left = `${x}px`;
+  orbContextMenu.style.top = `${y}px`;
+  orbContextMenu.style.display = 'block';
+
+  updateContextMenuTexts();
+}
+
+function hideContextMenu() {
+  if (orbContextMenu) orbContextMenu.style.display = 'none';
+}
+
+window.addEventListener('contextmenu', (e) => {
+  showContextMenu(e);
 });
 
-btnPin.addEventListener('click', async () => {
-  isPinned = await window.assistantApi.toggleAlwaysOnTop();
-  btnPin.classList.toggle('active', isPinned);
-  btnPin.title = isPinned ? 'Unpin from Top' : 'Pin to Top';
+window.addEventListener('click', (e) => {
+  if (orbContextMenu && !orbContextMenu.contains(e.target)) {
+    hideContextMenu();
+  }
 });
 
-// Window Minimize -> Morph into Mini Floating Toolbar
-btnMin.addEventListener('click', () => {
-  window.assistantApi.setMiniMode(true);
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hideContextMenu();
 });
+
+if (menuItemMic) {
+  menuItemMic.addEventListener('click', async () => {
+    hideContextMenu();
+    isMuted = await window.assistantApi.toggleMute();
+    if (btnMiniMic) btnMiniMic.classList.toggle('muted', isMuted);
+    updateContextMenuTexts();
+    updateState(currentState);
+  });
+}
+
+if (menuItemPin) {
+  menuItemPin.addEventListener('click', async () => {
+    hideContextMenu();
+    isPinned = await window.assistantApi.toggleAlwaysOnTop();
+    updateContextMenuTexts();
+  });
+}
+
+if (menuItemMinimize) {
+  menuItemMinimize.addEventListener('click', () => {
+    hideContextMenu();
+    window.assistantApi.setMiniMode(true);
+  });
+}
+
+if (menuItemTray) {
+  menuItemTray.addEventListener('click', () => {
+    hideContextMenu();
+    window.assistantApi.minimizeToTray('all');
+  });
+}
+
+if (menuItemDeck) {
+  menuItemDeck.addEventListener('click', () => {
+    hideContextMenu();
+    window.assistantApi.openWorkspaceDeck();
+  });
+}
+
+if (menuItemSettings) {
+  menuItemSettings.addEventListener('click', () => {
+    hideContextMenu();
+    window.assistantApi.restoreWindow('left');
+  });
+}
+
+if (menuItemQuit) {
+  menuItemQuit.addEventListener('click', () => {
+    hideContextMenu();
+    window.assistantApi.closeApp();
+  });
+}
 
 // Mini Toolbar Event Listeners
 if (btnExpand) {
@@ -1029,9 +1303,9 @@ if (btnExpand) {
 if (btnMiniMic) {
   btnMiniMic.addEventListener('click', async () => {
     isMuted = await window.assistantApi.toggleMute();
-    btnMic.classList.toggle('muted', isMuted);
-    btnMiniMic.classList.toggle('muted', isMuted);
+    if (btnMiniMic) btnMiniMic.classList.toggle('muted', isMuted);
     btnMiniMic.title = isMuted ? 'Unmute Microphone' : 'Mute Microphone';
+    updateContextMenuTexts();
     updateState(currentState);
   });
 }
@@ -1086,16 +1360,24 @@ window.assistantApi.onTurnComplete(() => {
 });
 
 window.assistantApi.onToolActivity((activity) => {
-  if (activity.type === 'executing') updateState('THINKING');
-  else if (activity.type === 'completed') {
-    updateState('IDLE');
+  if (activity.type === 'executing') {
+    updateState('THINKING');
+    if (stateBadge && activity.name) {
+      let friendly = activity.name.replace(/_/g, ' ').toUpperCase();
+      if (friendly.length > 20) friendly = friendly.substring(0, 18) + '...';
+      stateBadge.innerText = friendly;
+      stateBadge.style.color = '#ffd32a';
+      stateBadge.style.borderColor = 'rgba(255, 211, 42, 0.7)';
+    }
+  } else if (activity.type === 'completed' || activity.type === 'failed') {
+    updateState(isAssistantSpeaking ? 'SPEAKING' : 'IDLE');
   }
 });
 
 window.assistantApi.onMuteChanged((muted) => {
   isMuted = muted;
-  btnMic.classList.toggle('muted', isMuted);
   if (btnMiniMic) btnMiniMic.classList.toggle('muted', isMuted);
+  updateContextMenuTexts();
   updateState(currentState);
 });
 

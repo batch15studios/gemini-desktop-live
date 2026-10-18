@@ -38,6 +38,7 @@ class AssistantApp {
     this.config = this.loadConfig();
     this.toolsManager = new ToolsManager(this.engineEmitter, this.config.enabledMcpServers);
     this.toolsManager.setScreenCaptureProvider(() => this.captureDesktopSnapshotJpeg());
+    this.toolsManager.setScreenshotProvider((opts) => this.captureDesktopScreenshot(opts));
     this.toolsManager.setWebviewDomExtractor((selector) => this.extractWorkspaceWebviewDom(selector));
 
     const activeVoice = (this.config.skin === 'gears' && this.config.gearsVoice && this.config.gearsVoice.trim() !== '')
@@ -251,6 +252,40 @@ class AssistantApp {
       this.broadcast('safety:blocked', data);
     });
 
+    // Voice & Autonomous Assistant Control Actions
+    this.engineEmitter.on('assistant_control', async (data) => {
+      console.log('[Main] Received assistant_control action:', data.action);
+      switch (data.action) {
+        case 'disconnect':
+          if (this.liveEngine && this.liveEngine.isConnected) {
+            await this.liveEngine.disconnect();
+          }
+          break;
+        case 'minimize_all':
+          this.setMiniMode(true);
+          break;
+        case 'restore_all':
+          this.setMiniMode(false);
+          break;
+        case 'minimize_tray':
+          this.orbWindow?.hide();
+          this.leftWindow?.hide();
+          this.rightWindow?.hide();
+          this.workspaceWindow?.hide();
+          this.broadcast('app:standby-changed', true);
+          break;
+        case 'mute':
+          if (this.liveEngine) this.liveEngine.setMuted(true);
+          break;
+        case 'unmute':
+          if (this.liveEngine) this.liveEngine.setMuted(false);
+          break;
+        case 'quit':
+          setTimeout(() => app.quit(), 400);
+          break;
+      }
+    });
+
     // Workspace Deck Hot-Reload: broadcast file modifications
     this.engineEmitter.on('file_written', (data) => {
       if (this.workspaceWindow && !this.workspaceWindow.isDestroyed()) {
@@ -336,6 +371,68 @@ class AssistantApp {
       console.error('[Main] Desktop snapshot capture error:', err);
     }
     return null;
+  }
+
+  async captureDesktopScreenshot({ saveToFile = true, copyToClipboard = true, customFilename = null } = {}) {
+    try {
+      const primary = screen.getPrimaryDisplay();
+      const scale = primary.scaleFactor || 1;
+      const physW = Math.round(primary.bounds.width * scale);
+      const physH = Math.round(primary.bounds.height * scale);
+
+      const sources = await desktopCapturer.getSources({
+        types: ['screen'],
+        thumbnailSize: {
+          width: physW,
+          height: physH
+        }
+      });
+
+      if (sources && sources.length > 0) {
+        const thumb = sources[0].thumbnail;
+        let savedPath = null;
+
+        if (saveToFile !== false) {
+          const picturesDir = path.join(os.homedir(), 'Pictures', 'Screenshots');
+          if (!fs.existsSync(picturesDir)) {
+            fs.mkdirSync(picturesDir, { recursive: true });
+          }
+          const fname = customFilename || `Screenshot_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.png`;
+          savedPath = path.join(picturesDir, fname);
+          fs.writeFileSync(savedPath, thumb.toPNG());
+        }
+
+        if (copyToClipboard !== false) {
+          const { clipboard } = require('electron');
+          clipboard.writeImage(thumb);
+        }
+
+        if (Notification && Notification.isSupported()) {
+          try {
+            new Notification({
+              title: 'Gemini Screenshot Captured',
+              body: savedPath ? `Saved to ${path.basename(savedPath)} & copied to clipboard.` : 'Screenshot copied to clipboard.',
+              icon: path.join(__dirname, 'assets', 'icon.png')
+            }).show();
+          } catch (e) {}
+        }
+
+        return {
+          success: true,
+          path: savedPath,
+          copiedToClipboard: copyToClipboard !== false,
+          width: physW,
+          height: physH,
+          message: savedPath
+            ? `Screenshot captured (${physW}x${physH}), saved to "${savedPath}", and copied to the clipboard.`
+            : `Screenshot captured and copied to the clipboard.`
+        };
+      }
+      return { success: false, error: 'No display screen sources detected.' };
+    } catch (err) {
+      console.error('[Main] Desktop screenshot capture error:', err);
+      return { success: false, error: err.message };
+    }
   }
 
   async extractWorkspaceWebviewDom(selector = 'body') {
@@ -669,10 +766,25 @@ class AssistantApp {
       if (windowName === 'left' && this.leftWindow) this.leftWindow.hide();
       else if (windowName === 'right' && this.rightWindow) this.rightWindow.hide();
       else if (windowName === 'orb' && this.orbWindow) this.orbWindow.hide();
+      else if (windowName === 'workspace' && this.workspaceWindow) this.workspaceWindow.hide();
       else if (windowName === 'all') {
         this.orbWindow?.hide();
         this.leftWindow?.hide();
         this.rightWindow?.hide();
+        this.workspaceWindow?.hide();
+        this.broadcast('app:standby-changed', true);
+      }
+    });
+
+    ipcMain.on('window:toggle', (e, windowName) => {
+      let win = null;
+      if (windowName === 'left') win = this.leftWindow;
+      else if (windowName === 'right') win = this.rightWindow;
+      else if (windowName === 'orb') win = this.orbWindow;
+      else if (windowName === 'workspace') return this.toggleWorkspaceWindow();
+      if (win && !win.isDestroyed()) {
+        if (win.isVisible()) win.hide();
+        else { win.show(); win.focus(); }
       }
     });
 
@@ -684,6 +796,7 @@ class AssistantApp {
       if (windowName === 'left') this.leftWindow?.show();
       if (windowName === 'right') this.rightWindow?.show();
       if (windowName === 'orb') this.orbWindow?.show();
+      if (windowName === 'workspace') this.workspaceWindow?.show();
     });
 
     ipcMain.handle('window:toggle-top', () => {
@@ -839,9 +952,10 @@ class AssistantApp {
     const { width, height } = primaryDisplay.workAreaSize;
 
     if (this.isMiniMode) {
-      // 1. Hide side docks to maximize desktop workspace
+      // 1. Hide side docks and workspace deck to maximize desktop workspace
       if (this.leftWindow && !this.leftWindow.isDestroyed()) this.leftWindow.hide();
       if (this.rightWindow && !this.rightWindow.isDestroyed()) this.rightWindow.hide();
+      if (this.workspaceWindow && !this.workspaceWindow.isDestroyed()) this.workspaceWindow.hide();
 
       // 2. Morph Orb window into sleek top-of-screen floating toolbar (with 14px padding clearance so rounded pill glow never clips)
       const miniW = 448;
@@ -881,6 +995,7 @@ class AssistantApp {
       this.orbWindow?.hide();
       this.leftWindow?.hide();
       this.rightWindow?.hide();
+      this.workspaceWindow?.hide();
       this.broadcast('app:standby-changed', true);
     } else {
       // Wake up: restore active mode, bring to front, and activate

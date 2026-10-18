@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.4.1",
-  "description": "Full Desktop PC Assistant v2.4.1 with Visual Research & Leads Database Tab, Mode Navigation Tab Bar, Structured Research & Lead Database, and Batch15Studios Lead Engine",
+  "version": "2.5.0",
+  "description": "Full Desktop PC Assistant v2.5.0 with Studio Pro & Enterprise Slate Mode, Clean Floating Orb Context Menu, Native Screenshot Tool, Universal Minimize, and Voice Disconnect/Mute/Control",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

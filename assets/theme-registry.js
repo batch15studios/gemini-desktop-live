@@ -57,6 +57,15 @@ const THEMES = [
     secondary: '#94a3b8',
     bg: '#0c1420',
     desc: 'Cryogenic diamond ice & brushed titanium slate'
+  },
+  {
+    id: 'enterprise-pro',
+    name: 'Enterprise Slate',
+    tag: 'Windows Studio',
+    primary: '#0078d4',
+    secondary: '#38bdf8',
+    bg: '#0b111e',
+    desc: 'Native Windows 11 Fluent Studio & brushed titanium slate'
   }
 ];
 
@@ -144,6 +153,30 @@ const THEME_PALETTES = {
     coreC: '#8b0000',
     synthGradient: ['#ff2222', '#ff6600', '#8b0000'],
     synthWave: '#ffffff'
+  },
+  'enterprise-pro': {
+    primary: '#0078d4',
+    secondary: '#38bdf8',
+    glow: 'rgba(0, 120, 212, 0.35)',
+    aura: 'rgba(56, 189, 248, 0.22)',
+    ring: 'rgba(0, 120, 212, 0.45)',
+    coreA: '#ffffff',
+    coreB: '#38bdf8',
+    coreC: '#0078d4',
+    synthGradient: ['#0078d4', '#38bdf8', '#94a3b8'],
+    synthWave: '#f8fafc'
+  },
+  'pro-studio': {
+    primary: '#0078d4',
+    secondary: '#38bdf8',
+    glow: 'rgba(0, 120, 212, 0.35)',
+    aura: 'rgba(56, 189, 248, 0.22)',
+    ring: 'rgba(0, 120, 212, 0.45)',
+    coreA: '#ffffff',
+    coreB: '#38bdf8',
+    coreC: '#0078d4',
+    synthGradient: ['#0078d4', '#38bdf8', '#94a3b8'],
+    synthWave: '#f8fafc'
   }
 };
 
@@ -153,6 +186,12 @@ const SKINS = [
     name: 'Nexus Hologram',
     tag: 'Cyber Glass',
     desc: 'Sleek frosted glass panels & celestial energy orb'
+  },
+  {
+    id: 'pro-studio',
+    name: 'Studio Pro Lens',
+    tag: 'Native Pro Tool',
+    desc: 'Precision optical telemetry aperture, degree ticks & enterprise studio visualizer'
   },
   {
     id: 'gears',

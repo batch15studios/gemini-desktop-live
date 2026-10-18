@@ -79,54 +79,94 @@ html, body {
   pointer-events: none;
 }
 
-.orb-controls {
+/* Sleek Right-Click Holographic Context Menu */
+.orb-context-menu {
   position: absolute;
-  bottom: 8px;
-  display: flex;
-  gap: 8px;
-  background: var(--theme-bg-toolbar, rgba(8, 16, 28, 0.94));
-  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.28));
-  padding: 4px 10px;
-  border-radius: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 8px rgba(var(--theme-accent-rgb, 0, 240, 255), 0.14);
-  z-index: 15;
+  min-width: 200px;
+  background: var(--theme-bg-toolbar, rgba(12, 18, 30, 0.96));
+  border: 1px solid var(--theme-border, rgba(0, 240, 255, 0.3));
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 0 16px rgba(var(--theme-accent-rgb, 0, 240, 255), 0.2);
+  backdrop-filter: blur(16px);
+  z-index: 100;
   -webkit-app-region: no-drag;
+  animation: contextMenuPop 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.orb-btn {
-  background: transparent;
-  border: none;
-  color: rgba(220, 245, 255, 0.7);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+@keyframes contextMenuPop {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.menu-header {
+  padding: 6px 8px 4px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.menu-header-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--theme-accent, #00f0ff);
+  text-transform: uppercase;
+}
+
+.menu-header-sub {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--theme-text-muted, #648ba6);
+}
+
+.menu-divider {
+  height: 1px;
+  background: var(--theme-border, rgba(255, 255, 255, 0.08));
+  margin: 4px 0;
+}
+
+.menu-item {
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 8px;
+  color: var(--theme-text-bright, #e2f1f8);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s ease;
 }
 
-.orb-btn:hover {
-  color: #00f0ff;
-  background: rgba(0, 240, 255, 0.15);
-  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
-  transform: scale(1.08);
+.menu-item:hover {
+  background: rgba(var(--theme-accent-rgb, 0, 240, 255), 0.15);
+  color: var(--theme-accent, #00f0ff);
 }
 
-.orb-btn.active {
-  color: #00f0ff;
-  background: rgba(0, 240, 255, 0.2);
+.menu-item .menu-icon {
+  flex-shrink: 0;
+  color: var(--theme-accent, #00f0ff);
+  transition: color 0.15s ease;
 }
 
-.orb-btn.muted {
-  color: #ff4757;
-  background: rgba(255, 71, 87, 0.15);
+.menu-item:hover .menu-icon {
+  color: var(--theme-accent, #00f0ff);
 }
 
-.orb-btn.btn-min:hover {
-  color: #ffa502;
-  background: rgba(255, 165, 2, 0.15);
+.menu-item-danger:hover {
+  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
+}
+
+.menu-item-danger:hover .menu-icon {
+  color: #ef4444;
 }
 
 /* ====================================================

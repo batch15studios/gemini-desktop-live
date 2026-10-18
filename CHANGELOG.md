@@ -4,6 +4,28 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.5.0] — 2026-10-18
+### Added
+- **Enterprise Slate & Studio Pro Mode (Native Windows Enterprise Look)**:
+  - **Color Palette (`enterprise-pro`)**: Native Windows 11 Acrylic & Mica inspired palette with Microsoft Azure Blue (`#0078d4`), light titanium slate (`#38bdf8`), deep obsidian backing (`#0b111e`), crisp typography, and non-distracting subtle rim illumination.
+  - **Visual Skin (`pro-studio`)**: "Studio Pro Lens" — A precision-engineered optical telemetry aperture with concentric precision calibration rings, 24-division degree tick marks, rotating index reticles, studio visualizer rings, and silky audio-reactive dampening that matches native Windows 11 enterprise tools and pro audio workstations.
+  - Added full card selectors for both **Studio Pro Lens** and **Enterprise Slate** in the Left Dock settings.
+- **Clean Floating Orb & Holographic Right-Click Context Menu**:
+  - Removed the bottom button pill (`.orb-controls`) from the center Orb interface, leaving only the pristine floating Orb and the dynamic state badge.
+  - Built a sleek, futuristic Right-Click Context Menu (`#orbContextMenu`) on the Orb with zero emojis and 100% precision SVG iconography.
+  - Provides quick access to Mute/Unmute Microphone, Toggle Always on Top (Pin), Universal Minimize, Minimize to System Tray, Open Workspace Command Deck, Open Left Settings & MCP Switchboard, and Exit Application.
+- **Native Screenshot Tool (`take_screenshot`)**:
+  - Added native `take_screenshot` tool callable by voice command.
+  - Captures high-resolution screen, auto-saves a timestamped PNG in `Pictures/Screenshots` (or Desktop), copies the image directly to the Windows clipboard, and displays a native Action Center toast notification.
+- **Voice-Activated Assistant Control (`assistant_control`)**:
+  - Added native `assistant_control` tool enabling voice commands: *"disconnect"* (terminates live call), *"minimize all"* / *"hide"* (morphs to top mini toolbar), *"restore all"* (restores desktop suite), *"mute"* / *"unmute"*, or *"shut down"* / *"quit"*.
+- **Universal Minimize Architecture (`main.js`)**:
+  - Updated `setMiniMode(true)`, `toggleVisibility()`, and `window:minimize-tray` (`all`) to coordinate across all 4 windows (`orbWindow`, `leftWindow`, `rightWindow`, and `workspaceWindow`).
+- **Dynamic Tasking Badge (`renderers/orb/orb.js`)**:
+  - Upgraded `stateBadge` on the center Orb to display the exact friendly task name during long-running tool executions (e.g. `TAKE SCREENSHOT`, `SEARCHING WEB...`, `FIND LOCAL BUSINESS LEADS...`) with gold status accenting, automatically restoring to IDLE/SPEAKING upon completion.
+
+---
+
 ## [2.4.1] — 2026-10-16
 ### Added
 - **Visual Research & Leads Database Dashboard (4th Tab in Workspace Deck)**:

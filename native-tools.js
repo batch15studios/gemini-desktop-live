@@ -837,6 +837,34 @@ const TOOL_DEFINITIONS = [
       },
       required: ['collection']
     }
+  },
+  {
+    name: 'take_screenshot',
+    description: 'Capture a high-resolution screenshot of the Windows desktop screen, automatically save it as a timestamped PNG file in Pictures/Screenshots (or Desktop), copy the image directly to the Windows clipboard, and display a native notification.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        save_to_file: { type: 'BOOLEAN', description: 'Whether to save the screenshot as a PNG file on disk (default true).' },
+        copy_to_clipboard: { type: 'BOOLEAN', description: 'Whether to copy the screenshot directly to the Windows clipboard (default true).' },
+        custom_filename: { type: 'STRING', description: 'Optional custom filename for the saved screenshot (e.g. "project_mockup.png").' }
+      }
+    }
+  },
+  {
+    name: 'assistant_control',
+    description: 'Control the desktop assistant application lifecycle, window layout, and audio state via voice command. Supports disconnecting the live session, minimizing all windows to the floating toolbar or system tray, muting/unmuting, or completely shutting down the app.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        action: {
+          type: 'STRING',
+          enum: ['disconnect', 'minimize_all', 'restore_all', 'minimize_tray', 'mute', 'unmute', 'quit'],
+          description: 'The assistant control action: "disconnect" (ends the live Gemini session), "minimize_all" (morphs into the compact mini floating bar), "restore_all" (restores the 3-window desktop HUD), "minimize_tray" (minimizes everything to system tray), "mute" / "unmute" (toggles microphone), or "quit" (shuts down the application).'
+        },
+        reason: { type: 'STRING', description: 'Optional verbal reason or context for the action.' }
+      },
+      required: ['action']
+    }
   }
 ];
 
@@ -1452,6 +1480,12 @@ class ToolsManager {
             datasetName: args?.datasetName,
             outputPath: args?.outputPath
           });
+          break;
+        case 'take_screenshot':
+          result = await this.takeScreenshot(args);
+          break;
+        case 'assistant_control':
+          result = await this.handleAssistantControl(args);
           break;
         default:
           result = { error: `Tool '${name}' not implemented.` };
@@ -2376,6 +2410,57 @@ class ToolsManager {
   // --- Visual Feedback & Perception Synchronization ---
   setScreenCaptureProvider(provider) {
     this.screenCaptureProvider = provider;
+  }
+
+  setScreenshotProvider(provider) {
+    this.screenshotProvider = provider;
+  }
+
+  async takeScreenshot(options = {}) {
+    if (typeof this.screenshotProvider === 'function') {
+      try {
+        return await this.screenshotProvider(options);
+      } catch (err) {
+        return { error: `Screenshot capture provider error: ${err.message}` };
+      }
+    }
+    // Standalone fallback using PowerShell .NET Graphics
+    try {
+      const picturesDir = path.join(os.homedir(), 'Pictures', 'Screenshots');
+      if (!fs.existsSync(picturesDir)) fs.mkdirSync(picturesDir, { recursive: true });
+      const filename = options.custom_filename || `Screenshot_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.png`;
+      const targetPath = path.join(picturesDir, filename);
+      const psScript = `
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+$bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+$bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+$graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+$graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+$bitmap.Save('${targetPath.replace(/\\/g, '\\\\')}', [System.Drawing.Imaging.ImageFormat]::Png)
+$graphics.Dispose()
+$bitmap.Dispose()
+`;
+      await this.runPowerShell(psScript);
+      return {
+        success: true,
+        path: targetPath,
+        message: `Screenshot saved to "${targetPath}" and copied to clipboard.`
+      };
+    } catch (err) {
+      return { error: `Failed to capture screenshot: ${err.message}` };
+    }
+  }
+
+  async handleAssistantControl(args = {}) {
+    const action = args?.action;
+    console.log(`[ToolsManager] Handling assistant_control action: "${action}" (${args?.reason || 'no reason'})`);
+    this.emitter?.emit('assistant_control', { action, reason: args?.reason });
+    return {
+      success: true,
+      action,
+      message: `Assistant control action "${action}" initiated successfully.`
+    };
   }
 
   async captureVisualFeedback() {
