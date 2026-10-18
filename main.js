@@ -20,7 +20,13 @@ app.commandLine.appendSwitch('enable-features', 'WebRtcApmInAudioService,AudioSe
 app.commandLine.appendSwitch('enable-webrtc-apm-in-audio-service');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
-app.commandLine.appendSwitch('high-dpi-support', '1');
+// Global process safety shields to prevent unexpected crashes from async operations
+process.on('uncaughtException', (err) => {
+  console.error('[Main Process] Trapped Uncaught Exception:', err?.stack || err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.warn('[Main Process] Trapped Unhandled Rejection:', reason?.stack || reason);
+});
 
 class AssistantApp {
   constructor() {
@@ -191,7 +197,7 @@ class AssistantApp {
             const version = app.getVersion();
             const model = this.config.model || 'gemini-3.8-live';
             this.liveEngine.sendTextMessage(
-              `[SYSTEM EVENT: STARTUP EXECUTIVE RUNDOWN] Ryan has booted up the assistant (System Version: v${version}, Active Model: ${model}). Please invoke workspace_startup_rundown (or your workspace tools) to inspect Ryan's unread emails, pending tasks, and today's calendar schedule, then deliver a crisp, natural spoken briefing.`
+              `[SYSTEM EVENT: STARTUP EXECUTIVE RUNDOWN] Ryan has booted up the assistant. System Version: v${version}, Model: ${model}. Please invoke workspace_startup_rundown (or your workspace tools) to inspect Ryan's unread emails, pending tasks, and today's calendar schedule, then deliver a crisp, natural spoken briefing. Do NOT recite version numbers or model names unprompted unless Ryan explicitly asks for them.`
             );
           }
         }, 3000);

@@ -4,6 +4,24 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.6.2] — 2026-10-18
+### Fixed & Improved
+- **Natural Startup Greetings (No Unprompted Recitations)**:
+  - Refined behavioral directives in `memory-manager.js`, `gemini-live-engine.js`, and `main.js`.
+  - Removed prompt phrasing that compelled the assistant to announce version numbers or hardware specs upon greeting.
+  - The assistant now greets naturally with situational readiness while retaining deep, silent internal cognition of Ryan's hardware, active model, and tool suite for tasks and explicit questions.
+- **Process Execution Hardening & Timeout Guards**:
+  - Hardened `runPowerShell` in `native-tools.js` with `timeout: 30000`, null-safe string trimming, and exitCode 124 timeout handling.
+  - Added `timeout: 8000` to `runCursorDriver` (`CursorDriver.exe`) and `timeout: 15000` to `runUiaDriver` (`UIADriver.exe`) to prevent UIAutomation freezes when scanning unresponsive desktop windows.
+  - Added `timeout: 10000` to `tasklist /v /fo csv` in `window-tools.js`.
+  - Added `timeout: 30000` to `workspace:exec-cmd` and chat-send commands in `workspace-ipc.js`.
+- **Global Process Crash Shields**:
+  - Implemented `uncaughtException` and `unhandledRejection` handlers in `main.js` to safeguard the Electron main process from unexpected async rejections or pipe errors.
+- **CodeRabbit Integration**:
+  - Added `.coderabbit.yaml` repository configuration with custom review instructions safeguarding the 16kHz/24kHz WebRTC APM AEC3 audio streaming pipeline and native driver integrity.
+
+---
+
 ## [2.6.1] — 2026-10-18
 ### Fixed & Improved
 - **Dynamic Version Synchronization Across All Prompts & Boot Memory**:

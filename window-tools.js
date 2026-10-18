@@ -12,7 +12,7 @@ const DRIVER_PATH = path.join(__dirname, 'assets', 'bin', 'CursorDriver.exe');
 class WindowTools {
   static async listWindows() {
     return new Promise((resolve) => {
-      exec('tasklist /v /fo csv', { windowsHide: true, maxBuffer: 1024 * 1024 * 2 }, (err, stdout) => {
+      exec('tasklist /v /fo csv', { windowsHide: true, maxBuffer: 1024 * 1024 * 2, timeout: 10000 }, (err, stdout) => {
         if (err || !stdout) {
           return resolve({ success: false, windows: [], error: err ? err.message : 'No output' });
         }

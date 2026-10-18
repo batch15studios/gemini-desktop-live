@@ -320,12 +320,12 @@ function registerWorkspaceIpc(assistantApp) {
   ipcMain.handle('workspace:exec-cmd', async (e, { command, cwd }) => {
     return new Promise((resolve) => {
       const workingDir = cwd || rootDir;
-      exec(command, { cwd: workingDir, maxBuffer: 1024 * 1024 * 2 }, (error, stdout, stderr) => {
+      exec(command, { cwd: workingDir, maxBuffer: 1024 * 1024 * 2, timeout: 30000 }, (error, stdout, stderr) => {
         resolve({
           success: !error,
           stdout: stdout || '',
-          stderr: stderr || (error ? error.message : ''),
-          code: error ? error.code : 0
+          stderr: stderr || (error ? (error.killed ? 'Command timed out after 30 seconds.' : error.message) : ''),
+          code: error ? (error.killed ? 124 : error.code) : 0
         });
       });
     });
@@ -346,8 +346,8 @@ function registerWorkspaceIpc(assistantApp) {
     if (query.startsWith('$') || query.startsWith('>')) {
       const cmd = query.slice(1).trim();
       return new Promise((resolve) => {
-        exec(cmd, { cwd: rootDir }, (err, stdout, stderr) => {
-          resolve({ response: stdout || stderr || (err ? err.message : 'Command executed.') });
+        exec(cmd, { cwd: rootDir, timeout: 30000 }, (err, stdout, stderr) => {
+          resolve({ response: stdout || stderr || (err ? (err.killed ? 'Command timed out after 30s.' : err.message) : 'Command executed.') });
         });
       });
     }

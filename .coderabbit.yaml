@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+version: "2"
+language: "en-US"
+early_access: false
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+      - "master"
+  tools:
+    ast-grep:
+      enabled: true
+    shellcheck:
+      enabled: true
+  path_instructions:
+    - path: "renderers/orb/orb.js"
+      instructions: "CRITICAL: The audio streaming pipeline in orb.js uses Chromium WebRTC APM AEC3, 16kHz PCM capture, and 24kHz playback with hardware echo cancellation. DO NOT suggest altering sample rates, removing silent audio sinks, or changing buffer queues without verifying half-duplex acoustic stability."
+    - path: "gemini-live-engine.js"
+      instructions: "Ensure low-latency WebSocket communication with Gemini Live API is maintained. Pay special attention to reconnection watchdog timers, session resumption tokens, and non-blocking tool calls."
+    - path: "native-tools.js"
+      instructions: "Verify all child processes and PowerShell commands execute with strict timeouts, windowsHide: true, and pass through Windows Safety Guard checks."
+
+path_filters:
+  - "!assets/bin/**"
+  - "!node_modules/**"
+  - "!package-lock.json"

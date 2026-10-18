@@ -1611,12 +1611,20 @@ class ToolsManager {
     return new Promise((resolve) => {
       exec(`powershell -NoProfile -NonInteractive -Command "${command.replace(/"/g, '`"')}"`, {
         windowsHide: true,
-        maxBuffer: 1024 * 1024 * 4
+        maxBuffer: 1024 * 1024 * 4,
+        timeout: 30000
       }, (error, stdout, stderr) => {
+        if (error && error.killed) {
+          return resolve({
+            exitCode: 124,
+            stdout: (stdout || '').trim(),
+            stderr: 'PowerShell execution timed out after 30 seconds.'
+          });
+        }
         resolve({
-          exitCode: error ? error.code : 0,
-          stdout: stdout.trim(),
-          stderr: stderr.trim()
+          exitCode: error ? (error.code || 1) : 0,
+          stdout: (stdout || '').trim(),
+          stderr: (stderr || '').trim()
         });
       });
     });
@@ -2254,15 +2262,16 @@ class ToolsManager {
     return new Promise((resolve) => {
       const driverPath = path.join(__dirname, 'assets', 'bin', 'CursorDriver.exe');
       const cmd = `"${driverPath}" ${driverArgs}`;
-      exec(cmd, { windowsHide: true }, (err, stdout, stderr) => {
+      exec(cmd, { windowsHide: true, timeout: 8000 }, (err, stdout, stderr) => {
         if (err) {
-          return resolve({ error: err.message, stderr: stderr?.trim() });
+          return resolve({ error: err.message, stderr: (stderr || '').trim() });
         }
         try {
-          const parsed = JSON.parse(stdout.trim());
+          const raw = (stdout || '').trim();
+          const parsed = JSON.parse(raw);
           resolve(parsed);
         } catch (e) {
-          resolve({ success: true, raw: stdout.trim() });
+          resolve({ success: true, raw: (stdout || '').trim() });
         }
       });
     });
@@ -2318,15 +2327,16 @@ class ToolsManager {
     return new Promise((resolve) => {
       const driverPath = path.join(__dirname, 'assets', 'bin', 'UIADriver.exe');
       const cmd = `"${driverPath}" ${driverArgs}`;
-      exec(cmd, { windowsHide: true }, (err, stdout, stderr) => {
+      exec(cmd, { windowsHide: true, timeout: 15000 }, (err, stdout, stderr) => {
         if (err && !stdout) {
-          return resolve({ error: err.message, stderr: stderr?.trim() });
+          return resolve({ error: err.message, stderr: (stderr || '').trim() });
         }
         try {
-          const parsed = JSON.parse(stdout.trim());
+          const raw = (stdout || '').trim();
+          const parsed = JSON.parse(raw);
           resolve(parsed);
         } catch (e) {
-          resolve({ success: true, raw: stdout?.trim() || '' });
+          resolve({ success: true, raw: (stdout || '').trim() });
         }
       });
     });
@@ -2650,7 +2660,7 @@ $bitmap.Dispose()
 
   checkProcessRunning(procName) {
     return new Promise((resolve) => {
-      exec(`powershell -NoProfile -Command "Get-Process -Name '${procName}' -ErrorAction SilentlyContinue"`, { windowsHide: true }, (err, stdout) => {
+      exec(`powershell -NoProfile -Command "Get-Process -Name '${procName}' -ErrorAction SilentlyContinue"`, { windowsHide: true, timeout: 5000 }, (err, stdout) => {
         resolve(!!(stdout && stdout.trim().length > 0));
       });
     });

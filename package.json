@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.6.1",
-  "description": "Full Desktop PC Assistant v2.6.1 - Dynamic Version & Model Self-Awareness, Auto-Synchronized Boot Memory, and Real-Time Engine Model Consciousness",
+  "version": "2.6.2",
+  "description": "Full Desktop PC Assistant v2.6.2 - Unprompted Startup Greeting Refinement, Hardened Process Timeouts, Global Crash Shields, and CodeRabbit Integration",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
