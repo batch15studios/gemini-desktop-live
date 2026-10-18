@@ -4,7 +4,7 @@
  * Windows System Tray, Native Tool dispatch, and Gemini Live streaming.
  */
 
-const { app, BrowserWindow, ipcMain, Tray, Menu, screen, desktopCapturer, nativeImage, session, globalShortcut, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, screen, desktopCapturer, nativeImage, globalShortcut, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -880,22 +880,8 @@ app.on('second-instance', () => {
 });
 
 app.whenReady().then(() => {
-  // Allow getDisplayMedia() to automatically capture primary desktop screen in Electron
-  if (session.defaultSession.setDisplayMediaRequestHandler) {
-    session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-      desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-        if (sources && sources.length > 0) {
-          callback({ video: sources[0] });
-        } else {
-          callback({});
-        }
-      }).catch((err) => {
-        console.error('[Main] setDisplayMediaRequestHandler error:', err);
-        callback({});
-      });
-    });
-  }
-
+  // Keep Electron's default denial of getDisplayMedia() for browsing content.
+  // App screen sharing uses the screen:capture-snapshot IPC handler instead.
   assistant.setupIpcHandlers();
   assistant.createWindows();
 
