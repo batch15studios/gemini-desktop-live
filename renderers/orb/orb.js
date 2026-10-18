@@ -804,6 +804,9 @@ async function startMicrophoneCapture() {
 
     // Native AudioContext at 16kHz
     audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().catch(e => console.warn('[Orb] mic audioContext resume error:', e));
+    }
     const source = audioContext.createMediaStreamSource(micStream);
 
     // --- Voice Isolation & Anti-Feedback DSP Pipeline ---

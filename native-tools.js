@@ -1631,12 +1631,16 @@ class ToolsManager {
   }
 
   async readFile(filePath) {
-    const resolved = path.resolve(filePath);
-    if (!fs.existsSync(resolved)) {
-      return { error: `File not found: ${resolved}` };
+    try {
+      const resolved = path.resolve(filePath);
+      if (!fs.existsSync(resolved)) {
+        return { error: `File not found: ${resolved}` };
+      }
+      const content = fs.readFileSync(resolved, 'utf-8');
+      return { path: resolved, content: content.slice(0, 100000), truncated: content.length > 100000 };
+    } catch (e) {
+      return { error: `Failed to read file '${filePath}': ${e.message}` };
     }
-    const content = fs.readFileSync(resolved, 'utf-8');
-    return { path: resolved, content: content.slice(0, 100000), truncated: content.length > 100000 };
   }
 
   async writeFile(filePath, content) {
@@ -1670,16 +1674,28 @@ class ToolsManager {
   }
 
   async listDirectory(dirPath) {
-    const resolved = path.resolve(dirPath);
-    if (!fs.existsSync(resolved)) {
-      return { error: `Directory not found: ${resolved}` };
+    try {
+      const resolved = path.resolve(dirPath);
+      if (!fs.existsSync(resolved)) {
+        return { error: `Directory not found: ${resolved}` };
+      }
+      const entries = fs.readdirSync(resolved, { withFileTypes: true }).map(e => {
+        let size = null;
+        if (e.isFile()) {
+          try {
+            size = fs.statSync(path.join(resolved, e.name)).size;
+          } catch (_) {}
+        }
+        return {
+          name: e.name,
+          isDirectory: e.isDirectory(),
+          size
+        };
+      });
+      return { path: resolved, entries };
+    } catch (e) {
+      return { error: `Failed to list directory '${dirPath}': ${e.message}` };
     }
-    const entries = fs.readdirSync(resolved, { withFileTypes: true }).map(e => ({
-      name: e.name,
-      isDirectory: e.isDirectory(),
-      size: e.isFile() ? fs.statSync(path.join(resolved, e.name)).size : null
-    }));
-    return { path: resolved, entries };
   }
 
   getSystemStatus() {
@@ -2147,6 +2163,7 @@ class ToolsManager {
           return data.result || data;
         } catch (c7Err) {
           console.warn('[ToolsManager] Context7 call error:', c7Err);
+          return { error: `Context7 tool execution error: ${c7Err.message}` };
         }
       }
     }

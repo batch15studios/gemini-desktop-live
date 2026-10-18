@@ -1,7 +1,7 @@
 {
   "name": "gemini-desktop-live",
-  "version": "2.6.2",
-  "description": "Full Desktop PC Assistant v2.6.2 - Unprompted Startup Greeting Refinement, Hardened Process Timeouts, Global Crash Shields, and CodeRabbit Integration",
+  "version": "2.6.3",
+  "description": "Full Desktop PC Assistant v2.6.3 - Deep CodeRabbit Hardening: DOM/XSS Protection, Safe I/O Handlers, AudioContext Lifecycle, and Interval Cleanup",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

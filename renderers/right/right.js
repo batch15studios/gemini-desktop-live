@@ -55,6 +55,7 @@ async function toggleWebcam() {
     webcamTag.innerText = 'OFFLINE';
     webcamTag.classList.remove('active');
     camOverlay.style.display = 'block';
+    stopPeriodicVisionLoopIfNeeded();
   } else {
     try {
       webcamStream = await navigator.mediaDevices.getUserMedia({
@@ -88,6 +89,7 @@ async function toggleScreenShare() {
     if (screenImg) screenImg.style.display = 'none';
     screenOverlay.style.display = 'block';
     screenOverlay.innerText = 'Screen Share Standby';
+    stopPeriodicVisionLoopIfNeeded();
   } else {
     try {
       screenOverlay.innerText = 'Connecting Desktop Display...';
@@ -165,6 +167,13 @@ function startPeriodicVisionLoop() {
       captureAndSendFrame('auto');
     }
   }, 2500);
+}
+
+function stopPeriodicVisionLoopIfNeeded() {
+  if (!webcamStream && !isScreenSharing && streamInterval) {
+    clearInterval(streamInterval);
+    streamInterval = null;
+  }
 }
 
 // 5. Hardware Telemetry Polling Engine

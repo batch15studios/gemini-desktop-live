@@ -4,6 +4,23 @@ All notable changes, version milestones, and architectural revisions to `gemini-
 
 ---
 
+## [2.6.3] — 2026-10-18
+### Fixed & Improved
+- **DOM & XSS Sanitization in Task Log (`renderers/left/left.js`)**:
+  - Replaced unescaped `innerHTML` assignment in `addLogEntry` with safe DOM nodes (`textContent` and `createTextNode`). Eliminates any risk of malformed HTML parsing or script injection from speech transcriptions, LLM markdown artifacts, or tool logs.
+- **Defensive File I/O & Directory Resolution (`native-tools.js`)**:
+  - Wrapped `readFile` in `try...catch` with clean error messages for locked or inaccessible files.
+  - Wrapped `listDirectory` in `try...catch` and guarded `fs.statSync` against broken symlinks and unreadable system files.
+  - Fixed Context7 catch block in `callMcpTool` to return an explicit error object (`{ error: ... }`) instead of silently falling through to the generic schema fallback.
+- **Vision Stream Interval Lifecycle (`renderers/right/right.js`)**:
+  - Added `stopPeriodicVisionLoopIfNeeded()`. When both the webcam and screen share are stopped, the 2.5-second `setInterval` is cleanly cleared from memory instead of ticking indefinitely.
+- **Microphone AudioContext Suspended State Safeguard (`renderers/orb/orb.js`)**:
+  - Added an automatic `.resume()` check on the 16kHz microphone `audioContext` to prevent Windows audio subsystem sleep states from delaying speech capture.
+- **UI UTF-8 Character Normalization (`renderers/workspace/workspace.js`)**:
+  - Standardized temporary button copy feedback using `textContent = '✓'`.
+
+---
+
 ## [2.6.2] — 2026-10-18
 ### Fixed & Improved
 - **Natural Startup Greetings (No Unprompted Recitations)**:

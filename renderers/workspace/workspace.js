@@ -1030,7 +1030,7 @@
         if (text) {
           navigator.clipboard.writeText(text);
           const origSvg = btn.innerHTML;
-          btn.innerHTML = '✓';
+          btn.textContent = '✓';
           setTimeout(() => { btn.innerHTML = origSvg; }, 1200);
         }
       });

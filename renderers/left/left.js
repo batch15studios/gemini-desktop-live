@@ -53,7 +53,20 @@ btnMinimize.addEventListener('click', () => {
 function addLogEntry(speaker, text, type = 'system') {
   const entry = document.createElement('div');
   entry.className = `log-entry ${type}`;
-  entry.innerHTML = `<span class="log-time">[${new Date().toLocaleTimeString()}]</span> <strong>${speaker}:</strong> ${text}`;
+  
+  const timeSpan = document.createElement('span');
+  timeSpan.className = 'log-time';
+  timeSpan.textContent = `[${new Date().toLocaleTimeString()}] `;
+  
+  const strong = document.createElement('strong');
+  strong.textContent = `${speaker}: `;
+  
+  const textNode = document.createTextNode(text || '');
+  
+  entry.appendChild(timeSpan);
+  entry.appendChild(strong);
+  entry.appendChild(textNode);
+  
   taskLog.appendChild(entry);
   taskLog.scrollTop = taskLog.scrollHeight;
 }
